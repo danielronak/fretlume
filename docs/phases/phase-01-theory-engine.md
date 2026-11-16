@@ -6,25 +6,38 @@ flat fretboard diagram. No camera, no audio.
 **Sessions:** 2–3.
 
 ## Tasks
-- [ ] **1.1 Primitives.** Pitch classes, MIDI, note spelling by key context, intervals, tunings (standard,
+- [x] **1.1 Primitives.** Pitch classes, MIDI, note spelling by key context, intervals, tunings (standard,
       drop D, DADGAD, open G, open D, half-step down, + custom), capo, `noteAt`, transposition. Property tests.
-- [ ] **1.2 Instrument model** (`core/guitar`): profiles, `fretX`, `halfWidth`, `stringY`, finger-target
+- [x] **1.2 Instrument model** (`core/guitar`): profiles, `fretX`, `halfWidth`, `stringY`, finger-target
       and open-marker positions; tests with hand-computed values (e.g. `fretX(12) = scale/2`).
-- [ ] **1.3 Chords.** Quality table; seed voicings (open + CAGED movable forms + shells) with fingerings;
+- [x] **1.3 Chords.** Quality table; seed voicings (open + CAGED movable forms + shells) with fingerings;
       CAGED chord set generator; voicing generator + ergonomic ranking; fingering inference; reverse lookup.
-- [ ] **1.4 Scales.** Scale table; full-neck marks; CAGED position templates; 3NPS; degree alteration
+- [x] **1.4 Scales.** Scale table; full-neck marks; CAGED position templates; 3NPS; degree alteration
       re-fit for harmonic/melodic minor; overlap groups.
-- [ ] **1.5 Triads, arpeggios, intervals, note finder.**
-- [ ] **1.6 Keys & harmony.** Diatonic chords, roles, progressions, relative/parallel, capo suggestions,
+- [x] **1.5 Triads, arpeggios, intervals, note finder.**
+- [x] **1.6 Keys & harmony.** Diatonic chords, roles, progressions, relative/parallel, capo suggestions,
       chord-scale map.
-- [ ] **1.7 Library index.** Item catalogue with ids, aliases, tags, facets; MiniSearch index built at
+- [x] **1.7 Library index.** Item catalogue with ids, aliases, tags, facets; MiniSearch index built at
       build time; query grammar; 60 query tests.
-- [ ] **1.8 Diagram renderer** (`overlay/FlatFretboard.tsx`, SVG): horizontal full-neck and vertical
+- [x] **1.8 Diagram renderer** (`overlay/FlatFretboard.tsx`, SVG): horizontal full-neck and vertical
       chord-box layouts; label modes; colour modes incl. split-colour dots for overlapping groups; root
       ring; open/muted markers; inlay dots; fret numbers; lefty mirror; responsive; accessible description
       (`aria-label` listing the notes).
-- [ ] **1.9 Shared mark model.** The same `Shape`/`Mark[]` feeds the SVG diagram now and the camera
+- [x] **1.9 Shared mark model.** The same `Shape`/`Mark[]` feeds the SVG diagram now and the camera
       overlay later — one source of truth; snapshot tests of mark lists for 30 representative shapes.
+
+## Result (2026-11-16)
+| Gate | Result |
+|---|---|
+| 1. Reference tests, coverage | 218 unit/property/component tests pass. Line coverage of `core/` is 99.2 % (threshold 95 % enforced by `npm run test`). The G major E-shape reference was corrected to frets 2–5 on every string (DECISIONS D-009). |
+| 2. Catalogue counts | `docs/benchmarks/catalogue.json`: 744 library items; 26 chord qualities × 12 roots with at least 3 voicings each (1310 voicings: 80 authored, 691 moved, 539 generated); 22 scales × 12 roots with at least 5 CAGED positions each; 682 triad voicings on 15 frets; 48 keys. |
+| 3. Visual check | 18 chord boxes and 22 neck diagrams at `/#/dev/diagrams`, inspected in both themes; screenshots in `docs/screens/phase-1/`. Dots sit on the right string between the right fret wires (also asserted in tests). |
+| 4. Fingering inference | Agrees with 73 of 80 authored fingerings (91.3 %). |
+
+Deviations: search is a custom scorer instead of MiniSearch (D-011); generated voicings only top chords up
+to four shapes (D-010); `Mark.groups` is a list and muted strings live on `Shape.muted` (D-009).
+Known soft spot: generated voicings for rare qualities (11, 13, 6/9, madd9) are valid and playable but
+not always idiomatic — worth a musician's eye during the first field test.
 
 ## Acceptance (exit gate)
 1. All reference tests in `specs/03` §3–§4 pass; ≥ 95 % line coverage in `core/theory` and `core/guitar`.

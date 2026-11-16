@@ -5,7 +5,7 @@ import { chordVoicings, voicingToShape } from '@core/theory/chords/index';
 import { scaleShape } from '@core/theory/scales/index';
 import { triadShape } from '@core/theory/triads';
 import { groupColor, isActive, markColors, markLabel } from './display';
-import { FlatFretboard } from './FlatFretboard';
+import { barres, FlatFretboard } from './FlatFretboard';
 
 afterEach(cleanup);
 
@@ -168,5 +168,9 @@ describe('<FlatFretboard> box layout', () => {
     const { container } = render(<FlatFretboard shape={fMajorBarre} layout="box" />);
     expect(container.querySelector('.fretboard__nut')).not.toBeNull();
     expect(container.querySelectorAll('.fretboard__mark')).toHaveLength(6);
+    // The index finger's barre is drawn as one bar from string 6 to string 1.
+    expect(barres(fMajorBarre.marks)).toEqual([{ finger: 1, fret: 1, from: 6, to: 1 }]);
+    expect(container.querySelectorAll('.fretboard__barre')).toHaveLength(1);
+    expect(barres(cMajor.marks)).toEqual([]);
   });
 });

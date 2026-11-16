@@ -81,7 +81,7 @@ When a field test is optional, keep working on the next task while waiting.
 ```bash
 npm run dev            # Vite dev server
 npm run verify         # typecheck + eslint/prettier + vitest + playwright tests tagged @smoke
-npm run test           # vitest only
+npm run test           # vitest with coverage; fails if core/ line coverage drops below 95 %
 npm run test:e2e       # full Playwright suite with fake camera/mic fixtures
 npm run format         # prettier --write
 npm run icons          # re-rasterise app/public/icons from mark.svg

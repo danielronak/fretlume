@@ -71,6 +71,26 @@ function Dot({ x, y, r, mark, labelMode, colorMode, dim }: DotProps) {
   );
 }
 
+/** Frets where one finger holds several strings: drawn as a bar behind the dots. */
+export function barres(
+  marks: readonly Mark[],
+): { finger: number; fret: number; from: number; to: number }[] {
+  const byFinger = new Map<string, Mark[]>();
+  for (const mark of marks) {
+    if (typeof mark.finger !== 'number' || mark.finger === 0 || mark.fret === 0) continue;
+    const key = `${mark.finger}:${mark.fret}`;
+    byFinger.set(key, [...(byFinger.get(key) ?? []), mark]);
+  }
+  return [...byFinger.values()]
+    .filter((group) => group.length >= 2)
+    .map((group) => ({
+      finger: group[0]?.finger as number,
+      fret: group[0]?.fret ?? 0,
+      from: Math.max(...group.map((m) => m.string)),
+      to: Math.min(...group.map((m) => m.string)),
+    }));
+}
+
 function Cross({ x, y, size }: { x: number; y: number; size: number }) {
   return (
     <g className="fretboard__muted">
@@ -287,6 +307,19 @@ function BoxDiagram({
       {shape.muted.map((s) => (
         <Cross key={s} x={stringX(s)} y={padTop - 16} size={5.5} />
       ))}
+      {barres(shape.marks)
+        .filter((barre) => barre.fret >= start && barre.fret < start + rows)
+        .map((barre) => (
+          <line
+            key={`${barre.finger}:${barre.fret}`}
+            className="fretboard__barre"
+            x1={stringX(barre.from)}
+            x2={stringX(barre.to)}
+            y1={noteY(barre.fret)}
+            y2={noteY(barre.fret)}
+            strokeWidth={r * 1.5}
+          />
+        ))}
       {shape.marks
         .filter((mark) => mark.string <= strings)
         .map((mark) =>

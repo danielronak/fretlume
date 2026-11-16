@@ -3,12 +3,12 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 1 — Theory engine & diagrams (`docs/phases/phase-01-theory-engine.md`)
-- **Next task:** 1.1 (pitch classes, MIDI, spelling, intervals, tunings, capo)
+- **Current phase:** 2 — App shell, Library, Tuner (`docs/phases/phase-02-shell-library-tuner.md`)
+- **Next task:** 2.1 (settings store, first-run welcome), then 2.2 storage
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`). Created
   2026-11-16; the script was run by hand but is unproven until a fresh session starts on it.
-- **Last updated:** 2026-11-16 (Phase 0 complete)
+- **Last updated:** 2026-11-16 (Phase 1 complete)
 
 ## Waiting on the owner (does not block building)
 - **Switch on GitHub Pages (one click):** repository Settings → Pages → Source = **GitHub Actions**, then
@@ -43,7 +43,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | Phase | Status | Release | Gate numbers / notes |
 |---|---|---|---|
 | 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally and in CI (12 unit, 8 browser tests); first Pages deploy waits for the owner to enable Pages |
-| 1 Theory engine | not started | — | |
+| 1 Theory engine | **done** 2026-11-16 | — | 218 tests; core line coverage 99.2 %; fingering agreement 91.3 %; `docs/benchmarks/catalogue.json` |
 | 2 Shell, Library, Tuner | not started | v0.1 | |
 | 3 Camera + manual lock | not started | v0.2 🎸 | |
 | 4 Synthetic + auto-lock | not started | v0.3 🎸 | |
@@ -55,6 +55,17 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 10 Jam tools | not started | v0.9 | |
 | 11 Perf / a11y / mobile | not started | v0.10 🎸 | |
 | 12 Release | not started | v1.0 | |
+
+## Done in Phase 1 (2026-11-16)
+- `app/src/core/theory`: pitch/spelling, degrees, tunings + capo; 26 chord qualities, 80 authored voicings,
+  moved CAGED forms, voicing generator, fingering inference, reverse lookup; 22 scales with CAGED,
+  three-notes-per-string and whole-neck layouts; triads; arpeggios; intervals; note finder; keys,
+  progressions, capo and chord-scale help; library catalogue (744 items) and descriptive search.
+- `app/src/core/guitar`: instrument geometry in millimetres (used by the camera overlay in Phase 3).
+- `app/src/overlay`: `FlatFretboard` SVG renderer (neck and chord-box layouts) and shared label/colour rules.
+- Entry points for Phase 2: `searchLibrary`, `libraryCatalogue`, `chordVoicings` / `voicingToShape`,
+  `cagedChordShape`, `scaleShape` / `scalePositionShape`, `triadShape`, `arpeggioShape`, `buildKey`,
+  `<FlatFretboard shape layout labelMode colorMode activeGroups leftHanded />`. Contact sheet: `/#/dev/diagrams`.
 
 ## Done in Phase 0 (2026-11-16)
 - npm workspace, `app/` (Vite 8, React 19, TypeScript 6 strict), ESLint, Prettier, path aliases, skeleton.

@@ -75,3 +75,9 @@
   font: 600 13px var(--font-mono);
   dominant-baseline: central;
 }
+
+.fretboard__barre {
+  stroke: var(--text-muted);
+  stroke-linecap: round;
+  opacity: 0.55;
+}

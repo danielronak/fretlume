@@ -1,0 +1,44 @@
+{
+  "generatedBy": "app/src/core/theory/catalogue.report.test.ts",
+  "libraryItems": {
+    "chord": 312,
+    "scale": 264,
+    "triad": 48,
+    "key": 24,
+    "arpeggio": 96,
+    "total": 744
+  },
+  "chords": {
+    "roots": 12,
+    "qualities": 26,
+    "seedVoicings": 80,
+    "voicings": 1310,
+    "minVoicingsPerChord": 3,
+    "bySource": {
+      "seed": 80,
+      "moved": 691,
+      "generated": 539
+    }
+  },
+  "scales": {
+    "roots": 12,
+    "scales": 22,
+    "cagedPositionsOn15Frets": 1562,
+    "minCagedPositionsPerScale": 5,
+    "threeNpsPositionsOn22Frets": 1176
+  },
+  "triads": {
+    "qualities": 4,
+    "stringSets": 4,
+    "inversions": 3,
+    "voicingsOn15Frets": 682
+  },
+  "keys": {
+    "built": 48
+  },
+  "fingeringInference": {
+    "seeds": 80,
+    "agreeing": 73,
+    "agreement": 0.9125
+  }
+}

@@ -23,6 +23,7 @@ Update this file whenever a dependency is added, removed or upgraded across a ma
 | vite-plugin-pwa (+ workbox-build) | 2.0.0 (7.4.1) | MIT |
 | typescript | 6.0.3 | Apache-2.0 |
 | vitest | 5.1.0 | MIT |
+| @vitest/coverage-v8 | 5.1.0 | MIT |
 | @playwright/test | 1.63.0 | Apache-2.0 |
 | @testing-library/react | 16.3.3 | MIT |
 | happy-dom | 21.0.4 | MIT |

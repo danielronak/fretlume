@@ -1,0 +1,828 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`shape snapshots > A harmonic minor, all CAGED positions 1`] = `
+{
+  "groups": "A,G,E,D,C,A+12",
+  "marks": [
+    "6:0 E 5 open [A]",
+    "6:1 F b6 tone [A]",
+    "6:4 G# 7 tone [G+E]",
+    "6:5 A 1 root [G+E]",
+    "6:7 B 2 tone [E+D]",
+    "6:8 C b3 tone [E+D]",
+    "6:10 D 4 tone [D+C]",
+    "6:12 E 5 tone [C+A+12]",
+    "6:13 F b6 tone [C+A+12]",
+    "5:0 A 1 root [A]",
+    "5:2 B 2 tone [A+G]",
+    "5:3 C b3 tone [A+G]",
+    "5:5 D 4 tone [G+E]",
+    "5:7 E 5 tone [E+D]",
+    "5:8 F b6 tone [E+D]",
+    "5:11 G# 7 tone [C]",
+    "5:12 A 1 root [C+A+12]",
+    "5:14 B 2 tone [A+12]",
+    "5:15 C b3 tone [A+12]",
+    "4:0 D 4 open [A]",
+    "4:2 E 5 tone [A+G]",
+    "4:3 F b6 tone [A+G]",
+    "4:6 G# 7 tone [G+E]",
+    "4:7 A 1 root [E+D]",
+    "4:9 B 2 tone [D+C]",
+    "4:10 C b3 tone [D+C]",
+    "4:12 D 4 tone [C+A+12]",
+    "4:14 E 5 tone [A+12]",
+    "4:15 F b6 tone [A+12]",
+    "3:1 G# 7 tone [A]",
+    "3:2 A 1 root [A+G]",
+    "3:4 B 2 tone [G+E]",
+    "3:5 C b3 tone [G+E]",
+    "3:7 D 4 tone [E+D]",
+    "3:9 E 5 tone [D+C]",
+    "3:10 F b6 tone [D+C]",
+    "3:13 G# 7 tone [C+A+12]",
+    "3:14 A 1 root [A+12]",
+    "2:0 B 2 open [A]",
+    "2:1 C b3 tone [A]",
+    "2:3 D 4 tone [A+G]",
+    "2:5 E 5 tone [G+E]",
+    "2:6 F b6 tone [G+E]",
+    "2:9 G# 7 tone [D+C]",
+    "2:10 A 1 root [D+C]",
+    "2:12 B 2 tone [C+A+12]",
+    "2:13 C b3 tone [C+A+12]",
+    "2:15 D 4 tone [A+12]",
+    "1:0 E 5 open [A]",
+    "1:1 F b6 tone [A]",
+    "1:4 G# 7 tone [G+E]",
+    "1:5 A 1 root [G+E]",
+    "1:7 B 2 tone [E+D]",
+    "1:8 C b3 tone [E+D]",
+    "1:10 D 4 tone [D+C]",
+    "1:12 E 5 tone [C+A+12]",
+    "1:13 F b6 tone [C+A+12]",
+  ],
+  "muted": "",
+  "title": "A harmonic minor",
+  "window": "1-15",
+}
+`;
+
+exports[`shape snapshots > A major, all CAGED positions 1`] = `
+{
+  "groups": "G,E,D,C,A,G+12",
+  "marks": [
+    "6:2 F# 6 tone [G]",
+    "6:4 G# 7 tone [G+E]",
+    "6:5 A 1 root [G+E]",
+    "6:7 B 2 tone [E+D]",
+    "6:9 C# 3 tone [D+C]",
+    "6:10 D 4 tone [D+C]",
+    "6:12 E 5 tone [C+A]",
+    "6:14 F# 6 tone [A+G+12]",
+    "5:2 B 2 tone [G]",
+    "5:4 C# 3 tone [G+E]",
+    "5:5 D 4 tone [G+E]",
+    "5:7 E 5 tone [E+D]",
+    "5:9 F# 6 tone [D+C]",
+    "5:11 G# 7 tone [C+A]",
+    "5:12 A 1 root [C+A]",
+    "5:14 B 2 tone [A+G+12]",
+    "4:2 E 5 tone [G]",
+    "4:4 F# 6 tone [G+E]",
+    "4:6 G# 7 tone [E+D]",
+    "4:7 A 1 root [E+D]",
+    "4:9 B 2 tone [D+C]",
+    "4:11 C# 3 tone [C+A]",
+    "4:12 D 4 tone [C+A]",
+    "4:14 E 5 tone [A+G+12]",
+    "3:1 G# 7 tone [G]",
+    "3:2 A 1 root [G]",
+    "3:4 B 2 tone [G+E]",
+    "3:6 C# 3 tone [E+D]",
+    "3:7 D 4 tone [E+D]",
+    "3:9 E 5 tone [D+C]",
+    "3:11 F# 6 tone [C+A]",
+    "3:13 G# 7 tone [A+G+12]",
+    "3:14 A 1 root [A+G+12]",
+    "2:2 C# 3 tone [G]",
+    "2:3 D 4 tone [G]",
+    "2:5 E 5 tone [G+E]",
+    "2:7 F# 6 tone [E+D]",
+    "2:9 G# 7 tone [D+C]",
+    "2:10 A 1 root [D+C]",
+    "2:12 B 2 tone [C+A]",
+    "2:14 C# 3 tone [A+G+12]",
+    "2:15 D 4 tone [A+G+12]",
+    "1:2 F# 6 tone [G]",
+    "1:4 G# 7 tone [G+E]",
+    "1:5 A 1 root [G+E]",
+    "1:7 B 2 tone [E+D]",
+    "1:9 C# 3 tone [D+C]",
+    "1:10 D 4 tone [D+C]",
+    "1:12 E 5 tone [C+A]",
+    "1:14 F# 6 tone [A+G+12]",
+  ],
+  "muted": "",
+  "title": "A major",
+  "window": "1-15",
+}
+`;
+
+exports[`shape snapshots > A minor open chord 1`] = `
+{
+  "groups": "A",
+  "marks": [
+    "5:0 A 1 root [A]",
+    "4:2 E 5 f2 tone [A]",
+    "3:2 A 1 f3 root [A]",
+    "2:1 C b3 f1 tone [A]",
+    "1:0 E 5 open [A]",
+  ],
+  "muted": "6",
+  "title": "A minor",
+  "window": "1-2",
+}
+`;
+
+exports[`shape snapshots > A minor pentatonic, E shape 1`] = `
+{
+  "groups": "E",
+  "marks": [
+    "6:5 A 1 root [E]",
+    "6:8 C b3 tone [E]",
+    "5:5 D 4 tone [E]",
+    "5:7 E 5 tone [E]",
+    "4:5 G b7 tone [E]",
+    "4:7 A 1 root [E]",
+    "3:5 C b3 tone [E]",
+    "3:7 D 4 tone [E]",
+    "2:5 E 5 tone [E]",
+    "2:8 G b7 tone [E]",
+    "1:5 A 1 root [E]",
+    "1:8 C b3 tone [E]",
+  ],
+  "muted": "",
+  "title": "A minor pentatonic, E shape",
+  "window": "5-8",
+}
+`;
+
+exports[`shape snapshots > A minor triads on strings 543 1`] = `
+{
+  "groups": "root,1st,2nd",
+  "marks": [
+    "5:3 C b3 tone [1st]",
+    "5:7 E 5 tone [2nd]",
+    "5:12 A 1 root [root]",
+    "5:15 C b3 tone [1st]",
+    "4:2 E 5 tone [1st]",
+    "4:7 A 1 root [2nd]",
+    "4:10 C b3 tone [root]",
+    "4:14 E 5 tone [1st]",
+    "3:2 A 1 root [1st]",
+    "3:5 C b3 tone [2nd]",
+    "3:9 E 5 tone [root]",
+    "3:14 A 1 root [1st]",
+  ],
+  "muted": "",
+  "title": "A minor triads",
+  "window": "2-15",
+}
+`;
+
+exports[`shape snapshots > A minor, five CAGED chord shapes 1`] = `
+{
+  "groups": "A,G,E,D,C",
+  "marks": [
+    "6:5 A 1 root [G+E]",
+    "5:0 A 1 root [A]",
+    "5:3 C b3 tone [G]",
+    "5:7 E 5 tone [E]",
+    "5:12 A 1 root [C]",
+    "4:2 E 5 tone [A+G]",
+    "4:7 A 1 root [E+D]",
+    "4:10 C b3 tone [C]",
+    "3:2 A 1 root [A+G]",
+    "3:5 C b3 tone [E]",
+    "3:9 E 5 tone [D+C]",
+    "2:1 C b3 tone [A]",
+    "2:5 E 5 tone [G+E]",
+    "2:10 A 1 root [D]",
+    "1:0 E 5 open [A]",
+    "1:5 A 1 root [G+E]",
+    "1:8 C b3 tone [D]",
+  ],
+  "muted": "",
+  "title": "A minor",
+  "window": "1-12",
+}
+`;
+
+exports[`shape snapshots > B diminished triads on strings 432 1`] = `
+{
+  "groups": "root,1st,2nd",
+  "marks": [
+    "4:3 F b5 tone [2nd]",
+    "4:9 B 1 root [root]",
+    "4:12 D b3 tone [1st]",
+    "3:4 B 1 root [2nd]",
+    "3:7 D b3 tone [root]",
+    "3:10 F b5 tone [1st]",
+    "2:3 D b3 tone [2nd]",
+    "2:6 F b5 tone [root]",
+    "2:12 B 1 root [1st]",
+  ],
+  "muted": "",
+  "title": "B diminished triads",
+  "window": "3-12",
+}
+`;
+
+exports[`shape snapshots > B minor barre chord 1`] = `
+{
+  "groups": "A",
+  "marks": [
+    "5:2 B 1 f1 root [A]",
+    "4:4 F# 5 f3 tone [A]",
+    "3:4 B 1 f4 root [A]",
+    "2:3 D b3 f2 tone [A]",
+    "1:2 F# 5 f1 tone [A]",
+  ],
+  "muted": "6",
+  "title": "B minor",
+  "window": "2-4",
+}
+`;
+
+exports[`shape snapshots > B7 1`] = `
+{
+  "groups": "",
+  "marks": [
+    "5:2 B 1 f2 root",
+    "4:1 D# 3 f1 tone",
+    "3:2 A b7 f3 tone",
+    "2:0 B 1 root",
+    "1:2 F# 5 f4 tone",
+  ],
+  "muted": "6",
+  "title": "B dominant seventh",
+  "window": "1-2",
+}
+`;
+
+exports[`shape snapshots > Bb major (A-shape barre) 1`] = `
+{
+  "groups": "A",
+  "marks": [
+    "5:1 Bb 1 f1 root [A]",
+    "4:3 F 5 f2 tone [A]",
+    "3:3 Bb 1 f3 root [A]",
+    "2:3 D 3 f4 tone [A]",
+    "1:1 F 5 f1 tone [A]",
+  ],
+  "muted": "6",
+  "title": "Bb major",
+  "window": "1-3",
+}
+`;
+
+exports[`shape snapshots > C major open chord 1`] = `
+{
+  "groups": "C",
+  "marks": [
+    "5:3 C 1 f3 root [C]",
+    "4:2 E 3 f2 tone [C]",
+    "3:0 G 5 open [C]",
+    "2:1 C 1 f1 root [C]",
+    "1:0 E 3 open [C]",
+  ],
+  "muted": "6",
+  "title": "C major",
+  "window": "1-3",
+}
+`;
+
+exports[`shape snapshots > C major seventh 1`] = `
+{
+  "groups": "C",
+  "marks": [
+    "5:3 C 1 f3 root [C]",
+    "4:2 E 3 f2 tone [C]",
+    "3:0 G 5 open [C]",
+    "2:0 B 7 open [C]",
+    "1:0 E 3 open [C]",
+  ],
+  "muted": "6",
+  "title": "C major seventh",
+  "window": "2-3",
+}
+`;
+
+exports[`shape snapshots > C major seventh arpeggio 1`] = `
+{
+  "groups": "C,A,G,E,D,C+12",
+  "marks": [
+    "6:0 E 3 open [C]",
+    "6:3 G 5 tone [C+A]",
+    "6:7 B 7 tone [G+E]",
+    "6:8 C 1 root [G+E]",
+    "6:12 E 3 tone [D+C+12]",
+    "6:15 G 5 tone [C+12]",
+    "5:2 B 7 tone [C+A]",
+    "5:3 C 1 root [C+A]",
+    "5:7 E 3 tone [G+E]",
+    "5:10 G 5 tone [E+D]",
+    "5:14 B 7 tone [C+12]",
+    "5:15 C 1 root [C+12]",
+    "4:2 E 3 tone [C+A]",
+    "4:5 G 5 tone [A+G]",
+    "4:9 B 7 tone [E+D]",
+    "4:10 C 1 root [E+D]",
+    "4:14 E 3 tone [C+12]",
+    "3:0 G 5 open [C]",
+    "3:4 B 7 tone [A+G]",
+    "3:5 C 1 root [A+G]",
+    "3:9 E 3 tone [E+D]",
+    "3:12 G 5 tone [D+C+12]",
+    "2:0 B 7 open [C]",
+    "2:1 C 1 root [C]",
+    "2:5 E 3 tone [A+G]",
+    "2:8 G 5 tone [G+E]",
+    "2:12 B 7 tone [D+C+12]",
+    "2:13 C 1 root [D+C+12]",
+    "1:0 E 3 open [C]",
+    "1:3 G 5 tone [C+A]",
+    "1:7 B 7 tone [G+E]",
+    "1:8 C 1 root [G+E]",
+    "1:12 E 3 tone [D+C+12]",
+    "1:15 G 5 tone [C+12]",
+  ],
+  "muted": "",
+  "title": "C major seventh arpeggio",
+  "window": "1-15",
+}
+`;
+
+exports[`shape snapshots > C major triads on strings 321 1`] = `
+{
+  "groups": "root,1st,2nd",
+  "marks": [
+    "3:0 G 5 open [2nd]",
+    "3:5 C 1 root [root]",
+    "3:9 E 3 tone [1st]",
+    "3:12 G 5 tone [2nd]",
+    "2:1 C 1 root [2nd]",
+    "2:5 E 3 tone [root]",
+    "2:8 G 5 tone [1st]",
+    "2:13 C 1 root [2nd]",
+    "1:0 E 3 open [2nd]",
+    "1:3 G 5 tone [root]",
+    "1:8 C 1 root [1st]",
+    "1:12 E 3 tone [2nd]",
+  ],
+  "muted": "",
+  "title": "C major triads",
+  "window": "1-13",
+}
+`;
+
+exports[`shape snapshots > C major, C shape (open position) 1`] = `
+{
+  "groups": "C",
+  "marks": [
+    "6:0 E 3 open [C]",
+    "6:1 F 4 tone [C]",
+    "6:3 G 5 tone [C]",
+    "5:0 A 6 open [C]",
+    "5:2 B 7 tone [C]",
+    "5:3 C 1 root [C]",
+    "4:0 D 2 open [C]",
+    "4:2 E 3 tone [C]",
+    "4:3 F 4 tone [C]",
+    "3:0 G 5 open [C]",
+    "3:2 A 6 tone [C]",
+    "2:0 B 7 open [C]",
+    "2:1 C 1 root [C]",
+    "2:3 D 2 tone [C]",
+    "1:0 E 3 open [C]",
+    "1:1 F 4 tone [C]",
+    "1:3 G 5 tone [C]",
+  ],
+  "muted": "",
+  "title": "C major, C shape",
+  "window": "1-3",
+}
+`;
+
+exports[`shape snapshots > C major, five CAGED chord shapes 1`] = `
+{
+  "groups": "C,A,G,E,D",
+  "marks": [
+    "6:8 C 1 root [G+E]",
+    "5:3 C 1 root [C+A]",
+    "5:7 E 3 tone [G]",
+    "5:10 G 5 tone [E]",
+    "4:2 E 3 tone [C]",
+    "4:5 G 5 tone [A+G]",
+    "4:10 C 1 root [E+D]",
+    "3:0 G 5 open [C]",
+    "3:5 C 1 root [A+G]",
+    "3:9 E 3 tone [E]",
+    "3:12 G 5 tone [D]",
+    "2:1 C 1 root [C]",
+    "2:5 E 3 tone [A+G]",
+    "2:8 G 5 tone [E]",
+    "2:13 C 1 root [D]",
+    "1:0 E 3 open [C]",
+    "1:3 G 5 tone [A]",
+    "1:8 C 1 root [G+E]",
+    "1:12 E 3 tone [D]",
+  ],
+  "muted": "",
+  "title": "C major",
+  "window": "1-13",
+}
+`;
+
+exports[`shape snapshots > D Dorian, whole neck to fret 12 1`] = `
+{
+  "groups": "",
+  "marks": [
+    "6:0 E 2 open",
+    "6:1 F b3 tone",
+    "6:3 G 4 tone",
+    "6:5 A 5 tone",
+    "6:7 B 6 tone",
+    "6:8 C b7 tone",
+    "6:10 D 1 root",
+    "6:12 E 2 tone",
+    "5:0 A 5 open",
+    "5:2 B 6 tone",
+    "5:3 C b7 tone",
+    "5:5 D 1 root",
+    "5:7 E 2 tone",
+    "5:8 F b3 tone",
+    "5:10 G 4 tone",
+    "5:12 A 5 tone",
+    "4:0 D 1 root",
+    "4:2 E 2 tone",
+    "4:3 F b3 tone",
+    "4:5 G 4 tone",
+    "4:7 A 5 tone",
+    "4:9 B 6 tone",
+    "4:10 C b7 tone",
+    "4:12 D 1 root",
+    "3:0 G 4 open",
+    "3:2 A 5 tone",
+    "3:4 B 6 tone",
+    "3:5 C b7 tone",
+    "3:7 D 1 root",
+    "3:9 E 2 tone",
+    "3:10 F b3 tone",
+    "3:12 G 4 tone",
+    "2:0 B 6 open",
+    "2:1 C b7 tone",
+    "2:3 D 1 root",
+    "2:5 E 2 tone",
+    "2:6 F b3 tone",
+    "2:8 G 4 tone",
+    "2:10 A 5 tone",
+    "2:12 B 6 tone",
+    "1:0 E 2 open",
+    "1:1 F b3 tone",
+    "1:3 G 4 tone",
+    "1:5 A 5 tone",
+    "1:7 B 6 tone",
+    "1:8 C b7 tone",
+    "1:10 D 1 root",
+    "1:12 E 2 tone",
+  ],
+  "muted": "",
+  "title": "D Dorian",
+  "window": "1-12",
+}
+`;
+
+exports[`shape snapshots > D major open chord 1`] = `
+{
+  "groups": "D",
+  "marks": [
+    "4:0 D 1 root [D]",
+    "3:2 A 5 f1 tone [D]",
+    "2:3 D 1 f3 root [D]",
+    "1:2 F# 3 f2 tone [D]",
+  ],
+  "muted": "6,5",
+  "title": "D major",
+  "window": "2-3",
+}
+`;
+
+exports[`shape snapshots > D minor seventh 1`] = `
+{
+  "groups": "D",
+  "marks": [
+    "4:0 D 1 root [D]",
+    "3:2 A 5 f2 tone [D]",
+    "2:1 C b7 f1 tone [D]",
+    "1:1 F b3 f1 tone [D]",
+  ],
+  "muted": "6,5",
+  "title": "D minor seventh",
+  "window": "1-2",
+}
+`;
+
+exports[`shape snapshots > E blues, all CAGED positions 1`] = `
+{
+  "groups": "E,D,C,A,G,E+12",
+  "marks": [
+    "6:0 E 1 root [E]",
+    "6:3 G b3 tone [E+D]",
+    "6:5 A 4 tone [D+C]",
+    "6:6 Bb b5 tone [C]",
+    "6:7 B 5 tone [C+A]",
+    "6:10 D b7 tone [A+G]",
+    "6:12 E 1 root [G+E+12]",
+    "6:15 G b3 tone [E+12]",
+    "5:0 A 4 open [E]",
+    "5:1 Bb b5 tone [E]",
+    "5:2 B 5 tone [E+D]",
+    "5:5 D b7 tone [D+C]",
+    "5:7 E 1 root [C+A]",
+    "5:10 G b3 tone [A+G]",
+    "5:12 A 4 tone [G+E+12]",
+    "5:13 Bb b5 tone [G+E+12]",
+    "5:14 B 5 tone [E+12]",
+    "4:0 D b7 open [E]",
+    "4:2 E 1 root [E+D]",
+    "4:5 G b3 tone [D+C]",
+    "4:7 A 4 tone [C+A]",
+    "4:8 Bb b5 tone [C+A]",
+    "4:9 B 5 tone [A+G]",
+    "4:12 D b7 tone [G+E+12]",
+    "4:14 E 1 root [E+12]",
+    "3:0 G b3 open [E]",
+    "3:2 A 4 tone [E+D]",
+    "3:3 Bb b5 tone [E+D]",
+    "3:4 B 5 tone [D+C]",
+    "3:7 D b7 tone [C+A]",
+    "3:9 E 1 root [A+G]",
+    "3:12 G b3 tone [G+E+12]",
+    "3:14 A 4 tone [E+12]",
+    "3:15 Bb b5 tone [E+12]",
+    "2:0 B 5 open [E]",
+    "2:3 D b7 tone [E+D]",
+    "2:5 E 1 root [D+C]",
+    "2:8 G b3 tone [C+A]",
+    "2:10 A 4 tone [A+G]",
+    "2:11 Bb b5 tone [G+E+12]",
+    "2:12 B 5 tone [G+E+12]",
+    "2:15 D b7 tone [E+12]",
+    "1:0 E 1 root [E]",
+    "1:3 G b3 tone [E+D]",
+    "1:5 A 4 tone [D+C]",
+    "1:6 Bb b5 tone [C]",
+    "1:7 B 5 tone [C+A]",
+    "1:10 D b7 tone [A+G]",
+    "1:12 E 1 root [G+E+12]",
+    "1:15 G b3 tone [E+12]",
+  ],
+  "muted": "",
+  "title": "E blues",
+  "window": "1-15",
+}
+`;
+
+exports[`shape snapshots > E minor open chord 1`] = `
+{
+  "groups": "E",
+  "marks": [
+    "6:0 E 1 root [E]",
+    "5:2 B 5 f2 tone [E]",
+    "4:2 E 1 f3 root [E]",
+    "3:0 G b3 open [E]",
+    "2:0 B 5 open [E]",
+    "1:0 E 1 root [E]",
+  ],
+  "muted": "",
+  "title": "E minor",
+  "window": "2-2",
+}
+`;
+
+exports[`shape snapshots > E minor pentatonic, E shape (open position) 1`] = `
+{
+  "groups": "E",
+  "marks": [
+    "6:0 E 1 root [E]",
+    "6:3 G b3 tone [E]",
+    "5:0 A 4 open [E]",
+    "5:2 B 5 tone [E]",
+    "4:0 D b7 open [E]",
+    "4:2 E 1 root [E]",
+    "3:0 G b3 open [E]",
+    "3:2 A 4 tone [E]",
+    "2:0 B 5 open [E]",
+    "2:3 D b7 tone [E]",
+    "1:0 E 1 root [E]",
+    "1:3 G b3 tone [E]",
+  ],
+  "muted": "",
+  "title": "E minor pentatonic, E shape",
+  "window": "2-3",
+}
+`;
+
+exports[`shape snapshots > E7#9 1`] = `
+{
+  "groups": "",
+  "marks": [
+    "6:0 E 1 root",
+    "5:2 B 5 f2 tone",
+    "4:0 D b7 open",
+    "3:1 G# 3 f1 tone",
+    "2:0 B 5 open",
+    "1:3 F## #9 f3 tone",
+  ],
+  "muted": "",
+  "title": "E dominant seventh sharp nine",
+  "window": "1-3",
+}
+`;
+
+exports[`shape snapshots > Every C on the neck 1`] = `
+{
+  "groups": "",
+  "marks": [
+    "6:8 C 1 root",
+    "5:3 C 1 root",
+    "5:15 C 1 root",
+    "4:10 C 1 root",
+    "3:5 C 1 root",
+    "2:1 C 1 root",
+    "2:13 C 1 root",
+    "1:8 C 1 root",
+  ],
+  "muted": "",
+  "title": "Every C on the neck",
+  "window": "1-15",
+}
+`;
+
+exports[`shape snapshots > F major barre chord 1`] = `
+{
+  "groups": "E",
+  "marks": [
+    "6:1 F 1 f1 root [E]",
+    "5:3 C 5 f3 tone [E]",
+    "4:3 F 1 f4 root [E]",
+    "3:2 A 3 f2 tone [E]",
+    "2:1 C 5 f1 tone [E]",
+    "1:1 F 1 f1 root [E]",
+  ],
+  "muted": "",
+  "title": "F major",
+  "window": "1-3",
+}
+`;
+
+exports[`shape snapshots > F# half-diminished 1`] = `
+{
+  "groups": "",
+  "marks": [
+    "6:2 F# 1 f2 root",
+    "4:2 E b7 f3 tone",
+    "3:2 A b3 f4 tone",
+    "2:1 C b5 f1 tone",
+  ],
+  "muted": "5,1",
+  "title": "F# half-diminished",
+  "window": "1-2",
+}
+`;
+
+exports[`shape snapshots > G major open chord 1`] = `
+{
+  "groups": "G",
+  "marks": [
+    "6:3 G 1 f2 root [G]",
+    "5:2 B 3 f1 tone [G]",
+    "4:0 D 5 open [G]",
+    "3:0 G 1 root [G]",
+    "2:0 B 3 open [G]",
+    "1:3 G 1 f3 root [G]",
+  ],
+  "muted": "",
+  "title": "G major",
+  "window": "2-3",
+}
+`;
+
+exports[`shape snapshots > G major, E shape 1`] = `
+{
+  "groups": "E",
+  "marks": [
+    "6:2 F# 7 tone [E]",
+    "6:3 G 1 root [E]",
+    "6:5 A 2 tone [E]",
+    "5:2 B 3 tone [E]",
+    "5:3 C 4 tone [E]",
+    "5:5 D 5 tone [E]",
+    "4:2 E 6 tone [E]",
+    "4:4 F# 7 tone [E]",
+    "4:5 G 1 root [E]",
+    "3:2 A 2 tone [E]",
+    "3:4 B 3 tone [E]",
+    "3:5 C 4 tone [E]",
+    "2:3 D 5 tone [E]",
+    "2:5 E 6 tone [E]",
+    "1:2 F# 7 tone [E]",
+    "1:3 G 1 root [E]",
+    "1:5 A 2 tone [E]",
+  ],
+  "muted": "",
+  "title": "G major, E shape",
+  "window": "2-5",
+}
+`;
+
+exports[`shape snapshots > G major, three notes per string 1`] = `
+{
+  "groups": "nps6,nps7,nps1,nps2,nps3,nps4,nps5",
+  "marks": [
+    "6:0 E 6 open [nps6]",
+    "6:2 F# 7 tone [nps6+nps7]",
+    "6:3 G 1 root [nps6+nps7+nps1]",
+    "6:5 A 2 tone [nps7+nps1+nps2]",
+    "6:7 B 3 tone [nps1+nps2+nps3]",
+    "6:8 C 4 tone [nps2+nps3+nps4]",
+    "6:10 D 5 tone [nps3+nps4+nps5]",
+    "6:12 E 6 tone [nps4+nps5]",
+    "6:14 F# 7 tone [nps5]",
+    "5:0 A 2 open [nps6]",
+    "5:2 B 3 tone [nps6+nps7]",
+    "5:3 C 4 tone [nps6+nps7+nps1]",
+    "5:5 D 5 tone [nps7+nps1+nps2]",
+    "5:7 E 6 tone [nps1+nps2+nps3]",
+    "5:9 F# 7 tone [nps2+nps3+nps4]",
+    "5:10 G 1 root [nps3+nps4+nps5]",
+    "5:12 A 2 tone [nps4+nps5]",
+    "5:14 B 3 tone [nps5]",
+    "4:0 D 5 open [nps6]",
+    "4:2 E 6 tone [nps6+nps7]",
+    "4:4 F# 7 tone [nps6+nps7+nps1]",
+    "4:5 G 1 root [nps7+nps1+nps2]",
+    "4:7 A 2 tone [nps1+nps2+nps3]",
+    "4:9 B 3 tone [nps2+nps3+nps4]",
+    "4:10 C 4 tone [nps3+nps4+nps5]",
+    "4:12 D 5 tone [nps4+nps5]",
+    "4:14 E 6 tone [nps5]",
+    "3:0 G 1 root [nps6]",
+    "3:2 A 2 tone [nps6+nps7]",
+    "3:4 B 3 tone [nps6+nps7+nps1]",
+    "3:5 C 4 tone [nps7+nps1+nps2]",
+    "3:7 D 5 tone [nps1+nps2+nps3]",
+    "3:9 E 6 tone [nps2+nps3+nps4]",
+    "3:11 F# 7 tone [nps3+nps4+nps5]",
+    "3:12 G 1 root [nps4+nps5]",
+    "3:14 A 2 tone [nps5]",
+    "2:1 C 4 tone [nps6]",
+    "2:3 D 5 tone [nps6+nps7]",
+    "2:5 E 6 tone [nps6+nps7+nps1]",
+    "2:7 F# 7 tone [nps7+nps1+nps2]",
+    "2:8 G 1 root [nps1+nps2+nps3]",
+    "2:10 A 2 tone [nps2+nps3+nps4]",
+    "2:12 B 3 tone [nps3+nps4+nps5]",
+    "2:13 C 4 tone [nps4+nps5]",
+    "2:15 D 5 tone [nps5]",
+    "1:2 F# 7 tone [nps6]",
+    "1:3 G 1 root [nps6+nps7]",
+    "1:5 A 2 tone [nps6+nps7+nps1]",
+    "1:7 B 3 tone [nps7+nps1+nps2]",
+    "1:8 C 4 tone [nps1+nps2+nps3]",
+    "1:10 D 5 tone [nps2+nps3+nps4]",
+    "1:12 E 6 tone [nps3+nps4+nps5]",
+    "1:14 F# 7 tone [nps4+nps5]",
+    "1:15 G 1 root [nps5]",
+  ],
+  "muted": "",
+  "title": "G major",
+  "window": "1-15",
+}
+`;
+
+exports[`shape snapshots > Octave above G (string 6 fret 3) 1`] = `
+{
+  "groups": "",
+  "marks": [
+    "6:3 G 1 root",
+    "4:5 G 1 root",
+    "3:0 G 1 root",
+  ],
+  "muted": "",
+  "title": "octave above G",
+  "window": "3-5",
+}
+`;

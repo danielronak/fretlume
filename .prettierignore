@@ -11,3 +11,5 @@ playwright-report
 test-results
 *.md
 .github
+coverage
+__snapshots__
