@@ -58,6 +58,12 @@ When a field test is optional, keep working on the next task while waiting.
   Run suites with `--trace off`.
 - Fake devices for e2e: `--use-fake-device-for-media-stream --use-fake-ui-for-media-stream
   --use-file-for-fake-video-capture=<.y4m|.mjpeg> --use-file-for-fake-audio-capture=<.wav>`.
+  Use the `mediaPage` fixture in `app/e2e/fixtures.ts` (`test.use({ fakeMedia: { video, audio } })`);
+  fixture files live in `fixtures/generated/` and are produced by `npm run fixtures` (prefer `.mjpeg`).
+- E2E runs against the production build (`vite preview` on port 4173). Routes are hash routes: `/#/library`.
+- TypeScript is pinned to 6.0.x (DECISIONS D-002). Vitest component tests opt in to a DOM with
+  `// @vitest-environment happy-dom` on the first line.
+- Workflow results (CI, deploy) cannot be read from the session; ask the owner to glance at the Actions tab.
 - Reachable hosts: npm, PyPI, apt mirrors, `storage.googleapis.com`, `raw.githubusercontent.com`.
   Blocked: huggingface, zenodo, wikimedia, pexels, pytorch.org, GitHub release downloads. If a task
   truly needs a blocked host, propose the smallest environment change once, with the evidence.
@@ -69,8 +75,11 @@ When a field test is optional, keep working on the next task while waiting.
 ## Commands (created in Phase 0; keep them working)
 ```bash
 npm run dev            # Vite dev server
-npm run verify         # typecheck + eslint + vitest + playwright smoke
+npm run verify         # typecheck + eslint/prettier + vitest + playwright tests tagged @smoke
+npm run test           # vitest only
 npm run test:e2e       # full Playwright suite with fake camera/mic fixtures
+npm run format         # prettier --write
+npm run icons          # re-rasterise app/public/icons from mark.svg
 npm run fixtures       # (re)generate synthetic video/audio fixtures into fixtures/
 npm run bench:vision   # tracking/lock benchmark → docs/benchmarks/*.json
 npm run bench:audio    # audio verification benchmark

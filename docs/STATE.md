@@ -3,10 +3,19 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 0 — Bootstrap & guardrails (`docs/phases/phase-00-bootstrap.md`)
-- **Next task:** 0.1 remainder (LICENSE, .editorconfig, docs/DECISIONS.md, docs/THIRD_PARTY.md), then 0.2
-- **Repository:** `danielronak/fretlume`, default branch `main` (plan committed 2026-11-16)
-- **Last updated:** 2026-11-16 (planning session)
+- **Current phase:** 1 — Theory engine & diagrams (`docs/phases/phase-01-theory-engine.md`)
+- **Next task:** 1.1 (pitch classes, MIDI, spelling, intervals, tunings, capo)
+- **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
+- **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`). Created
+  2026-11-16; the script was run by hand but is unproven until a fresh session starts on it.
+- **Last updated:** 2026-11-16 (Phase 0 complete)
+
+## Waiting on the owner (nothing here blocks Phase 1)
+- **Check CI:** open the repository's *Actions* tab and confirm the "CI" run on `main` is green. The build
+  session cannot read workflow results. If it is red, paste the failing step's log into the chat.
+- **GitHub Pages:** the `v0.0` tag triggers the "Deploy" workflow. If it fails at "configure-pages" with
+  "Pages not enabled", switch it on once: Settings → Pages → Source = **GitHub Actions**, then re-run the
+  workflow. The app will then be live at `https://danielronak.github.io/fretlume/`.
 
 ## Session bootstrap (do this first in a new session)
 1. Is a Fretlume repository attached to the session and cloned?
@@ -26,7 +35,7 @@
 ## Phase board
 | Phase | Status | Release | Gate numbers / notes |
 |---|---|---|---|
-| 0 Bootstrap | not started | v0.0 | |
+| 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally (12 unit, 8 browser tests); CI and Pages results need an owner glance |
 | 1 Theory engine | not started | — | |
 | 2 Shell, Library, Tuner | not started | v0.1 | |
 | 3 Camera + manual lock | not started | v0.2 🎸 | |
@@ -39,6 +48,15 @@
 | 10 Jam tools | not started | v0.9 | |
 | 11 Perf / a11y / mobile | not started | v0.10 🎸 | |
 | 12 Release | not started | v1.0 | |
+
+## Done in Phase 0 (2026-11-16)
+- npm workspace, `app/` (Vite 8, React 19, TypeScript 6 strict), ESLint, Prettier, path aliases, skeleton.
+- Offline PWA (precache, manifest, original mark + icons, update-on-request toast).
+- Design tokens (dark/light), nine UI primitives, navigation shell, seven placeholder screens, i18n.
+- Test harness: Vitest; Playwright against the production build; `mediaPage` fixture for fake
+  camera/microphone (`app/e2e/fixtures.ts`); `/#/dev/media-probe`; offline + no-external-request tests.
+- `tools/fixtures` (ffmpeg wrappers, WAV writer), `ml/` Python env via `uv`.
+- CI (`ci.yml`) and Pages deploy (`deploy.yml`); `fretlume` cloud environment.
 
 ## Done so far (planning session, 2026-11-16)
 - Product teardown of the reference app and competitors → `docs/research/01-product-teardown.md`.
