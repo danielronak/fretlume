@@ -1,4 +1,5 @@
 import { createHashRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { Diagrams } from '@features/dev/Diagrams';
 import { KitchenSink } from '@features/dev/KitchenSink';
 import { MediaProbe } from '@features/dev/MediaProbe';
 import { NotFound } from '@features/NotFound';
@@ -19,6 +20,7 @@ const router = createHashRouter([
         path: destination.path.slice(1),
         element: <PlaceholderScreen destination={destination} />,
       })),
+      { path: 'dev/diagrams', element: <Diagrams /> },
       { path: 'dev/kitchen-sink', element: <KitchenSink /> },
       { path: 'dev/media-probe', element: <MediaProbe /> },
       { path: '*', element: <NotFound /> },

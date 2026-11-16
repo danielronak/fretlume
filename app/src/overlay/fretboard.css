@@ -1,0 +1,77 @@
+/* Flat fretboard diagrams. Tokens only. */
+.fretboard {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-display);
+  user-select: none;
+}
+.fretboard__board {
+  fill: var(--board);
+}
+.fretboard__fret {
+  stroke: var(--board-fret);
+  stroke-width: 2;
+}
+.fretboard__nut {
+  stroke: var(--board-nut);
+  stroke-width: 6;
+  stroke-linecap: butt;
+}
+.fretboard__string {
+  stroke: var(--board-string);
+}
+.fretboard__inlay {
+  fill: var(--board-inlay);
+}
+.fretboard__number {
+  fill: var(--text-muted);
+  font: 500 12px var(--font-mono);
+  text-anchor: middle;
+}
+.fretboard__muted {
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+.fretboard__open {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+}
+.fretboard__dot-outline {
+  fill: none;
+  stroke: var(--dot-outline);
+  stroke-width: 1.5;
+}
+.fretboard__ring {
+  fill: none;
+  stroke: var(--dot-ring);
+  stroke-width: 2.5;
+}
+.fretboard__ring-shadow {
+  fill: none;
+  stroke: var(--dot-outline);
+  stroke-width: 5;
+}
+.fretboard__label {
+  fill: var(--dot-label);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: var(--dot-outline);
+  stroke-width: 2.2px;
+  stroke-linejoin: round;
+}
+.fretboard__mark--ghost {
+  opacity: 0.35;
+}
+.fretboard__mark--dim {
+  opacity: 0.18;
+}
+.fretboard__position {
+  fill: var(--text-muted);
+  font: 600 13px var(--font-mono);
+  dominant-baseline: central;
+}

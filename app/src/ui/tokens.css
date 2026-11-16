@@ -30,6 +30,13 @@
 
   --shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
   --backdrop: rgba(8, 7, 6, 0.66);
+
+  /* Flat fretboard diagram */
+  --board: #241f1a;
+  --board-fret: #6b6257;
+  --board-nut: #e9e2d6;
+  --board-string: #9c9286;
+  --board-inlay: #3a332c;
 }
 
 :root[data-theme='light'] {
@@ -56,6 +63,12 @@
 
   --shadow: 0 8px 28px rgba(60, 45, 20, 0.16);
   --backdrop: rgba(40, 32, 20, 0.4);
+
+  --board: #f3ede2;
+  --board-fret: #a89d8c;
+  --board-nut: #3b342c;
+  --board-string: #8d8272;
+  --board-inlay: #ddd4c4;
 }
 
 :root {
@@ -74,6 +87,29 @@
   --finger-4: #f72585;
   --dot-outline: rgba(0, 0, 0, 0.55);
   --dot-label: #ffffff;
+  --dot-ring: #ffffff;
+  --dot-single: #4cc9f0;
+
+  /* Degree palette: root, third, fifth, seventh, everything else. */
+  --deg-root: #ffb000;
+  --deg-third: #2ec4b6;
+  --deg-fifth: #4361ee;
+  --deg-seventh: #b5179e;
+  --deg-other: #6c757d;
+
+  /* Twelve-colour note wheel, C = 0 … B = 11 (neighbouring notes contrast). */
+  --note-0: #e63946;
+  --note-1: #f3722c;
+  --note-2: #f8961e;
+  --note-3: #c9a227;
+  --note-4: #90be6d;
+  --note-5: #43aa8b;
+  --note-6: #2ec4b6;
+  --note-7: #4cc9f0;
+  --note-8: #4361ee;
+  --note-9: #7b2cbf;
+  --note-10: #b5179e;
+  --note-11: #f72585;
 
   --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display: 'Manrope Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
