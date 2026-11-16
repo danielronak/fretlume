@@ -1,0 +1,238 @@
+<title>Fretlume Build Plan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column; the 13 phases sit on a fret-spaced neck (nut = phase 0, 12th fret = v1.0). */
+:root {
+  --bg: #F5F6F8; --surface: #FFFFFF; --ink: #17212B; --muted: #5A6875; --line: #D9DEE4;
+  --accent: #A86400; --accent-soft: #FFF1D6; --info: #0B6E84; --wood: #3B2A20; --wire: #C9CED4; --ok: #1F7A4D;
+  --display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161B; --surface: #1A2027; --ink: #E8ECF0; --muted: #9AA7B3; --line: #2C353F;
+  --accent: #FFB000; --accent-soft: #33280E; --info: #5CC8DE; --wood: #2A1F18; --wire: #8E98A3; --ok: #5FD39A; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161B; --surface: #1A2027; --ink: #E8ECF0; --muted: #9AA7B3; --line: #2C353F;
+  --accent: #FFB000; --accent-soft: #33280E; --info: #5CC8DE; --wood: #2A1F18; --wire: #8E98A3; --ok: #5FD39A; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body); }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 44px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.2; }
+h1 { font-size: clamp(30px, 6vw, 44px); font-weight: 600; letter-spacing: -0.01em; }
+h2 { font-size: 22px; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+section { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 18px; color: var(--ink); }
+.muted { color: var(--muted); }
+code { font: 0.9em var(--mono); background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+/* neck */
+.neck-scroll { overflow-x: auto; }
+.neck { position: relative; height: 96px; min-width: 640px; }
+.neck .board { position: absolute; left: 46px; right: 0; top: 0; bottom: 0; background: var(--wood); border-radius: 0 4px 4px 0; }
+.neck .nut { position: absolute; left: -6px; top: 0; bottom: 0; width: 6px; background: #EDE7D9; }
+.neck .wire { position: absolute; top: 0; bottom: 0; width: 3px; background: var(--wire); }
+.neck .dot { position: absolute; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
+  background: var(--info); color: #fff; font: 500 13px/30px var(--mono); text-align: center; border: 2px solid rgba(0,0,0,.45); box-sizing: border-box; }
+.neck .dot.parity { background: #A86400; } .neck .dot.final { background: #1F7A4D; }
+.neck .dot.jam { box-shadow: 0 0 0 2px #fff inset; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+/* tables */
+.tbl { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); }
+th { font: 500 12px/1.2 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+td.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tag { display: inline-block; font: 500 11px/1 var(--mono); padding: 4px 7px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.tag.test { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 28px; }
+.cols > div { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+ol { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; }
+.callout { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+/* files */
+.files { display: flex; flex-wrap: wrap; gap: 8px; }
+.files button { font: 500 13px var(--mono); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; cursor: pointer; }
+.files button:hover { border-color: var(--accent); }
+.files button:focus-visible, .copy:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+.files button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+#viewer { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px; overflow-x: auto;
+  font: 13px/1.55 var(--mono); white-space: pre-wrap; word-break: break-word; max-height: 70vh; overflow-y: auto; margin: 0; }
+.prompt { font: 14px/1.55 var(--mono); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; white-space: pre-wrap; margin: 0; }
+.copy { align-self: flex-start; font: 500 13px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header style="display:flex;flex-direction:column;gap:14px">
+    <span class="eyebrow">Master build plan · v1.0 · 16 Nov 2026</span>
+    <h1>Fretlume</h1>
+    <p class="lede">A free, offline app that draws chords, scales, triads and tabs on your real guitar through any camera. It matches the reference app feature for feature, then goes further: it listens to your playing, watches your fretting hand, teaches a full course and adapts to you.</p>
+    <p class="muted">Nothing is built yet. This page is the plan a coding agent follows from an empty repository to version 1.0. “Fretlume” is a working name.</p>
+  </header>
+
+  <section>
+    <h2>Thirteen phases, nut to twelfth fret</h2>
+    <div class="neck-scroll"><div class="neck" id="neck" role="img" aria-label="Phases 0 to 12 placed on a guitar neck. Phase 5 reaches parity with the reference app; phase 12 is version 1.0."><div class="board" id="board"><div class="nut"></div></div></div></div>
+    <div class="legend">
+      <span><i style="background:var(--info)"></i>build phase</span>
+      <span><i style="background:#A86400"></i>phase 5: parity with the reference app</span>
+      <span><i style="background:#1F7A4D"></i>phase 12: version 1.0</span>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>#</th><th>Phase</th><th>What exists at the end</th><th>Release</th></tr></thead>
+      <tbody>
+        <tr><td class="n">0</td><td>Bootstrap</td><td>Repository, automated tests with a fake webcam and microphone, free hosting</td><td class="n">v0.0</td></tr>
+        <tr><td class="n">1</td><td>Theory engine</td><td>Chords, scales, CAGED positions, triads and keys generated by tested code</td><td class="n">—</td></tr>
+        <tr><td class="n">2</td><td>Shell, library, tuner</td><td>Installable offline app: browse and search the library, tune up, metronome, backup</td><td class="n">v0.1</td></tr>
+        <tr><td class="n">3</td><td>Camera overlay, manual lock</td><td>Tap four points once; the overlay stays on the real neck while you play</td><td class="n">v0.2 <span class="tag test">you test</span></td></tr>
+        <tr><td class="n">4</td><td>Automatic lock</td><td>The neck is found by itself, trained only on generated images</td><td class="n">v0.3 <span class="tag test">you test</span></td></tr>
+        <tr><td class="n">5</td><td>Practice runs, playground, tabs</td><td>Run builder, tab editor and import, play-along on the neck</td><td class="n">v0.4 <span class="tag">parity</span></td></tr>
+        <tr><td class="n">6</td><td>Listening</td><td>Notes, chords and timing are checked; muted or wrong strings are named</td><td class="n">v0.5 <span class="tag test">you test</span></td></tr>
+        <tr><td class="n">7</td><td>Hand vision</td><td>Finger-level hints before you strum</td><td class="n">v0.6 <span class="tag test">you test</span></td></tr>
+        <tr><td class="n">8</td><td>Curriculum and songs</td><td>About 70 lessons in six tracks and 15 public-domain songs</td><td class="n">v0.7</td></tr>
+        <tr><td class="n">9</td><td>Personalisation</td><td>Placement, daily plan, spaced review, adaptive tempo, overlays that fade as you improve</td><td class="n">v0.8 <span class="tag test">you test</span></td></tr>
+        <tr><td class="n">10</td><td>Jam tools</td><td>Backing band, scale-per-chord overlay, looper, clip recording, games</td><td class="n">v0.9</td></tr>
+        <tr><td class="n">11</td><td>Performance, access, mobile</td><td>Smooth on modest laptops and phones; accessibility pass</td><td class="n">v0.10 <span class="tag test">you test</span></td></tr>
+        <tr><td class="n">12</td><td>Release</td><td>Install polish, documentation, licence and privacy audits</td><td class="n">v1.0</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">Roughly 25 to 40 agent sessions in total. Phases 4 and 5 are independent, so parity does not wait for automatic lock.</p>
+  </section>
+
+  <section>
+    <h2>Same as the reference app, and what is added</h2>
+    <div class="cols">
+      <div>
+        <h3>Matched (phases 0–5)</h3>
+        <ul>
+          <li>Live overlay on the real neck, lock and re-lock, flip strings</li>
+          <li>Library of chords, scales, triads and keys with search</li>
+          <li>CAGED shapes and positions, colour by shape or note</li>
+          <li>Notes, intervals or finger labels</li>
+          <li>Custom practice runs with auto-advance and loop</li>
+          <li>Chromatic tuner with reference tones</li>
+          <li>Tab editor, import, play-along on the neck</li>
+          <li>Left-handed mode, local data, backup and restore</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Added (phases 6–12)</h3>
+        <ul>
+          <li>Listens and grades; the reference app says it does not</li>
+          <li>Names the muted or wrong string</li>
+          <li>Sees fingers and corrects placement</li>
+          <li>Structured course with mastery gates</li>
+          <li>Daily plan sized to your time, spaced review, adaptive tempo</li>
+          <li>Backing band and scale guidance over chord changes</li>
+          <li>Runs on phones, tablets and any desktop, about 40 MB</li>
+          <li>Free, no account, open source</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What was tested today</h2>
+    <p>Four spikes ran in the cloud build container before the plan was written. Their results decided the architecture.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Question</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Can the agent test camera and microphone code with no person present?</td><td>Yes. A headless browser took 1280×720 frames from a video file and heard a 110 Hz tone from an audio file as 110.4 Hz. Hand tracking ran inside it.</td></tr>
+        <tr><td>Can the overlay stay on the neck without machine learning?</td><td>Yes. A classical alignment prototype reached a median worst-case error of 0.017 of a fret along the neck and 0.08 of a string spacing across it, 100% of the time, when started within about 2 pixels of the truth. That is the frame-to-frame case.</td></tr>
+        <tr><td>How rough can the first guess be?</td><td>Not very. Success fell to 78–85% at 5 pixels of starting error and 50–60% at 8 pixels. So the first lock needs help: four taps with a magnifier, then a small detector plus a multi-start search.</td></tr>
+        <tr><td>Can a detector be trained here with no graphics card?</td><td>Yes. A one-million-parameter network trained at 85 images per second on four processor cores, about 300,000 images an hour.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout">
+      <h3>One finding worth knowing</h3>
+      <p>Fret spacing is self-similar: shift every fret by one and the wire pattern looks the same from a camera. Wires alone can never tell fret 3 from fret 4. The lock is therefore anchored on the nut and inlays, shows fret numbers on your neck for you to confirm, and offers a one-tap shift.</p>
+    </div>
+    <p class="muted">Synthetic test images were crude and no real guitar has been tested yet. Real-guitar accuracy is the largest open risk, which is why the four-tap manual lock ships first and always remains available.</p>
+  </section>
+
+  <section>
+    <h2>Key decisions</h2>
+    <ul>
+      <li><strong>An installable web app.</strong> It costs nothing to distribute, works offline after the first visit, runs on every system, and can be built and tested entirely in the cloud. Native Mac and iOS builds cannot be made there.</li>
+      <li><strong>Lock, then track.</strong> Tracking is classical image alignment. A neural network is used only to find the neck at lock time, where a manual fallback exists.</li>
+      <li><strong>Generated training data only.</strong> No public dataset has fret positions, and you should not label images.</li>
+      <li><strong>Check what should sound.</strong> The app knows the expected notes, so it verifies them instead of transcribing blindly. No trained audio model is needed.</li>
+      <li><strong>Nothing leaves the device.</strong> An automated test fails the build if the app makes any network request while running.</li>
+      <li><strong>Original product.</strong> Its own name, look, wording and content; public-domain songs or your own imported tabs.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What you do</h2>
+    <ol>
+      <li>Create an empty GitHub repository once and tell the agent its name.</li>
+      <li>Approve network or environment prompts when they appear. Each is one click.</li>
+      <li>Possibly one settings click to switch on GitHub Pages.</li>
+      <li>At the six “you test” releases, play for ten minutes, press Export diagnostics and drop the file into the chat. Optional but valuable.</li>
+      <li>Decide the name, the licence and priorities when asked.</li>
+    </ol>
+    <p>No coding, labelling, training or data preparation.</p>
+    <h3>The prompt for every later session</h3>
+    <pre class="prompt" id="prompt">Continue building Fretlume. Read CLAUDE.md and docs/STATE.md, then carry on with the next unchecked task in the current phase. Work until the phase's exit gate passes or you hit a blocker only I can clear. Commit and push after every green step and keep docs/STATE.md current.</pre>
+    <button class="copy" id="copy" type="button">Copy prompt</button>
+  </section>
+
+  <section>
+    <h2>The plan files</h2>
+    <p class="muted">These are the files the build agent reads. Select one to view it here.</p>
+    <div class="files" id="files"></div>
+    <pre id="viewer" tabindex="0">Select a file above.</pre>
+  </section>
+</div>
+
+<script>
+(function () {
+  // Phases on a fret-spaced neck: fret n sits at 1 - 2^(-n/12) of the scale; the 12th fret is the halfway point.
+  var neck = document.getElementById('neck'), board = document.getElementById('board');
+  var pos = function (n) { return (1 - Math.pow(2, -n / 12)) * 2 * 96; }; // percent of the visible neck (nut → 12th fret = 96%)
+  for (var n = 1; n <= 12; n++) {
+    var w = document.createElement('div'); w.className = 'wire'; w.style.left = pos(n) + '%'; board.appendChild(w);
+  }
+  for (var p = 0; p <= 12; p++) {
+    var d = document.createElement('div');
+    d.className = 'dot' + (p === 5 ? ' parity' : '') + (p === 12 ? ' final' : '');
+    d.textContent = p;
+    if (p === 0) { d.style.left = '18px'; neck.appendChild(d); }           // phase 0 is the open string, beside the nut
+    else { d.style.left = (pos(p - 1) + (pos(p) - pos(p - 1)) * 0.5) + '%'; board.appendChild(d); }
+  }
+  var files = [
+    'CLAUDE.md', 'docs/MASTER_PLAN.md', 'docs/STATE.md', 'docs/KICKOFF_PROMPTS.md',
+    'docs/research/01-product-teardown.md', 'docs/research/02-spike-results.md',
+    'docs/specs/01-vision.md', 'docs/specs/02-audio.md', 'docs/specs/03-theory-content.md',
+    'docs/specs/04-learning.md', 'docs/specs/05-ux.md', 'docs/specs/06-testing-and-data.md',
+    'docs/phases/phase-00-bootstrap.md', 'docs/phases/phase-01-theory-engine.md', 'docs/phases/phase-02-shell-library-tuner.md',
+    'docs/phases/phase-03-camera-manual-lock.md', 'docs/phases/phase-04-synthetic-autolock.md', 'docs/phases/phase-05-practice-tabs-parity.md',
+    'docs/phases/phase-06-listening.md', 'docs/phases/phase-07-hand-vision.md', 'docs/phases/phase-08-curriculum.md',
+    'docs/phases/phase-09-personalisation.md', 'docs/phases/phase-10-jam-tools.md', 'docs/phases/phase-11-performance-access-mobile.md',
+    'docs/phases/phase-12-release.md', 'spikes/README.md', 'spikes/edge_tracker/proto.py'
+  ];
+  var box = document.getElementById('files'), viewer = document.getElementById('viewer');
+  files.forEach(function (f) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = f.replace(/^docs\//, ''); b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', function () {
+      Array.prototype.forEach.call(box.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true'); viewer.textContent = 'Loading ' + f + '…';
+      fetch(f).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (t) { viewer.textContent = t; viewer.scrollTop = 0; })
+        .catch(function () { viewer.textContent = 'Could not load ' + f + '. Reload the page and try again.'; });
+    });
+    box.appendChild(b);
+  });
+  var copy = document.getElementById('copy');
+  copy.addEventListener('click', function () {
+    var text = document.getElementById('prompt').textContent;
+    navigator.clipboard.writeText(text).then(function () { copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy prompt'; }, 1600); })
+      .catch(function () { var r = document.createRange(); r.selectNodeContents(document.getElementById('prompt')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); copy.textContent = 'Selected — press copy'; });
+  });
+})();
+</script>

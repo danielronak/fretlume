@@ -1,0 +1,28 @@
+<!doctype html><meta charset=utf8><video id=v autoplay playsinline muted></video><canvas id=c></canvas>
+<script type=module>
+import {FilesetResolver, HandLandmarker} from './vision_bundle.mjs';
+const out={};
+try{
+const stream=await navigator.mediaDevices.getUserMedia({video:{width:1280,height:720},audio:true});
+const v=document.getElementById('v'); v.srcObject=stream; await v.play();
+out.video=[v.videoWidth,v.videoHeight];
+// audio: measure dominant freq via analyser
+const ac=new AudioContext(); await ac.resume(); const src=ac.createMediaStreamSource(stream); const an=ac.createAnalyser(); an.fftSize=16384; src.connect(an);
+await new Promise(r=>setTimeout(r,800));
+const f=new Float32Array(an.frequencyBinCount); an.getFloatFrequencyData(f); let mi=0; for(let i=1;i<f.length;i++) if(f[i]>f[mi]) mi=i; out.audioPeakHz=mi*ac.sampleRate/an.fftSize; out.sr=ac.sampleRate;
+out.crossOriginIsolated=self.crossOriginIsolated; out.webgpu=!!navigator.gpu; out.sab=typeof SharedArrayBuffer;
+const fs=await FilesetResolver.forVisionTasks('./mpwasm');
+for(const delegate of ['CPU','GPU']){
+ try{
+  const hl=await HandLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:'./hand_landmarker.task',delegate},runningMode:'VIDEO',numHands:2});
+  let t0=performance.now(); let n=0; let last;
+  for(let i=0;i<20;i++){ last=hl.detectForVideo(v, performance.now()); n++; await new Promise(r=>requestAnimationFrame(r)); }
+  out['mp_'+delegate]={msPerFrame:(performance.now()-t0)/n, hands:last.landmarks.length}; hl.close();
+ }catch(e){ out['mp_'+delegate]='ERR '+e.message; }
+}
+// pixel readback
+const c=document.getElementById('c'); c.width=1280;c.height=720; const ctx=c.getContext('2d',{willReadFrequently:true}); let t0=performance.now(); for(let i=0;i<20;i++){ctx.drawImage(v,0,0); ctx.getImageData(0,0,1280,720);} out.readbackMs=(performance.now()-t0)/20;
+try{ const ort=await import('./ort/ort.all.min.mjs'); ort.env.wasm.wasmPaths='./ort/'; out.ort='loaded threads='+ort.env.wasm.numThreads; }catch(e){out.ort='ERR '+e.message}
+}catch(e){out.err=String(e&&e.stack||e)}
+window.__out=out; document.title='done';
+</script>
