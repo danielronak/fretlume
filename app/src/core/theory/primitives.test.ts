@@ -72,19 +72,24 @@ describe('pitch', () => {
 
   it('transposition by 12 is the identity and composes', () => {
     fc.assert(
-      fc.property(pcArb, fc.integer({ min: -48, max: 48 }), fc.integer({ min: -48, max: 48 }), (pc, a, b) => {
-        expect(transposePc(pc, 12)).toBe(pc);
-        expect(transposePc(transposePc(pc, a), b)).toBe(transposePc(pc, a + b));
-      }),
+      fc.property(
+        pcArb,
+        fc.integer({ min: -48, max: 48 }),
+        fc.integer({ min: -48, max: 48 }),
+        (pc, a, b) => {
+          expect(transposePc(pc, 12)).toBe(pc);
+          expect(transposePc(transposePc(pc, a), b)).toBe(transposePc(pc, a + b));
+        },
+      ),
     );
   });
 });
 
 describe('degrees', () => {
   it('maps degrees to semitones', () => {
-    expect(['1', 'b3', '3', '4', '#4', 'b5', '5', '#5', '6', 'bb7', 'b7', '7'].map(degreeSemitones)).toEqual(
-      [0, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11],
-    );
+    expect(
+      ['1', 'b3', '3', '4', '#4', 'b5', '5', '#5', '6', 'bb7', 'b7', '7'].map(degreeSemitones),
+    ).toEqual([0, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11]);
     expect(['b9', '9', '#9', '11', '#11', 'b13', '13'].map(degreeSemitones)).toEqual([
       13, 14, 15, 17, 18, 20, 21,
     ]);
@@ -114,23 +119,47 @@ describe('degrees', () => {
   });
 
   it('a spelled degree always sounds the right pitch class', () => {
-    const degrees = ['1', 'b2', '2', 'b3', '3', '4', '#4', 'b5', '5', '#5', 'b6', '6', 'bb7', 'b7', '7', '9', '#11', 'b13'];
+    const degrees = [
+      '1',
+      'b2',
+      '2',
+      'b3',
+      '3',
+      '4',
+      '#4',
+      'b5',
+      '5',
+      '#5',
+      'b6',
+      '6',
+      'bb7',
+      'b7',
+      '7',
+      '9',
+      '#11',
+      'b13',
+    ];
     fc.assert(
-      fc.property(pcArb, fc.constantFrom(...degrees), fc.constantFrom('major' as const, 'minor' as const), (pc, degree, kind) => {
-        const root = tonicSpelling(pc, kind);
-        const parsed = parseNote(spellDegree(root, degree));
-        expect(parsed).not.toBeNull();
-        expect(spelledPc(parsed!)).toBe(degreePc(pc, degree));
-      }),
+      fc.property(
+        pcArb,
+        fc.constantFrom(...degrees),
+        fc.constantFrom('major' as const, 'minor' as const),
+        (pc, degree, kind) => {
+          const root = tonicSpelling(pc, kind);
+          const parsed = parseNote(spellDegree(root, degree));
+          expect(parsed).not.toBeNull();
+          expect(spelledPc(parsed!)).toBe(degreePc(pc, degree));
+        },
+      ),
     );
   });
 });
 
 describe('tuning', () => {
   it('standard tuning is E A D G B E', () => {
-    expect([6, 5, 4, 3, 2, 1].map((s) => pcName(pcAt(STANDARD_TUNING, { string: s, fret: 0 })))).toEqual([
-      'E', 'A', 'D', 'G', 'B', 'E',
-    ]);
+    expect(
+      [6, 5, 4, 3, 2, 1].map((s) => pcName(pcAt(STANDARD_TUNING, { string: s, fret: 0 }))),
+    ).toEqual(['E', 'A', 'D', 'G', 'B', 'E']);
     expect(midiAt(STANDARD_TUNING, { string: 6, fret: 5 })).toBe(45); // A2, same as open 5th string
     expect(midiAt(STANDARD_TUNING, { string: 2, fret: 1 })).toBe(60); // middle C
   });
@@ -138,7 +167,8 @@ describe('tuning', () => {
   it('presets are ordered high string first and ascend', () => {
     for (const t of Object.values(TUNINGS)) {
       expect(t.strings).toHaveLength(6);
-      for (let i = 1; i < t.strings.length; i++) expect(t.strings[i - 1]!).toBeGreaterThan(t.strings[i]!);
+      for (let i = 1; i < t.strings.length; i++)
+        expect(t.strings[i - 1]!).toBeGreaterThan(t.strings[i]!);
     }
     expect(pcName(pcAt(TUNINGS.dropD, { string: 6, fret: 0 }))).toBe('D');
   });

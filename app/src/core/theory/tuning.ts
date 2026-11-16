@@ -12,9 +12,11 @@ const tuning = (id: string, name: string, lowToHigh: Midi[]): Tuning => ({
 export const TUNINGS = {
   standard: tuning('standard', 'Standard (E A D G B E)', [40, 45, 50, 55, 59, 64]),
   dropD: tuning('drop-d', 'Drop D (D A D G B E)', [38, 45, 50, 55, 59, 64]),
-  halfStepDown: tuning('half-step-down', 'Half step down (Eb Ab Db Gb Bb Eb)', [
-    39, 44, 49, 54, 58, 63,
-  ]),
+  halfStepDown: tuning(
+    'half-step-down',
+    'Half step down (Eb Ab Db Gb Bb Eb)',
+    [39, 44, 49, 54, 58, 63],
+  ),
   dadgad: tuning('dadgad', 'DADGAD', [38, 45, 50, 55, 57, 62]),
   openG: tuning('open-g', 'Open G (D G D G B D)', [38, 43, 50, 55, 59, 62]),
   openD: tuning('open-d', 'Open D (D A D F# A D)', [38, 45, 50, 54, 57, 62]),
