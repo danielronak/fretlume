@@ -4,7 +4,8 @@
 
 ## Now
 - **Current phase:** 0 — Bootstrap & guardrails (`docs/phases/phase-00-bootstrap.md`)
-- **Next task:** 0.1 (attach repository, commit the plan)
+- **Next task:** 0.1 remainder (LICENSE, .editorconfig, docs/DECISIONS.md, docs/THIRD_PARTY.md), then 0.2
+- **Repository:** `danielronak/fretlume`, default branch `main` (plan committed 2026-11-16)
 - **Last updated:** 2026-11-16 (planning session)
 
 ## Session bootstrap (do this first in a new session)
@@ -53,7 +54,7 @@
 | D4 | Allow Wikimedia hosts for the real-image golden set (Phase 4) | Ask when Phase 4 starts |
 
 ## Blockers
-- No GitHub repository is attached yet (needed for durability, CI and hosting).
+- None.
 
 ## Field-test log (🎸)
 *(empty — add date, device, findings, diagnostics file name, follow-up tasks)*
