@@ -65,7 +65,10 @@ When a field test is optional, keep working on the next task while waiting.
   `// @vitest-environment happy-dom` on the first line.
 - The session can push branches but **not tags**. To release, bump `version` in the root `package.json`;
   the Release workflow deploys and tags (DECISIONS D-008).
-- Workflow results (CI, deploy) cannot be read from the session; ask the owner to glance at the Actions tab.
+- **Check CI yourself** after pushing: `gh run list --repo danielronak/fretlume --limit 5` and
+  `gh run view <id> --repo danielronak/fretlume --log-failed`. (`gh auth status` reports an invalid token,
+  but the session proxy authenticates read calls.) Repository *settings* calls are blocked by the proxy
+  (for example enabling GitHub Pages) — those need the owner.
 - Reachable hosts: npm, PyPI, apt mirrors, `storage.googleapis.com`, `raw.githubusercontent.com`.
   Blocked: huggingface, zenodo, wikimedia, pexels, pytorch.org, GitHub release downloads. If a task
   truly needs a blocked host, propose the smallest environment change once, with the evidence.

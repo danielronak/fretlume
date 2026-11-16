@@ -10,13 +10,15 @@
   2026-11-16; the script was run by hand but is unproven until a fresh session starts on it.
 - **Last updated:** 2026-11-16 (Phase 0 complete)
 
-## Waiting on the owner (nothing here blocks Phase 1)
-- **Check CI:** open the repository's *Actions* tab and confirm the "CI" run on `main` is green. The build
-  session cannot read workflow results. If it is red, paste the failing step's log into the chat.
-- **GitHub Pages:** pushing the "Release" workflow started the first deploy of version 0.0.0. If it fails
-  at "configure-pages" with "Pages not enabled", switch it on once: Settings → Pages → Source =
-  **GitHub Actions**, then re-run the workflow from the Actions tab. The app will then be live at
+## Waiting on the owner (does not block building)
+- **Switch on GitHub Pages (one click):** repository Settings → Pages → Source = **GitHub Actions**, then
+  re-run the failed "Release" run in the Actions tab. The Release workflow failed on 2026-11-16 with
+  "Create Pages site failed: Resource not accessible by integration", and the session's proxy refuses the
+  Pages API, so only the owner can do this. Afterwards the app is live at
   `https://danielronak.github.io/fretlume/`.
+
+## CI status
+CI on `main` is green as of commit `7c365a2` (checked with `gh run list`).
 
 ## How to release (DECISIONS D-008)
 Bump `version` in the root `package.json` (and `APP_VERSION` in `app/src/config.ts`) in a commit on `main`.
@@ -40,7 +42,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 ## Phase board
 | Phase | Status | Release | Gate numbers / notes |
 |---|---|---|---|
-| 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally (12 unit, 8 browser tests); CI and Pages results need an owner glance |
+| 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally and in CI (12 unit, 8 browser tests); first Pages deploy waits for the owner to enable Pages |
 | 1 Theory engine | not started | — | |
 | 2 Shell, Library, Tuner | not started | v0.1 | |
 | 3 Camera + manual lock | not started | v0.2 🎸 | |

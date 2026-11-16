@@ -37,10 +37,10 @@ microphone, and shipped — before any feature exists.
 ## Result (2026-11-16)
 | Gate | Result |
 |---|---|
-| 1. `npm run verify` green | Locally: yes (typecheck, lint, 12 unit tests, 8 browser tests). CI: workflow pushed; its result cannot be read from the build session — check the repository's Actions tab. |
+| 1. `npm run verify` green | Locally: yes (typecheck, lint, 12 unit tests, 8 browser tests). CI: green (run 43895981213). |
 | 2. Fake camera + microphone | Pass: 1280×720 frames from `bars-720p.mjpeg`; loudest frequency within 2 Hz of 110 Hz from `tone-110hz.wav`. |
 | 3. Offline, no external requests | Pass on the production build, including a cold start while offline; also checked by hand under the `/fretlume/` sub-path used on GitHub Pages. |
-| 4. Installable PWA + screenshots | Manifest, icons and service worker served and tested locally; screenshots in `docs/screens/phase-0/`. Live install check waits for the first Pages deploy (Release workflow, version 0.0.0). |
+| 4. Installable PWA + screenshots | Manifest, icons and service worker served and tested locally; screenshots in `docs/screens/phase-0/`. Live install check waits for the first Pages deploy: the Release run failed because Pages is not enabled and only the owner can enable it. |
 
 Deviations: fixtures are Motion-JPEG rather than `.y4m` (DECISIONS D-005); `/dev/*` routes are hash routes
 (`/#/dev/kitchen-sink`, `/#/dev/media-probe`) (D-004); tags are created by the Release workflow because the
