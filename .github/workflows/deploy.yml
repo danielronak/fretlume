@@ -1,13 +1,19 @@
-name: Deploy
+name: Release
 
-# Publishes the PWA to GitHub Pages when a version tag is pushed (or on demand).
+# A release is a commit on main that changes "version" in the root package.json.
+# This workflow builds that commit, publishes it to GitHub Pages and then creates
+# the matching tag (v<version>). Tags are created here because the build agent's
+# git access cannot push tags. Run it by hand to redeploy the current version.
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths:
+      - package.json
+      - .github/workflows/deploy.yml
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -19,12 +25,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      is_new: ${{ steps.version.outputs.is_new }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      - id: version
+        name: Read version
+        run: |
+          TAG="v$(node -p "require('./package.json').version")"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "is_new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_new=true" >> "$GITHUB_OUTPUT"
+          fi
       - run: npm ci
       # Tries to switch Pages on for the repository. If the token is not allowed to,
       # this step fails with "Pages not enabled": enable it once under
@@ -42,6 +63,7 @@ jobs:
 
   deploy:
     needs: build
+    if: needs.build.outputs.is_new == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -49,3 +71,14 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  tag:
+    needs: [build, deploy]
+    if: needs.build.outputs.is_new == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create tag
+        run: |
+          git tag "${{ needs.build.outputs.tag }}"
+          git push origin "${{ needs.build.outputs.tag }}"

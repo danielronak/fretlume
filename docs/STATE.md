@@ -13,9 +13,14 @@
 ## Waiting on the owner (nothing here blocks Phase 1)
 - **Check CI:** open the repository's *Actions* tab and confirm the "CI" run on `main` is green. The build
   session cannot read workflow results. If it is red, paste the failing step's log into the chat.
-- **GitHub Pages:** the `v0.0` tag triggers the "Deploy" workflow. If it fails at "configure-pages" with
-  "Pages not enabled", switch it on once: Settings → Pages → Source = **GitHub Actions**, then re-run the
-  workflow. The app will then be live at `https://danielronak.github.io/fretlume/`.
+- **GitHub Pages:** pushing the "Release" workflow started the first deploy of version 0.0.0. If it fails
+  at "configure-pages" with "Pages not enabled", switch it on once: Settings → Pages → Source =
+  **GitHub Actions**, then re-run the workflow from the Actions tab. The app will then be live at
+  `https://danielronak.github.io/fretlume/`.
+
+## How to release (DECISIONS D-008)
+Bump `version` in the root `package.json` (and `APP_VERSION` in `app/src/config.ts`) in a commit on `main`.
+The "Release" workflow deploys it and creates the tag. The session cannot push tags itself.
 
 ## Session bootstrap (do this first in a new session)
 1. Is a Fretlume repository attached to the session and cloned?

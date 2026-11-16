@@ -63,6 +63,8 @@ When a field test is optional, keep working on the next task while waiting.
 - E2E runs against the production build (`vite preview` on port 4173). Routes are hash routes: `/#/library`.
 - TypeScript is pinned to 6.0.x (DECISIONS D-002). Vitest component tests opt in to a DOM with
   `// @vitest-environment happy-dom` on the first line.
+- The session can push branches but **not tags**. To release, bump `version` in the root `package.json`;
+  the Release workflow deploys and tags (DECISIONS D-008).
 - Workflow results (CI, deploy) cannot be read from the session; ask the owner to glance at the Actions tab.
 - Reachable hosts: npm, PyPI, apt mirrors, `storage.googleapis.com`, `raw.githubusercontent.com`.
   Blocked: huggingface, zenodo, wikimedia, pexels, pytorch.org, GitHub release downloads. If a task

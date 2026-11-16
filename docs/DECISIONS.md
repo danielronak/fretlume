@@ -43,3 +43,11 @@ a new version is waiting.
 (`deepmerge`, `glob`). They run only at build time on our own files and are not shipped.
 **Decision.** Accept for now; the suggested fix downgrades `vite-plugin-pwa` across a major version.
 Re-check at each phase end.
+
+## D-008 · 2026-11-16 · Releases are version bumps, tagged by the workflow
+**Context.** The build session's git access pushes branches but refuses tags (`git push origin v0.0`
+disconnects), so the planned "push a tag to deploy" flow cannot be driven by the agent.
+**Decision.** A release is a commit on `main` that changes `version` in the root `package.json`.
+`.github/workflows/deploy.yml` ("Release") builds it, deploys to GitHub Pages and creates the tag
+`v<version>` itself. Plan releases map as v0.1 → `0.1.0`, v0.10 → `0.10.0`, v1.0 → `1.0.0`.
+**Alternatives.** Ask the owner to push tags (manual work); deploy every push to `main` (no release points).
