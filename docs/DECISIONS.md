@@ -51,3 +51,22 @@ disconnects), so the planned "push a tag to deploy" flow cannot be driven by the
 `.github/workflows/deploy.yml` ("Release") builds it, deploys to GitHub Pages and creates the tag
 `v<version>` itself. Plan releases map as v0.1 → `0.1.0`, v0.10 → `0.10.0`, v1.0 → `1.0.0`.
 **Alternatives.** Ask the owner to push tags (manual work); deploy every push to `main` (no release points).
+
+## D-009 · 2026-11-16 · CAGED scale positions are fret windows; marks carry a list of groups
+**Context.** Published CAGED scale diagrams disagree at the edges (some start on the root and so show
+different frets on the two E strings). The spec's reference test for G major's E shape listed the low
+E string as frets 3–5 only.
+**Decision.** A position is *every scale tone inside a fret window* defined relative to the tonic's fret on
+the lowest string, with one window table for major-third tonics and one for minor-third tonics
+(`core/theory/scales/positions.ts`). Both E strings therefore always match, the positions tile the neck
+with no gaps, and the same rule serves every scale and arpeggio. G major's E shape is frets 2–5 on all
+strings (low E: 2, 3, 5). A minor pentatonic box 1, C major open position and E minor pentatonic open
+position match the standard diagrams exactly. `Mark.groups` is a list (not a single `group`) so that
+notes shared by neighbouring positions carry both; muted strings live on `Shape.muted`.
+**Alternatives.** Hand-typed templates per scale (error-prone, no rule for exotic scales).
+
+## D-010 · 2026-11-16 · Generated chord voicings only top the list up
+**Context.** The voicing generator always returns valid, playable shapes, but some are unidiomatic.
+**Decision.** `chordVoicings` lists hand-authored and moved shapes first and adds generated shapes only
+until there are four voicings. Each voicing carries `source` so the UI can label generated ones.
+Three-notes-per-string positions are limited to 5 frets per string (not per position, which can span 7).

@@ -52,7 +52,7 @@ UI, absolute on the neck for drawing.
   adjacent positions overlap — shared notes carry both groups (rendered as split-colour dots).
 - **3-notes-per-string (7 positions)** as an alternative segmentation.
 - **Reference tests (must pass):** A minor pentatonic box 1 = strings 6→1 frets (5,8)(5,7)(5,7)(5,7)(5,8)(5,8);
-  G major E-form position = (3,5)(2,3,5)(2,4,5)(2,4,5)(3,5)(2,3,5) on strings 6→1; C major open position;
+  G major E-form position = (2,3,5)(2,3,5)(2,4,5)(2,4,5)(3,5)(2,3,5) on strings 6→1 (window rule, DECISIONS D-009); C major open position;
   every position of every key contains only scale tones and spans ≤ 5 frets (≤ 6 for 3NPS);
   the union of the five positions equals the full-neck set between the lowest and highest position.
 
