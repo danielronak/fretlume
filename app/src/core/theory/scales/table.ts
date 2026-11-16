@@ -53,7 +53,7 @@ export const SCALES: ScaleDef[] = [
     difficulty: 1,
   }),
   s('blues', 'blues', '1 b3 4 b5 5 b7', {
-    aliases: ['minor blues', 'blues scale'],
+    aliases: ['minor blues', 'blues scale', 'bluesy'],
     tags: ['blues', 'bluesy', 'rock', 'gritty', 'solo', 'lead'],
     difficulty: 2,
   }),

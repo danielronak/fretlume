@@ -70,3 +70,11 @@ notes shared by neighbouring positions carry both; muted strings live on `Shape.
 **Decision.** `chordVoicings` lists hand-authored and moved shapes first and adds generated shapes only
 until there are four voicings. Each voicing carries `source` so the UI can label generated ones.
 Three-notes-per-string positions are limited to 5 frets per string (not per position, which can span 7).
+
+## D-011 · 2026-11-16 · Library search is a small custom scorer, not MiniSearch
+**Context.** The plan named MiniSearch. The catalogue is about 750 generated items and the queries are
+structured ("sad chords in G", "Am7", "what has C E G").
+**Decision.** `core/theory/library/search.ts` parses kind, root, chord symbol, mood words and note lists,
+then scores items with exact, alias, tag, prefix and one-typo matches. Deterministic, dependency-free,
+covered by 62 query expectations. Revisit if the catalogue grows to free-text content (lessons, songs).
+**Alternatives.** MiniSearch (generic relevance ranking would still need the same query parsing on top).
