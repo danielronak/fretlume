@@ -1,0 +1,38 @@
+{
+  "name": "fretlume",
+  "private": true,
+  "version": "0.0.0",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "app"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "npm run dev -w app",
+    "build": "npm run build -w app",
+    "preview": "npm run preview -w app",
+    "typecheck": "npm run typecheck -w app",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test": "npm run test -w app",
+    "fixtures": "node tools/fixtures/make.mjs",
+    "test:e2e": "npm run fixtures && npm run test:e2e -w app",
+    "test:smoke": "npm run fixtures && npm run test:smoke -w app",
+    "verify": "npm run typecheck && npm run lint && npm run test && npm run test:smoke",
+    "icons": "node tools/icons/make-icons.mjs",
+    "bench:vision": "echo \"bench:vision arrives in Phase 3\"",
+    "bench:audio": "echo \"bench:audio arrives in Phase 6\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}

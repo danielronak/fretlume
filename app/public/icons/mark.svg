@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fretlume mark: three strings crossing three frets, one lit note. Original artwork. -->
+  <rect width="512" height="512" rx="112" fill="#141210"/>
+  <g stroke="#4a443d" stroke-width="14" stroke-linecap="round">
+    <path d="M176 120v272M296 120v272M400 132v248"/>
+  </g>
+  <g stroke="#f3ede4" stroke-linecap="round">
+    <path d="M88 176h336" stroke-width="8"/>
+    <path d="M88 256h336" stroke-width="11"/>
+    <path d="M88 336h336" stroke-width="14"/>
+  </g>
+  <circle cx="236" cy="256" r="74" fill="#ffb000" opacity="0.22"/>
+  <circle cx="236" cy="256" r="46" fill="#ffb000"/>
+</svg>

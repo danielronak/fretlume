@@ -1,0 +1,13 @@
+node_modules
+dist
+dev-dist
+docs
+spikes
+ml
+fixtures
+package-lock.json
+app/public
+playwright-report
+test-results
+*.md
+.github
