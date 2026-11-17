@@ -6,12 +6,14 @@
  * Board coordinates are millimetres (spec §1). The strip covers x ∈ [-14, end + 6] mm and
  * y ∈ [-36, 36] mm at STRIP_W × STRIP_H pixels.
  */
-import { fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
+import { fretX, halfWidth, stringY, type InstrumentModel } from '@core/guitar/instrument';
 import {
   apply,
   fitHomography,
+  fitInverseFromLines,
   invert,
   multiply,
+  normalize,
   projective1D,
   type Mat3,
   type Pt,
@@ -35,6 +37,12 @@ export interface RefineOptions {
   mode?: 'parity' | 'improved';
   /** Fret wires lighter than the board ('bright') or darker ('dark'). Default 'bright'. */
   polarity?: 'bright' | 'dark';
+  /** Use the six strings as an across-neck cue (improved mode only). Default true. */
+  strings?: boolean;
+  /** Use where fret wires end as an across-neck cue. Default: on in parity mode, off in improved mode. */
+  fretEnds?: boolean;
+  /** Return the last strip and the measurements made on it (for debugging). */
+  debug?: boolean;
 }
 
 export interface RefineResult {
@@ -45,6 +53,15 @@ export interface RefineResult {
   score: number;
   /** Number of image pixel samples taken (cost proxy, gate G3.5). */
   samples: number;
+  debug?: {
+    strip: Float32Array;
+    /** Strip px → image px for the strip above. */
+    M: Mat3;
+    frets: Pt[];
+    fretBoard: Pt[];
+    strings: Pt[];
+    stringBoard: Pt[];
+  };
 }
 
 /** Python's round(): halves go to the even neighbour. */
@@ -159,13 +176,16 @@ export class EdgeTracker {
     return blurred;
   }
 
-  /** Global 1-D alignment of the fret comb via three anchor frets (0, 7, 17). */
+  /**
+   * Global 1-D alignment of the fret comb via three anchor frets (default 0, 7, 17; the search
+   * grid for anchor i spans ±ranges[i] fret spacings in steps[i] steps).
+   */
   combSearch(
     P: Float32Array,
     ranges: [number, number, number],
     steps: [number, number, number],
+    anchors: readonly [number, number, number] = [0, 7, 17],
   ): number[] {
-    const anchors = [0, 7, 17] as const;
     const { cols0, spacing } = this;
     const grids = anchors.map((a, i) =>
       Array.from(
@@ -208,8 +228,8 @@ export class EdgeTracker {
       const prior =
         1e-3 *
         (Math.abs(c.d[0]! / spacing[0]!) +
-          Math.abs(c.d[1]! / spacing[7]!) +
-          Math.abs(c.d[2]! / spacing[17]!)) *
+          Math.abs(c.d[1]! / spacing[anchors[1]]!) +
+          Math.abs(c.d[2]! / spacing[anchors[2]]!)) *
         maxScore;
       const s = c.score - prior;
       if (s > best) {
@@ -219,6 +239,262 @@ export class EdgeTracker {
     }
     const map = bestMap ?? ((x: number) => x);
     return cols0.map((c) => map(c));
+  }
+
+  /**
+   * String cue (spec §4.5): the six strings are thin ridges along the strip. Between frets, the row
+   * profile of a horizontal-ridge filter is matched to the expected string pattern (offset and
+   * scale), first per station, then along a robust line through all stations, then narrowly.
+   * Returns correspondences board (x, stringY) ↔ strip (column, row).
+   */
+  private stringCue(maxFret: number): { src: Pt[]; dst: Pt[]; weights: number[] } {
+    const { strip, valid, ky, model, cols0, spacing } = this;
+    const strings = model.strings;
+    // Two-sided horizontal ridges: a string is lighter (sign 1) or darker (sign -1) than the board
+    // on BOTH sides. A plain step, such as the board edge against the background, scores zero.
+    const ridgeAt = (r: number, c: number, sign: number) => {
+      const centre = strip[r * STRIP_W + c]!;
+      const above = sign * (centre - strip[(r - 2) * STRIP_W + c]!);
+      const below = sign * (centre - strip[(r + 2) * STRIP_W + c]!);
+      const v = Math.min(above, below);
+      return v > 0 ? v : 0;
+    };
+    // Board edges are wide steps; a thin string barely moves the mean of four rows either side.
+    const wideStep = (r: number, c: number) => {
+      let d = 0;
+      for (let k = 2; k <= 5; k++)
+        d += strip[(r + k) * STRIP_W + c]! - strip[(r - k) * STRIP_W + c]!;
+      return Math.abs(d) / 4;
+    };
+    interface Station {
+      x: number;
+      col: number;
+      profile: Float32Array;
+      rows: number[];
+      edges: Float32Array;
+      edgeRows: [number, number];
+    }
+    const centreRow = SYH * ky;
+    const stations: Station[] = [];
+    for (const sign of [1, -1]) {
+      for (let n = 1; n <= maxFret; n++) {
+        const a = cols0[n - 1]! + 0.25 * spacing[n - 1]!;
+        const b = cols0[n]! - 0.25 * spacing[n - 1]!;
+        const c0 = Math.max(3, Math.ceil(a));
+        const c1 = Math.min(STRIP_W - 3, Math.floor(b));
+        if (c1 - c0 < 3) continue;
+        const profile = new Float32Array(STRIP_H);
+        const edges = new Float32Array(STRIP_H);
+        const column: number[] = [];
+        const steps: number[] = [];
+        let validCount = 0;
+        for (let r = 2; r < STRIP_H - 2; r++) {
+          column.length = 0;
+          steps.length = 0;
+          for (let c = c0; c <= c1; c++) {
+            if (valid[r * STRIP_W + c]) validCount++;
+            column.push(ridgeAt(r, c, sign));
+            steps.push(r >= 6 && r < STRIP_H - 6 ? wideStep(r, c) : 0);
+          }
+          profile[r] = median(column);
+          edges[r] = median(steps);
+        }
+        if (validCount < 0.6 * (c1 - c0 + 1) * (STRIP_H - 4)) continue;
+        // Each cue is scaled by its own peak so that neither dominates on contrast alone.
+        normalizePeak(profile);
+        normalizePeak(edges);
+        const x = (0.5 * (a + b)) / this.kx + this.sx0;
+        const rows = Array.from(
+          { length: strings },
+          (_, s) => (stringY(model, s + 1, x) + SYH) * ky,
+        );
+        const hw = halfWidth(model, x);
+        const edgeRows: [number, number] = [(-hw + SYH) * ky, (hw + SYH) * ky];
+        stations.push({ x, col: 0.5 * (a + b), profile, rows, edges, edgeRows, sign } as Station & {
+          sign: number;
+        });
+      }
+    }
+    if (stations.length < 3) return { src: [], dst: [], weights: [] };
+
+    // The string pattern repeats, so a shift by one string scores almost as well. "Guards" one
+    // string-gap outside each outer string should be empty; a shifted fit puts a real string there.
+    const scoreAt = (st: Station, t: number, k: number) => {
+      let sum = 0;
+      const at = (row: number) => {
+        const r = Math.round(centreRow + k * (row - centreRow) + t);
+        return r >= 0 && r < STRIP_H ? st.profile[r]! : 0;
+      };
+      for (const row of st.rows) sum += at(row);
+      const first = st.rows[0]!;
+      const last = st.rows[st.rows.length - 1]!;
+      const gap = (last - first) / (st.rows.length - 1);
+      sum -= at(first - gap) + at(last + gap);
+      // The board edges sit at known positions outside the outer strings.
+      const edgeAt = (row: number) => {
+        const r = Math.round(centreRow + k * (row - centreRow) + t);
+        let best = 0;
+        for (let d = -1; d <= 1; d++) {
+          const q = r + d;
+          if (q >= 0 && q < STRIP_H && st.edges[q]! > best) best = st.edges[q]!;
+        }
+        return best;
+      };
+      sum += 1.5 * (edgeAt(st.edgeRows[0]) + edgeAt(st.edgeRows[1]));
+      return sum;
+    };
+    const stringRows = (st: Station) => Math.abs(st.rows[0]! - st.rows[1]!);
+
+    // Pass 1: each station on its own (wide), per polarity; keep the polarity that matches best overall.
+    const fits = stations.map((st) => {
+      const gap = stringRows(st);
+      let best = { t: 0, k: 1, score: -1 };
+      for (let k = 0.85; k <= 1.151; k += 0.05) {
+        for (let t = -1.4 * gap; t <= 1.4 * gap; t += 0.5) {
+          const sc = scoreAt(st, t, k) - 0.02 * Math.abs(t / gap) * 0;
+          if (sc > best.score) best = { t, k, score: sc };
+        }
+      }
+      return { st, ...best, sign: (st as Station & { sign: number }).sign };
+    });
+    const total = (sign: number) =>
+      fits.filter((f) => f.sign === sign).reduce((a, f) => a + f.score, 0);
+    const sign = total(1) >= total(-1) ? 1 : -1;
+    const mine = fits.filter((f) => f.sign === sign && f.score > 0);
+    if (mine.length < 3) return { src: [], dst: [], weights: [] };
+
+    // Robust lines t(x) and k(x) through the stations (iteratively reweighted least squares).
+    const line = (ys: number[], xs: number[], w0: number[]) => {
+      let w = w0.slice();
+      let a = 0;
+      let b = 0;
+      for (let iter = 0; iter < 6; iter++) {
+        let sw = 0,
+          sx = 0,
+          sy = 0,
+          sxx = 0,
+          sxy = 0;
+        xs.forEach((x, i) => {
+          sw += w[i]!;
+          sx += w[i]! * x;
+          sy += w[i]! * ys[i]!;
+          sxx += w[i]! * x * x;
+          sxy += w[i]! * x * ys[i]!;
+        });
+        const det = sw * sxx - sx * sx;
+        if (Math.abs(det) < 1e-9) {
+          a = sy / (sw || 1);
+          b = 0;
+        } else {
+          b = (sw * sxy - sx * sy) / det;
+          a = (sy - b * sx) / sw;
+        }
+        const res = xs.map((x, i) => Math.abs(ys[i]! - (a + b * x)));
+        const scale = 1.4826 * median(res.slice()) + 1e-6;
+        w = w0.map((wi, i) =>
+          res[i]! < 3 * scale ? wi * (1 - (res[i]! / (3 * scale)) ** 2) ** 2 : 0,
+        );
+      }
+      return (x: number) => a + b * x;
+    };
+    const xsSt = mine.map((f) => f.st.x);
+    const ws = mine.map((f) => f.score);
+    const tLine = line(
+      mine.map((f) => f.t),
+      xsSt,
+      ws,
+    );
+    const kLine = line(
+      mine.map((f) => f.k),
+      xsSt,
+      ws,
+    );
+
+    // Pass 2: narrow search around the lines, then per-string sub-row peaks.
+    const src: Pt[] = [];
+    const dst: Pt[] = [];
+    const weights: number[] = [];
+    const edgeSrc: Pt[] = [];
+    const edgeDst: Pt[] = [];
+    const edgeWeights: number[] = [];
+    /** Per station with both edges: how far the edges sit from where the string fit puts them. */
+    const edgeShift: number[] = [];
+    const subRow = (profile: Float32Array, r: number) => {
+      const y0 = profile[r - 1]!,
+        y1 = profile[r]!,
+        y2 = profile[r + 1]!;
+      const den = y0 - 2 * y1 + y2;
+      return r + (den < 0 ? (0.5 * (y0 - y2)) / den : 0);
+    };
+    for (const f of mine) {
+      const st = f.st;
+      const gap = stringRows(st);
+      const t0 = tLine(st.x);
+      const k0 = kLine(st.x);
+      let best = { t: t0, k: k0, score: -1 };
+      for (let k = k0 - 0.03; k <= k0 + 0.031; k += 0.01)
+        for (let t = t0 - 0.3 * gap; t <= t0 + 0.3 * gap; t += 0.25) {
+          const sc = scoreAt(st, t, k);
+          if (sc > best.score) best = { t, k, score: sc };
+        }
+      const noise = median(Array.from(st.profile)) + 1e-3;
+      st.rows.forEach((row, s) => {
+        const predicted = centreRow + best.k * (row - centreRow) + best.t;
+        const r0 = Math.round(predicted);
+        let r = r0;
+        for (let d = -2; d <= 2; d++) {
+          const q = r0 + d;
+          if (q > 0 && q < STRIP_H - 1 && st.profile[q]! > st.profile[r]!) r = q;
+        }
+        const peak = st.profile[r]!;
+        if (r <= 0 || r >= STRIP_H - 1 || peak < 3 * noise) return;
+        const y0 = st.profile[r - 1]!,
+          y1 = peak,
+          y2 = st.profile[r + 1]!;
+        const den = y0 - 2 * y1 + y2;
+        const offset = den < 0 ? (0.5 * (y0 - y2)) / den : 0;
+        src.push({ x: st.x, y: stringY(model, s + 1, st.x) });
+        dst.push({ x: st.col, y: r + offset });
+        weights.push(0.4 * Math.min(1, peak / (6 * noise)));
+      });
+      // Board edges near where this fit puts them. The visible edge can be the neck's side a
+      // millimetre or two outside the fretboard, the same on both sides, so only their midpoint
+      // (board y = 0) is used.
+      const found: { y: number; shift: number; strength: number }[] = [];
+      for (const row of st.edgeRows) {
+        const predicted = centreRow + best.k * (row - centreRow) + best.t;
+        const r0 = Math.round(predicted);
+        let r = -1;
+        for (let d = -6; d <= 6; d++) {
+          const q = r0 + d;
+          if (q <= 0 || q >= STRIP_H - 1) continue;
+          const v = st.edges[q]!;
+          if (v >= st.edges[q - 1]! && v >= st.edges[q + 1]! && (r < 0 || v > st.edges[r]!)) r = q;
+        }
+        if (r < 0 || st.edges[r]! < 0.3) break;
+        const y = subRow(st.edges, r);
+        found.push({ y, shift: y - predicted, strength: st.edges[r]! });
+      }
+      if (found.length === 2) {
+        const [a, b] = found as [(typeof found)[0], (typeof found)[0]];
+        edgeShift.push(0.5 * (a.shift + b.shift));
+        edgeSrc.push({ x: st.x, y: 0 });
+        edgeDst.push({ x: st.col, y: 0.5 * (a.y + b.y) });
+        edgeWeights.push(0.8 * Math.min(1, Math.min(a.strength, b.strength) / 0.6));
+      }
+    }
+    // Strings can be found by their shadow or highlight rather than the string itself, which
+    // moves every string the same way. When both board edges agree on a common offset, take it.
+    if (edgeShift.length >= 5) {
+      const shift = median(edgeShift.slice());
+      const spread = 1.4826 * median(edgeShift.map((v) => Math.abs(v - shift)));
+      if (spread < 1.5) for (const p of dst) p.y += shift;
+    }
+    return {
+      src: [...src, ...edgeSrc],
+      dst: [...dst, ...edgeDst],
+      weights: [...weights, ...edgeWeights],
+    };
   }
 
   refine(image: Image, H0: Mat3, options: RefineOptions = {}): RefineResult {
@@ -231,6 +507,7 @@ export class EdgeTracker {
     let inliers = 0;
     let score = 0;
     let samples = 0;
+    let debugInfo: RefineResult['debug'];
     for (let it = 0; it < iterations; it++) {
       const M = multiply(H, this.Sinv);
       samples += this.rectify(image, M, mode);
@@ -240,18 +517,39 @@ export class EdgeTracker {
       const rc1 = this.row(13);
       let bandCols: [number[], number[]];
       if (it === 0) {
-        const [ranges, steps]: [[number, number, number], [number, number, number]] = wide
+        type Triple = [number, number, number];
+        let [ranges, steps, anchors]: [Triple, Triple, Triple] = wide
           ? [
               [0.45, 0.9, 1.6],
               [11, 19, 33],
+              [0, 7, 17],
             ]
           : [
               [0.2, 0.25, 0.3],
               [5, 7, 9],
+              [0, 7, 17],
             ];
+        if (wide && mode === 'improved') {
+          // A lock starts from taps at the nut and the 12th fret, so those are known to within a
+          // fraction of a spacing; tap noise shows up as perspective, which bends the comb most
+          // in between (fret 7 is off by up to ~2 spacings at σ = 8 px, fret 17 by far more).
+          [ranges, steps, anchors] = [
+            [0.5, 2.2, 0.6],
+            [11, 45, 13],
+            [0, 7, 12],
+          ];
+        }
         bandCols = [
-          this.combSearch(this.bandProfile(-16, -4, 2), ranges, steps),
-          this.combSearch(this.bandProfile(4, 16, 2), ranges, steps),
+          this.combSearch(this.bandProfile(-16, -4, 2), ranges, steps, anchors),
+          this.combSearch(this.bandProfile(4, 16, 2), ranges, steps, anchors),
+        ];
+      } else if (mode === 'improved') {
+        // Re-run a narrow comb each round: a fret matched to its neighbour in round 0 is corrected.
+        const r: [number, number, number] = [0.2, 0.25, 0.3];
+        const st: [number, number, number] = [5, 7, 9];
+        bandCols = [
+          this.combSearch(this.bandProfile(-16, -4, 2), r, st),
+          this.combSearch(this.bandProfile(4, 16, 2), r, st),
         ];
       } else {
         bandCols = [cols0, cols0];
@@ -261,6 +559,8 @@ export class EdgeTracker {
       const src: Pt[] = [];
       const dst: Pt[] = [];
       const weights: number[] = [];
+      /** Which board coordinate each measurement pins down (used by the improved fit). */
+      const axes: ('x' | 'y')[] = [];
       const window = new Float32Array(STRIP_H);
       for (let n = 0; n <= this.frets; n++) {
         const x = xs[n]!;
@@ -301,10 +601,11 @@ export class EdgeTracker {
           src.push({ x, y: ym });
           dst.push({ x: cs, y: (ym + SYH) * ky });
           weights.push(Math.min(peak / (8 * noise), 1));
+          axes.push('x');
           found.push(cs);
         }
         // Across-neck evidence: the fret wire ends exactly at the board edge.
-        if (found.length === 2 && n >= 1) {
+        if (found.length === 2 && n >= 1 && (options.fretEnds ?? mode === 'parity')) {
           const cs = pyRound(0.5 * (found[0]! + found[1]!));
           const E = new Float32Array(STRIP_H);
           for (let r = 0; r < STRIP_H; r++) {
@@ -338,32 +639,86 @@ export class EdgeTracker {
               src.push({ x, y: sgn * hw });
               dst.push({ x: cs, y: bestR + (sgn < 0 ? -0.5 : 0.5) });
               weights.push(0.6);
+              axes.push('y');
             }
           }
         }
+      }
+      const fretPointsStrip = dst.slice();
+      let stringPointsStrip: Pt[] = [];
+      let stringBoard: Pt[] = [];
+      if (mode === 'improved' && (options.strings ?? true)) {
+        const cue = this.stringCue(Math.min(15, this.frets));
+        stringPointsStrip = cue.dst;
+        stringBoard = cue.src;
+        src.push(...cue.src);
+        dst.push(...cue.dst);
+        weights.push(...cue.weights);
+        for (let i = 0; i < cue.src.length; i++) axes.push('y');
       }
       if (src.length < 14) return { H: H0, inliers: 0, score: 0, samples };
       const dstImage = dst.map((p) => apply(M, p.x, p.y));
       let w = weights.slice();
       let Hn = H;
-      for (let round = 0; round < 4; round++) {
-        Hn = fitHomography(src, dstImage, w);
-        const residuals = src.map((p, i) => {
-          const q = apply(Hn, p.x, p.y);
-          return Math.hypot(q.x - dstImage[i]!.x, q.y - dstImage[i]!.y);
-        });
-        const scale = 1.4826 * median(residuals.slice()) + 0.5;
-        w = weights.map((w0, i) => {
-          const r = residuals[i]!;
-          return r < 3 * scale ? w0 * (1 - (r / (3 * scale)) ** 2) ** 2 : 0;
-        });
-        if (w.filter((v) => v > 0).length < 12) return { H: H0, inliers: 0, score: 0, samples };
-      }
+      const yCount = axes.filter((a) => a === 'y').length;
+      if (mode === 'improved' && yCount >= 8) {
+        // A fret wire says where along the neck a pixel is, and nothing about across; a string says
+        // where across and nothing about along. Using their measured points as full 2-D
+        // correspondences would pin the other coordinate to the current estimate.
+        let G = invert(H);
+        for (let round = 0; round < 4; round++) {
+          G = fitInverseFromLines(
+            dstImage.map((p, i) =>
+              axes[i] === 'x'
+                ? { p, x: src[i]!.x, weight: w[i]! }
+                : { p, y: src[i]!.y, weight: w[i]! },
+            ),
+          );
+          const residuals = dstImage.map((p, i) => {
+            const b = apply(G, p.x, p.y);
+            return axes[i] === 'x' ? Math.abs(b.x - src[i]!.x) : Math.abs(b.y - src[i]!.y);
+          });
+          const scale = 1.4826 * median(residuals.slice()) + 0.25;
+          w = weights.map((w0, i) => {
+            const r = residuals[i]!;
+            return r < 3 * scale ? w0 * (1 - (r / (3 * scale)) ** 2) ** 2 : 0;
+          });
+          const kept = (axis: 'x' | 'y') => w.filter((v, i) => v > 0 && axes[i] === axis).length;
+          if (kept('x') < 8 || kept('y') < 6) return { H: H0, inliers: 0, score: 0, samples };
+        }
+        try {
+          Hn = normalize(invert(G));
+        } catch {
+          return { H: H0, inliers: 0, score: 0, samples };
+        }
+      } else
+        for (let round = 0; round < 4; round++) {
+          Hn = fitHomography(src, dstImage, w);
+          const residuals = src.map((p, i) => {
+            const q = apply(Hn, p.x, p.y);
+            return Math.hypot(q.x - dstImage[i]!.x, q.y - dstImage[i]!.y);
+          });
+          const scale = 1.4826 * median(residuals.slice()) + 0.5;
+          w = weights.map((w0, i) => {
+            const r = residuals[i]!;
+            return r < 3 * scale ? w0 * (1 - (r / (3 * scale)) ** 2) ** 2 : 0;
+          });
+          if (w.filter((v) => v > 0).length < 12) return { H: H0, inliers: 0, score: 0, samples };
+        }
       H = Hn;
       inliers = w.filter((v) => v > 0).length;
       score = w.reduce((a, b) => a + b, 0);
+      if (options.debug)
+        debugInfo = {
+          strip: this.strip.slice(),
+          M,
+          frets: fretPointsStrip,
+          fretBoard: src.slice(0, fretPointsStrip.length),
+          strings: stringPointsStrip,
+          stringBoard,
+        };
     }
-    return { H, inliers, score, samples };
+    return { H, inliers, score, samples, ...(debugInfo ? { debug: debugInfo } : {}) };
   }
 }
 
@@ -398,3 +753,9 @@ export function trackingError(
 
 export const isSuccess = (e: { along: number; across: number }) =>
   e.along < 0.25 && e.across < 0.35;
+
+function normalizePeak(values: Float32Array): void {
+  let peak = 0;
+  for (const v of values) if (v > peak) peak = v;
+  if (peak > 0) for (let i = 0; i < values.length; i++) values[i] = values[i]! / peak;
+}

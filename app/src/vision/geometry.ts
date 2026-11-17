@@ -186,6 +186,65 @@ export function fitHomography(src: Pt[], dst: Pt[], weights?: number[]): Mat3 {
   return normalize(multiply(multiply(invert(Td), h), Ts));
 }
 
+/**
+ * A measurement that fixes one board coordinate of an image point: a fret wire tells where along
+ * the neck a pixel is (`x`), a string or board edge where across (`y`). Board mm, image px.
+ */
+export interface LineConstraint {
+  p: Pt;
+  x?: number;
+  y?: number;
+  weight: number;
+}
+
+/**
+ * Weighted DLT for the image → board homography G from one-coordinate constraints
+ * (each gives one linear equation g_i·p − X·g_3·p = 0). Needs the constraints to pin both board
+ * axes: at least four distinct `x` lines and some `y` lines, or the reverse.
+ */
+export function fitInverseFromLines(constraints: LineConstraint[]): Mat3 {
+  const used = constraints.filter((c) => c.weight > 0);
+  const Ti = normalizer(
+    used.map((c) => c.p),
+    used.map((c) => c.weight),
+  );
+  const axis = (key: 'x' | 'y') => {
+    let sw = 0;
+    let m = 0;
+    for (const c of used) if (c[key] !== undefined) (sw += c.weight), (m += c.weight * c[key]);
+    m = sw ? m / sw : 0;
+    let d = 0;
+    for (const c of used) if (c[key] !== undefined) d += c.weight * Math.abs(c[key] - m);
+    return { m, s: sw && d ? sw / d : 1 };
+  };
+  const ax = axis('x');
+  const ay = axis('y');
+  const Tb: Mat3 = [ax.s, 0, -ax.s * ax.m, 0, ay.s, -ay.s * ay.m, 0, 0, 1];
+  const ATA = Array.from({ length: 9 }, () => new Array<number>(9).fill(0));
+  for (const c of used) {
+    const a = apply(Ti, c.p.x, c.p.y);
+    const row = new Array<number>(9).fill(0);
+    if (c.x !== undefined) {
+      const X = ax.s * (c.x - ax.m);
+      row.splice(0, 3, a.x, a.y, 1);
+      row.splice(6, 3, -X * a.x, -X * a.y, -X);
+    } else if (c.y !== undefined) {
+      const Y = ay.s * (c.y - ay.m);
+      row.splice(3, 3, a.x, a.y, 1);
+      row.splice(6, 3, -Y * a.x, -Y * a.y, -Y);
+    } else continue;
+    for (let i = 0; i < 9; i++) {
+      if (row[i] === 0) continue;
+      for (let j = 0; j < 9; j++) ATA[i]![j]! += c.weight * row[i]! * row[j]!;
+    }
+  }
+  const { values, vectors } = symmetricEigen(ATA);
+  let smallest = 0;
+  for (let i = 1; i < 9; i++) if (values[i]! < values[smallest]!) smallest = i;
+  const g = vectors.map((row) => row[smallest]!) as Mat3;
+  return normalize(multiply(multiply(invert(Tb), g), Ti));
+}
+
 /** The four control points (spec §1): nut bass, nut treble, 12th-fret treble, 12th-fret bass. */
 export function controlPointsMm(model: InstrumentModel): Pt[] {
   const x12 = fretX(model, 12);

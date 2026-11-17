@@ -169,15 +169,23 @@ def render_neck_texture(inst: Instrument, look: Look) -> tuple[np.ndarray, np.nd
         hw = float(inst.half_width(x))
         poly([[x - fw / 2, -hw], [x + fw / 2, -hw], [x + fw / 2, hw], [x - fw / 2, hw]], look.wire_rgb)
         poly([[x - fw / 8, -hw], [x + fw / 8, -hw], [x + fw / 8, hw], [x - fw / 8, hw]], np.minimum(look.wire_rgb * 1.25, 1))
-    # Strings from behind the nut to the bridge (beyond the board).
+    # Strings from behind the nut to the bridge (beyond the board). A string is a metal cylinder: it
+    # casts a soft shadow on the board and shows a bright specular line, so it is visible on any board.
+    light_side = float(rng.choice([-1.0, 1.0]))
     for s in range(1, inst.strings + 1):
         gauge = 0.25 + 0.12 * (s - 1)  # mm
         color = look.wound_rgb if s >= 4 else look.string_rgb
-        y0, y1 = float(inst.string_y(s, -60)), float(inst.string_y(s, inst.scale_mm))
-        p0 = (np.array([-60 - TEX_X0, y0 - TEX_Y0]) * PXMM * 16).astype(int)
-        p1 = (np.array([inst.scale_mm - TEX_X0, y1 - TEX_Y0]) * PXMM * 16).astype(int)
-        th = max(1, int(round(gauge * 2 * PXMM)))
-        cv2.line(img, tuple(p0), tuple(p1), [float(c) for c in color], th, cv2.LINE_AA, shift=4)
+
+        def line(offset_mm, rgb, width_mm):
+            y0 = float(inst.string_y(s, -60)) + offset_mm
+            y1 = float(inst.string_y(s, inst.scale_mm)) + offset_mm
+            p0 = (np.array([-60 - TEX_X0, y0 - TEX_Y0]) * PXMM * 16).astype(int)
+            p1 = (np.array([inst.scale_mm - TEX_X0, y1 - TEX_Y0]) * PXMM * 16).astype(int)
+            cv2.line(img, tuple(p0), tuple(p1), [float(c) for c in rgb], max(1, int(round(width_mm * PXMM))), cv2.LINE_AA, shift=4)
+
+        line(light_side * (gauge + 0.5), look.board_rgb * 0.45, gauge * 2 + 0.6)  # shadow
+        line(0.0, color, gauge * 2)  # string
+        line(-light_side * gauge * 0.3, np.minimum(color * 1.6 + 0.15, 1), max(0.3, gauge * 0.6))  # highlight
     # Capo: a bar across all strings just behind the chosen fret.
     if look.capo_fret > 0:
         x = float(inst.fret_x(look.capo_fret)) - 6

@@ -5,6 +5,7 @@ import {
   apply,
   controlPointsPx,
   fitHomography,
+  fitInverseFromLines,
   fromControlPoints,
   fromFourPoints,
   IDENTITY,
@@ -13,6 +14,7 @@ import {
   multiply,
   projective1D,
   symmetricEigen,
+  type LineConstraint,
   type Mat3,
   type Pt,
 } from './geometry';
@@ -120,6 +122,36 @@ describe('geometry', () => {
           { x: 400, y: 25 },
         ])
           close(apply(fitted, p.x, p.y), apply(H, p.x, p.y), 4);
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  it('fits the inverse homography from fret lines (x only) and string lines (y only)', () => {
+    fc.assert(
+      fc.property(camera, (H) => {
+        const constraints: LineConstraint[] = [];
+        // Frets seen at rows that are NOT where the model thinks; only x is known.
+        for (let n = 0; n <= 17; n++)
+          for (const y of [-11, 9]) {
+            const x = fretX(electric, n);
+            constraints.push({ p: apply(H, x, y + 0.3 * n), x, weight: 1 });
+          }
+        // Strings seen at assorted positions along; only y is known.
+        for (let s = 0; s < 6; s++)
+          for (const x of [40, 150, 260, 330]) {
+            const y = -17 + 6.8 * s;
+            constraints.push({ p: apply(H, x + 7 * s, y), y, weight: 0.5 });
+          }
+        // An outlier with no weight.
+        constraints.push({ p: { x: 5, y: 5 }, x: 900, weight: 0 });
+        const G = fitInverseFromLines(constraints);
+        const Hf = invert(G);
+        for (const q of [
+          { x: 0, y: -20 },
+          { x: 380, y: 25 },
+        ])
+          close(apply(Hf, q.x, q.y), apply(H, q.x, q.y), 3);
       }),
       { numRuns: 50 },
     );
