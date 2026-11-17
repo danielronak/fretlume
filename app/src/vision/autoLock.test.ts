@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { INSTRUMENTS } from '@core/guitar/instrument';
-import { AutoLocker, cutOff } from './autoLock';
+import { AutoLocker, bassUp, cutOff } from './autoLock';
 import { luma } from './autoLockStats';
 import type { EdgeTracker, RefineResult } from './edgeTracker';
 import { controlPointsPx, fromControlPoints, type Mat3 } from './geometry';
@@ -85,5 +85,23 @@ describe('AutoLocker', () => {
     expect(cutOff([{ x: 600, y: 800 }], 1280, 720)).toBe('cut-off-bottom');
     expect(cutOff([{ x: 600, y: 300 }], 1280, 720)).toBeNull();
     expect(luma(frame(77))).toBe(77);
+  });
+});
+
+describe('bassUp', () => {
+  it('puts the upper corner first at the nut and last at the 12th fret', () => {
+    const p = (x: number, y: number) => ({ x, y });
+    expect(bassUp([p(0, 50), p(0, 10), p(9, 60), p(9, 20)])).toEqual([
+      p(0, 10),
+      p(0, 50),
+      p(9, 60),
+      p(9, 20),
+    ]);
+    expect(bassUp([p(0, 10), p(0, 50), p(9, 20), p(9, 60)])).toEqual([
+      p(0, 10),
+      p(0, 50),
+      p(9, 60),
+      p(9, 20),
+    ]);
   });
 });

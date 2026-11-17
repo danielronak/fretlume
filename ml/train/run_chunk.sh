@@ -5,5 +5,5 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 MINUTES="${1:-95}"
-uv run --group train python -m train.train --minutes "$MINUTES" --threads 4 --workers 1
+uv run --group train python -m train.train --minutes "$MINUTES" --threads 4 --workers 1 --total-samples 450000
 uv run --group train python -m train.bench --limit 2048 || true

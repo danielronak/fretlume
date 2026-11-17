@@ -105,21 +105,15 @@ export class AutoLocker {
     const det = this.detect(image);
     if (det.presence < this.o.minPresence) return { ...base, hint: 'no-neck', detection: det };
     const cut = cutOff(det.corners, image.width, image.height);
-    // Bass/treble can be confused in a mirrored view: try both orderings.
-    const orderings: Pt[][] = [
-      det.corners,
-      [det.corners[1]!, det.corners[0]!, det.corners[3]!, det.corners[2]!],
-    ];
-    let best: { H: Mat3; polarity: 'bright' | 'dark'; confidence: number } | null = null;
-    for (const taps of orderings) {
-      try {
-        const out = snapLock(this.tracker, image, taps);
-        const confidence = out.inliers > 0 ? out.score / fullScore(model) : 0;
-        if (!best || confidence > best.confidence)
-          best = { H: out.H, polarity: out.polarity, confidence };
-      } catch {
-        // degenerate candidate
-      }
+    // Bass versus treble cannot be seen at the network's resolution; a player's thick string faces
+    // up (towards their head) whether or not the picture is mirrored, so the upper corners are bass.
+    let best: { H: Mat3; polarity: 'bright' | 'dark'; confidence: number } | null;
+    try {
+      const out = snapLock(this.tracker, image, bassUp(det.corners));
+      const confidence = out.inliers > 0 ? out.score / fullScore(model) : 0;
+      best = { H: out.H, polarity: out.polarity, confidence };
+    } catch {
+      best = null; // degenerate candidate
     }
     if (!best || best.confidence < this.o.minConfidence)
       return { ...base, hint: cut ?? 'lift-hand', detection: det };
@@ -176,4 +170,12 @@ export function cutOff(corners: Pt[], width: number, height: number): SearchHint
     if (p.y > (1 + margin) * height) return 'cut-off-bottom';
   }
   return null;
+}
+
+/** C0..C3 with the bass corner the upper one at the nut and at the 12th fret (image y grows down). */
+export function bassUp(corners: Pt[]): Pt[] {
+  const [c0, c1, c2, c3] = corners as [Pt, Pt, Pt, Pt];
+  const [nutBass, nutTreble] = c0.y <= c1.y ? [c0, c1] : [c1, c0];
+  const [twTreble, twBass] = c3.y <= c2.y ? [c2, c3] : [c3, c2];
+  return [nutBass, nutTreble, twTreble, twBass];
 }

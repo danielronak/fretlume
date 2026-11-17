@@ -51,6 +51,20 @@ def targets(cps: np.ndarray, presence: int, flip: bool):
     return heat, offs, cells, weights
 
 
+def canonical(cps: np.ndarray) -> np.ndarray:
+    """Order corners so the bass side is the upper one (smaller y) at the nut and at the 12th fret.
+
+    Bass versus treble cannot be seen at 288×160, but a player's thick string faces up, towards
+    their head, whether or not the camera mirrors the picture; the overlay follows the same rule.
+    """
+    c = cps.copy()
+    if c[0, 1] > c[1, 1]:
+        c[[0, 1]] = c[[1, 0]]
+    if c[3, 1] > c[2, 1]:
+        c[[2, 3]] = c[[3, 2]]
+    return c
+
+
 def sample(shard: dict, i: int, augment: bool) -> dict:
     img = decode(shard, i)
     flip = augment and random.random() < 0.5
@@ -62,7 +76,8 @@ def sample(shard: dict, i: int, augment: bool) -> dict:
         x *= np.array([random.uniform(0.92, 1.08) for _ in range(3)], np.float32)
         x = np.clip(x, 0, 1)
     presence = int(shard['presence'][i])
-    heat, offs, cells, weights = targets(shard['cps'][i], presence, flip)
+    cps = canonical(shard['cps'][i])
+    heat, offs, cells, weights = targets(cps, presence, flip)
     mask = shard['mask'][i][:, ::-1] if flip else shard['mask'][i]
     orient = int(shard['orientation'][i])
     if flip:
@@ -73,8 +88,8 @@ def sample(shard: dict, i: int, augment: bool) -> dict:
         'cw': torch.from_numpy(weights), 'mask': torch.from_numpy(np.ascontiguousarray(mask).astype(np.float32)),
         'presence': torch.tensor(float(presence)), 'orientation': torch.tensor(float(orient)),
         'profile': torch.tensor(int(shard['profile'][i])),
-        'cps': torch.from_numpy(shard['cps'][i] * np.array([-1, 1], np.float32) + np.array([IN_W, 0], np.float32)
-                                if flip else shard['cps'][i]),
+        'cps': torch.from_numpy(cps * np.array([-1, 1], np.float32) + np.array([IN_W, 0], np.float32)
+                                if flip else cps),
     }
 
 
