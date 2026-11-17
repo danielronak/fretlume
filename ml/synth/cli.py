@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import cv2
@@ -92,7 +93,17 @@ def cmd_clip(args) -> None:
     base = sample_pose(rng, w, h, headstock='left' if kind == 'lefty' else 'right' if kind != 'random' else None,
                        easy=kind in ('lock-easy', 'track-hand', 'track-motion', 'lefty', 'capo', 'low-light', 'static-noise'))
     motion = {'lock-easy': 'static', 'static-noise': 'static', 'track-motion': 'move', 'no-guitar': 'static'}.get(kind, 'sway')
-    poses = trajectory(rng, base, inst, args.frames, motion=motion)
+    poses = trajectory(rng, base, inst, args.frames, motion=motion, max_px_per_frame=args.max_speed)
+    if args.hold:
+        # Hold still first (the player locking), then move from that same pose.
+        offset = poses[0]
+        poses = [replace(p, nut_x=p.nut_x - offset.nut_x + base.nut_x, nut_y=p.nut_y - offset.nut_y + base.nut_y,
+                         angle=p.angle - offset.angle + base.angle, scale=p.scale * base.scale / offset.scale)
+                 for p in poses]
+        poses = [base] * args.hold + poses
+    if args.pingpong:
+        # Forward then back, so a looping fake camera never jumps.
+        poses = poses + poses[-2:0:-1]
     bg = render_background(rng, w, h)
     hand_rng = np.random.default_rng(args.seed + 1)
     hand = sample_hand(hand_rng, inst, fret=3) if kind in ('track-hand', 'track-motion', 'random') else None
@@ -133,6 +144,10 @@ def main() -> None:
     sub.choices['clip'].add_argument('--frames', type=int, default=45)
     sub.choices['clip'].add_argument('--instrument', choices=list(INSTRUMENTS))
     sub.choices['clip'].add_argument('--board', help="board family, or 'any' (default depends on kind)")
+    sub.choices['clip'].add_argument('--hold', type=int, default=0, help='still frames before the motion starts')
+    sub.choices['clip'].add_argument('--pingpong', action='store_true', help='append the motion reversed')
+    sub.choices['clip'].add_argument('--max-speed', type=float, default=15.0,
+                                     help='fastest control-point motion, px per frame')
     sub.choices['clip'].add_argument('--stamp', action='store_true', help='write the frame number into the image')
     args = parser.parse_args()
     {'frames': cmd_frames, 'clip': cmd_clip}[args.command](args)

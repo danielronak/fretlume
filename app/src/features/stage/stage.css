@@ -1,0 +1,163 @@
+.stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.stage__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.stage__head h1 {
+  margin: 0;
+}
+.stage__pill {
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+.stage__pill--ok {
+  background: var(--success);
+  color: var(--text-on-accent);
+}
+.stage__pill--warn {
+  background: var(--info-soft);
+  color: var(--text);
+}
+.stage__pill--bad {
+  background: var(--danger-soft);
+  color: var(--text);
+}
+.stage__box {
+  position: relative;
+  width: min(100%, calc((100dvh - 220px) * 16 / 9));
+  max-width: 100%;
+  background: #000;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  touch-action: none;
+}
+.stage__box--hidden {
+  display: none;
+}
+.stage__video,
+.stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.stage__video {
+  object-fit: fill;
+}
+.stage__video--mirror {
+  transform: scaleX(-1);
+}
+.stage__canvas {
+  pointer-events: none;
+}
+.stage__handle {
+  position: absolute;
+  width: var(--touch);
+  height: var(--touch);
+  margin: calc(var(--touch) / -2) 0 0 calc(var(--touch) / -2);
+  border-radius: 50%;
+  border: 2px solid #7fe3c8;
+  background: rgba(10, 30, 26, 0.45);
+  color: #fff;
+  font-weight: 700;
+  cursor: grab;
+  touch-action: none;
+}
+.stage__handle::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: #7fe3c8;
+}
+.stage__handle--active,
+.stage__handle:focus-visible {
+  outline: 3px solid var(--accent);
+  cursor: grabbing;
+}
+.stage__loupe {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px solid #7fe3c8;
+  background: #000;
+  pointer-events: none;
+}
+.stage__panel,
+.stage__deck,
+.stage__nocam {
+  background: var(--surface-1);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.stage__panel h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.stage__panel p,
+.stage__nocam p {
+  margin: 0;
+}
+.stage__actions,
+.stage__settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.stage__shift {
+  min-width: 2.5em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.stage__deck-title {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.stage__select {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.stage__select select {
+  min-height: var(--touch);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-2);
+}
+
+/* Phone held sideways: the video takes the full height; the title shrinks; panels scroll below. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .stage {
+    gap: var(--space-2);
+  }
+  .stage__head h1 {
+    font-size: var(--text-lg);
+  }
+  .stage__box {
+    width: min(100%, calc((100dvh - 16px) * 16 / 9));
+    margin: 0 auto;
+  }
+}

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { INSTRUMENTS } from '@core/guitar/instrument';
 import { apply, fromControlPoints, type Mat3 } from './geometry';
-import { homographyFromTaps, tapPointsMm } from './lock';
+import { homographyFromTaps, shiftFrets, tapPointsMm } from './lock';
+import { fretX } from '@core/guitar/instrument';
 
 const model = INSTRUMENTS.steelAcoustic;
 const H: Mat3 = fromControlPoints(
@@ -39,5 +40,22 @@ describe('lock taps', () => {
 
   it('rejects other tap counts', () => {
     expect(() => homographyFromTaps([], model)).toThrow();
+  });
+});
+
+describe('shiftFrets', () => {
+  it('moves every fret line onto its neighbour and back', () => {
+    for (const k of [1, -1, 2]) {
+      const shifted = shiftFrets(H, model, k);
+      for (let n = 2; n <= 12; n++) {
+        const a = apply(shifted, fretX(model, n), 5);
+        const b = apply(H, fretX(model, n + k), 5);
+        expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeLessThan(1e-6);
+      }
+      const back = shiftFrets(shifted, model, -k);
+      const p = apply(back, 100, 3);
+      const q = apply(H, 100, 3);
+      expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeLessThan(1e-6);
+    }
   });
 });

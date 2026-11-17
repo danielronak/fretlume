@@ -5,7 +5,7 @@
 import { fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
 import type { EdgeTracker } from './edgeTracker';
 import { type RefineResult } from './edgeTracker';
-import { fitHomography, fromControlPoints, type Mat3, type Pt } from './geometry';
+import { fitHomography, fromControlPoints, multiply, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
 
 /** Fret positions of the tap pairs, in tap order: nut, 12th, then the optional 5th. */
@@ -70,4 +70,15 @@ export function snapLock(
     if (!best || out.score > best.score) best = { ...out, polarity, confidence };
   }
   return best!;
+}
+
+/**
+ * Move the grid by k frets along the neck (k > 0 toward the body): the confirmation step's
+ * ◄ shift ► (docs/specs/01-vision.md §5.4). Fret positions follow x′ = L − r^k (L − x), r = 2^(−1/12),
+ * so the shift is an exact board-space affine map; across positions are kept.
+ */
+export function shiftFrets(H: Mat3, model: InstrumentModel, k: number): Mat3 {
+  const r = 2 ** (-k / 12);
+  const L = model.scaleMm;
+  return multiply(H, [r, 0, L * (1 - r), 0, 1, 0, 0, 0, 1]);
 }

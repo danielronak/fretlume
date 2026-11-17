@@ -4,13 +4,17 @@
 
 ## Now
 - **Current phase:** 3 — Camera overlay with manual lock (`docs/phases/phase-03-camera-manual-lock.md`)
-- **Next task:** 3.7 manual lock UI, 3.8 overlay renderer (projection done: `overlay/projection.ts`), 3.9 Stage. Camera pipeline pieces exist (`camera/`, `vision/vision.worker.ts`, `vision/core.ts`); G3.2–G3.4 partly failing, recorded in D-016/D-017.
-- **Last release:** 0.1.0 (Phase 2), 2026-11-17 — deploys once GitHub Pages is enabled (see below)
+- **Next task:** Phase 4 (`docs/phases/phase-04-*.md`) — synthetic data + auto-lock. Carry over from Phase 3: G3.2 at σ 5 px, the G3.3 index slip, G3.4 jitter, index verification (nut/inlays) during recovery (D-016–D-018).
+- **Last release:** 0.2.0 (Phase 3), 2026-11-17 — deploys once GitHub Pages is enabled (see below)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
 - **Last updated:** 2026-11-17
 
 ## Waiting on the owner (does not block building)
+- **🎸 Optional field test of 0.2.0 (10 minutes).** Once the app is live (Pages, below) or with `npm run dev`
+  on a laptop: open Settings → Field test and follow the eight steps (lock in good and dim light, play
+  with the overlay, move the guitar, re-lock, tune), then *Export diagnostics* and attach the file to the
+  next session. Switching on "Include camera frames" first makes the file much more useful.
 - **Switch on GitHub Pages (one click):** repository Settings → Pages → Source = **GitHub Actions**, then
   re-run the failed "Release" run in the Actions tab. The Release workflow failed on 2026-11-16 with
   "Create Pages site failed: Resource not accessible by integration", and the session's proxy refuses the
@@ -45,7 +49,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally and in CI (12 unit, 8 browser tests); first Pages deploy waits for the owner to enable Pages |
 | 1 Theory engine | **done** 2026-11-16 | — | 218 tests; core line coverage 99.2 %; fingering agreement 91.3 %; `docs/benchmarks/catalogue.json` |
 | 2 Shell, Library, Tuner | **done** 2026-11-17 | v0.1 (0.1.0) | G6.1 18/18 within 1 cent; first load 1.41 MB; 283 unit + 29 smoke e2e |
-| 3 Camera + manual lock | in progress (3.1–3.6 done) | v0.2 🎸 | G3.1 pass; G3.2 91.5 % σ5 / 91.5 % σ8 (6 taps) fails σ5 (D-016); G3.3 98.2 % frames, 1 slip; G3.4 0.93 px; G3.5 pass (D-017) |
+| 3 Camera + manual lock | **done** 2026-11-17, 3 gates failing (recorded) | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 91.5 % σ5 / 91.5 % σ8 with 6 taps (fail σ5, D-016); G3.3 98.2 % frames, 1 slip in 60 (fail); G3.4 1.05 px (fail); G3.5 pass; e2e 60/60 |
 | 4 Synthetic + auto-lock | not started | v0.3 🎸 | |
 | 5 Runs, playground, tabs (parity) | not started | v0.4 | |
 | 6 Listening | not started | v0.5 🎸 | |
@@ -55,6 +59,17 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 10 Jam tools | not started | v0.9 | |
 | 11 Perf / a11y / mobile | not started | v0.10 🎸 | |
 | 12 Release | not started | v1.0 | |
+
+## Done in Phase 3 (2026-11-17)
+- `ml/synth`: synthetic guitar frames and clips (boards, inlays, strings with shadows, hand, camera
+  effects, hold/ping-pong clips); `npm run fixtures` renders the seven e2e camera clips.
+- `app/src/vision`: geometry kernel, EdgeTracker (parity + improved), lock snapping (`lock.ts`), tracking
+  session with One-Euro filter (`tracking.ts`), worker (`vision.worker.ts`, logic in `core.ts`).
+- `app/src/camera`: camera manager, frame pump with quality tiers (`visionClient.ts`).
+- `app/src/overlay/projection.ts` + `features/stage/` (Stage screen, deck, drawing), "Open on my guitar"
+  in the Library, field test + diagnostics (`features/fieldtest/`, `diagnostics/recorder.ts`).
+- Benchmarks `npm run bench:vision` → `docs/benchmarks/vision-phase3.json`; screens `docs/screens/phase-3/`
+  (regenerate with `node tools/screens/stage.mjs <dir>` against `vite preview`).
 
 ## Done in Phase 2 (2026-11-17)
 - Settings store (`app/src/state/settings.ts`, localStorage, D-012) and three-step welcome.

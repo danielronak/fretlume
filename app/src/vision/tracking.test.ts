@@ -4,7 +4,8 @@ import type { EdgeTracker, RefineOptions, RefineResult } from './edgeTracker';
 import { controlPointsPx, fromControlPoints, type Mat3 } from './geometry';
 import type { Image } from './image';
 import { fullScore } from './lock';
-import { TrackingSession } from './tracking';
+import { slipped, TrackingSession } from './tracking';
+import { shiftFrets } from './lock';
 
 const model = INSTRUMENTS.electric;
 const at = (dx: number): Mat3 =>
@@ -115,5 +116,16 @@ describe('TrackingSession.rescale', () => {
     const pose = session.update(image, 33)!;
     expect(pose.controlPoints[0]!.x).toBeCloseTo(550, 6);
     expect(session.wirePolarity).toBe('bright');
+  });
+});
+
+describe('slipped', () => {
+  it('flags a nut that moved a whole fret along the neck, not a small move', () => {
+    const H = at(0);
+    expect(slipped(H, H, model)).toBe(false);
+    expect(slipped(H, at(5), model)).toBe(false);
+    // One fret toward the body: the measured nut sits where fret 1 was.
+    expect(slipped(H, shiftFrets(H, model, 1), model)).toBe(true);
+    expect(slipped(H, shiftFrets(H, model, -1), model)).toBe(true);
   });
 });

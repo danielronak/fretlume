@@ -13,6 +13,8 @@ import { Tools } from '@features/tools/Tools';
 import { Tuner } from '@features/tools/Tuner';
 import { MetronomeScreen } from '@features/tools/MetronomeScreen';
 import { Welcome } from '@features/welcome/Welcome';
+import { StageScreen } from '@features/stage/StageScreen';
+import { FieldTest } from '@features/fieldtest/FieldTest';
 import { ToastProvider } from '@ui/index';
 import { useTheme } from '@ui/useTheme';
 import { UpdatePrompt } from './pwa/UpdatePrompt';
@@ -26,6 +28,7 @@ const router = createHashRouter([
     children: [
       { index: true, element: <Navigate to="/today" replace /> },
       { path: 'settings', element: <Settings /> },
+      { path: 'settings/field-test', element: <FieldTest /> },
       { path: 'library', element: <Navigate to="/library/chord/C/maj" replace /> },
       { path: 'library/saved', element: <SavedScreen /> },
       { path: 'help', element: <HelpIndex /> },
@@ -34,8 +37,10 @@ const router = createHashRouter([
       { path: 'tools/tuner', element: <Tuner /> },
       { path: 'tools/metronome', element: <MetronomeScreen /> },
       { path: 'library/:kind/:root/:type', element: <LibraryScreen /> },
+      { path: 'stage', element: <StageScreen /> },
+      { path: 'stage/:kind/:root/:type', element: <StageScreen /> },
       ...destinations
-        .filter((destination) => !['/library', '/tools'].includes(destination.path))
+        .filter((destination) => !['/library', '/tools', '/stage'].includes(destination.path))
         .map((destination) => ({
           path: destination.path.slice(1),
           element: <PlaceholderScreen destination={destination} />,

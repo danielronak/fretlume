@@ -23,7 +23,8 @@ function ensureDir(file) {
  */
 export function pngSequenceToMjpeg(pattern, outFile, { fps = 30, quality = 3 } = {}) {
   ensureDir(outFile);
-  ffmpeg(['-framerate', String(fps), '-i', pattern, '-c:v', 'mjpeg', '-q:v', String(quality), '-f', 'mjpeg', outFile]);
+  // Chromium's fake camera decodes 4:2:0 only (PNG input would otherwise give 4:4:4 and a green picture).
+  ffmpeg(['-framerate', String(fps), '-i', pattern, '-pix_fmt', 'yuvj420p', '-c:v', 'mjpeg', '-q:v', String(quality), '-f', 'mjpeg', outFile]);
 }
 
 /** PNG frame sequence -> uncompressed .y4m (large: ~1.4 MB per 720p frame; use for exact-pixel tests). */

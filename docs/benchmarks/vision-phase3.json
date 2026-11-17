@@ -2,7 +2,7 @@
   "G31": {
     "gate": "success rates within ±3 points of the Python reference; median along error ≤ 0.03 fret",
     "frames": 200,
-    "msPerRefine": 69.3,
+    "msPerRefine": 70.2,
     "perSigma": [
       {
         "sigma": 2,
@@ -144,11 +144,11 @@
     "frames": 2340,
     "goodFrames": 0.9816,
     "clipsWithSlip": 1,
-    "msPerFrame": 77.7,
+    "msPerFrame": 49.8,
     "worstClips": [
       {
         "clip": "g33-0",
-        "good": 27,
+        "good": 26,
         "frames": 39,
         "slipped": false
       },
@@ -171,8 +171,8 @@
         "slipped": false
       },
       {
-        "clip": "g33-50",
-        "good": 36,
+        "clip": "g33-36",
+        "good": 37,
         "frames": 39,
         "slipped": false
       }
@@ -180,14 +180,14 @@
   },
   "G35": {
     "gate": "≤ 2.0 M image pixel samples per frame in tracking mode",
-    "meanSamples": 294828,
+    "meanSamples": 294786,
     "maxSamples": 294912
   },
   "G34": {
     "gate": "published control points jitter ≤ 0.7 px RMS on static clips",
     "clips": 12,
-    "jitterRmsPx": 0.931,
-    "worstClipRmsPx": 2.844,
-    "medianBiasPx": 1
+    "jitterRmsPx": 1.047,
+    "worstClipRmsPx": 3.291,
+    "medianBiasPx": 0.79
   }
 }

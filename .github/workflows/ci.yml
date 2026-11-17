@@ -26,6 +26,11 @@ jobs:
         run: npm ci
       - name: Install ffmpeg (media fixtures)
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Install uv (synthetic camera clips are rendered by ml/synth)
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: ml/uv.lock
       - name: Install Chromium for Playwright
         run: npx playwright install --with-deps chromium
         working-directory: app

@@ -162,6 +162,13 @@ export function LibraryScreen() {
           <div className="lib-item__actions">
             <FavouriteButton itemId={details.id} name={name} />
             <FolderButton itemId={details.id} name={name} />
+            <Link
+              className="btn btn--primary"
+              to={`/stage/${kind}/${params.root}/${typeId}`}
+              data-testid="open-on-guitar"
+            >
+              {t('stageOpen')}
+            </Link>
           </div>
         </div>
         <dl className="lib-item__facts">

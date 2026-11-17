@@ -1,9 +1,11 @@
 // `npm run fixtures` — (re)generates the media fixtures used by the e2e tests into fixtures/generated/.
 // Everything here is deterministic, so the files are not committed.
-import { existsSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { floatsToWav, pluckTone, sineTone, testPatternToMjpeg } from './lib.mjs';
+import { floatsToWav, pngSequenceToMjpeg, pluckTone, sineTone, testPatternToMjpeg } from './lib.mjs';
 
 const outDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../fixtures/generated');
 const force = process.argv.includes('--force');
@@ -40,6 +42,43 @@ for (const [name, fHz] of OPEN_STRINGS) {
       make: (out) => floatsToWav(pluckTone(fHz * 2 ** (offset / 1200), 2, 48000, { seed: Math.round(fHz) }), 48000, out),
     });
   }
+}
+
+// Camera clips (phase 3 task 3.10): synthetic guitar footage with the frame number stamped in the
+// corner and exact labels (clip-<kind>.labels.jsonl). 3 s at 30 fps; Chromium loops the file.
+const mlDir = resolve(outDir, '../../ml');
+// Moving clips hold still for 2.5 s (the player locking), then move and come back (ping-pong), so the
+// looping fake camera never jumps. They move at most 3 px per frame (90 px/s): the container
+// processes ~10 frames/s; faster motion is covered by the G3.3 benchmark, which sees every frame. The capo clip uses a rosewood board so it tests the capo; light
+// boards are covered by the benchmarks (DECISIONS D-016).
+const HOLD = ['--hold', '75', '--pingpong', '--max-speed', '3'];
+const CLIPS = [
+  ['lock-easy', 11, ['--frames', '90']],
+  ['track-hand', 12, ['--frames', '60', ...HOLD]],
+  ['track-motion', 13, ['--frames', '60', ...HOLD]],
+  ['lefty', 14, ['--frames', '90', '--instrument', 'electric']],
+  ['capo', 15, ['--frames', '90', '--board', 'rosewood']],
+  ['low-light', 16, ['--frames', '90']],
+  ['no-guitar', 17, ['--frames', '90']],
+];
+for (const [kind, seed, extra] of CLIPS) {
+  fixtures.push({
+    file: `clip-${kind}.mjpeg`,
+    describe: `synthetic ${kind} clip, 1280x720, 30 fps, stamped, with labels`,
+    make: (out) => {
+      const dir = mkdtempSync(resolve(tmpdir(), `fretlume-${kind}-`));
+      const result = spawnSync(
+        'uv',
+        ['run', '--project', mlDir, 'python', '-m', 'synth.cli', 'clip', '--kind', kind,
+          '--seed', String(seed), '--format', 'png', '--stamp', '--out', dir, ...extra],
+        { cwd: mlDir, stdio: 'inherit' },
+      );
+      if (result.status !== 0) throw new Error(`clip ${kind} failed`);
+      pngSequenceToMjpeg(resolve(dir, '%06d.png'), out, { quality: 2 });
+      copyFileSync(resolve(dir, 'labels.jsonl'), out.replace(/\.mjpeg$/, '.labels.jsonl'));
+      rmSync(dir, { recursive: true, force: true });
+    },
+  });
 }
 
 for (const fixture of fixtures) {

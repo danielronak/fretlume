@@ -153,3 +153,27 @@ clips are below 0.7). G3.5: 0.29 M samples per frame (pass).
 The prediction as a soft prior in the fit: jitter got worse (1.2 px) because the prediction carries noise.
 **Next.** The fallback ladder's remaining steps (weight the unoccluded half of each fret; hold-and-fade) and
 an index guard against slow along-neck drift; real-camera field data will show whether nut jitter matters.
+
+## D-018 · 2026-11-17 · Stage, e2e clips, diagnostics format, tracker speed and index guard
+**Context.** Building the Stage (tasks 3.7–3.11) and running it on synthetic clips through the fake camera.
+**Decisions.**
+- *Lock flow.* Freeze the video, drag four numbered handles (optional 5th-fret pair) with a loupe, snap,
+  confirm with fret numbers 1·3·5·7·9·12 and ◄ shift ►. "Verified" is shown only at confidence ≥ 0.9
+  (D-016); otherwise the player is asked to check the grid. The tracker then starts from the confirmed
+  pose, measured once on the lock frame (D-017). Taps are remembered (settings `lockTaps`).
+- *Speed.* Rectification without per-pixel allocation and typed median buffers: 88 → 50 ms per tracked
+  frame in the container, same results (G3.1 unchanged).
+- *Index guard.* While recovering (wide search from a stale pose) a fit that moves the nut or 12th fret
+  by about half a fret or more is refused; during normal tracking it held too many good frames (G3.3
+  fell to 93 %), so it applies to recovery only. Fast motion during a hold can still slip the index;
+  index verification from the nut and inlays (spec 01 §5) remains to be done.
+- *E2E clips.* Moving clips hold still for 2.5 s (the player locking), then move at ≤ 3 px/frame and play
+  back in reverse so the looping fake camera never jumps: the container processes about 10 frames/s,
+  and faster motion is covered by G3.3, which sees every frame. The capo clip uses a rosewood board so
+  it tests the capo; light boards are covered (and failing) in the benchmarks. CI installs `uv`
+  (astral-sh/setup-uv) to render the clips.
+- *Diagnostics.* One JSON file (pose log, lock attempts, events, device type, settings, optional frames)
+  instead of a zip, so no new dependency yet. Camera frames only after the player switches them on in
+  Settings → Field test; they live in memory (last 15 s, 2 per second) and are deleted when switched off.
+**Alternatives.** A zip library (MIT, small) when frame volume grows; index guard always on (rejected,
+above); a clip per tracked motion speed (later, with field data).

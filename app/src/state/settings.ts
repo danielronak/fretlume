@@ -38,6 +38,14 @@ export interface Settings {
   metronomeCountIn: boolean;
   /** Tuner: true = one string at a time from the low E. */
   tunerGuided: boolean;
+  /** Stage overlay dot size multiplier, 0.6–1.6. */
+  dotScale: number;
+  /** Left-handed stringing: the thin string is where the thick one usually is. */
+  flipStrings: boolean;
+  /** Last manual-lock taps as fractions of the frame, x0, y0, x1, y1 … (4 or 6 points); [] = none. */
+  lockTaps: number[];
+  /** Stage deck auto-advance in seconds; 0 = off. */
+  stageAutoSeconds: number;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -58,6 +66,10 @@ export const DEFAULT_SETTINGS: Settings = {
   metronomeAccent: true,
   metronomeCountIn: false,
   tunerGuided: false,
+  dotScale: 1,
+  flipStrings: false,
+  lockTaps: [],
+  stageAutoSeconds: 0,
 };
 
 export const TIME_SIGNATURES = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '12/8'] as const;
@@ -101,6 +113,15 @@ export function sanitizeSettings(input: unknown): Settings {
   out.a4Hz = Math.min(450, Math.max(430, out.a4Hz));
   out.metronomeBpm = Math.min(260, Math.max(30, Math.round(out.metronomeBpm)));
   if (![1, 2, 3, 4].includes(out.metronomeSubdivision)) out.metronomeSubdivision = 1;
+  out.dotScale = Number.isFinite(out.dotScale) ? Math.min(1.6, Math.max(0.6, out.dotScale)) : 1;
+  const taps = out.lockTaps;
+  out.lockTaps =
+    Array.isArray(taps) &&
+    (taps.length === 8 || taps.length === 12) &&
+    taps.every((v) => typeof v === 'number' && v >= 0 && v <= 1)
+      ? [...taps]
+      : [];
+  if (![0, 4, 8, 15, 30].includes(out.stageAutoSeconds)) out.stageAutoSeconds = 0;
   return out;
 }
 

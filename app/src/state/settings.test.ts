@@ -27,3 +27,17 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings('nope')).toEqual(DEFAULT_SETTINGS);
   });
 });
+
+describe('stage settings', () => {
+  it('clamps dot size and validates remembered taps', () => {
+    expect(sanitizeSettings({ dotScale: 5 }).dotScale).toBe(1.6);
+    expect(
+      sanitizeSettings({ lockTaps: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] }).lockTaps,
+    ).toHaveLength(8);
+    expect(sanitizeSettings({ lockTaps: [0.1, 2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] }).lockTaps).toEqual(
+      [],
+    );
+    expect(sanitizeSettings({ lockTaps: 'x' }).lockTaps).toEqual([]);
+    expect(sanitizeSettings({ stageAutoSeconds: 7 }).stageAutoSeconds).toBe(0);
+  });
+});

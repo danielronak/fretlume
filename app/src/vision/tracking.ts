@@ -5,7 +5,9 @@
  * changed here: the narrow search moves the nut by at most a fraction of a fret spacing.
  */
 import type { EdgeTracker } from './edgeTracker';
+import { fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
 import {
+  apply,
   controlPointsPx,
   fromControlPoints,
   IDENTITY,
@@ -156,14 +158,21 @@ export class TrackingSession {
     let measured: Pt[] | null = null;
     let confidence = 0;
     try {
-      const out = this.tracker.refine(image, fromControlPoints(start, model), {
+      const startH = fromControlPoints(start, model);
+      const out = this.tracker.refine(image, startH, {
         iterations: recovering ? 3 : this.options.iterations,
         wide: recovering,
         polarity: this.polarity,
       });
       this.lastSamples = out.samples;
       confidence = out.inliers > 0 ? Math.min(1, out.score / fullScore(model)) : 0;
-      if (confidence >= this.options.lowConfidence) measured = controlPointsPx(out.H, model);
+      // While recovering (a wide search from a stale pose) a fit one fret off looks as good as the
+      // right one; refuse fits that move the nut or 12th fret by about half a fret or more.
+      if (
+        confidence >= this.options.lowConfidence &&
+        !(recovering && slipped(startH, out.H, model))
+      )
+        measured = controlPointsPx(out.H, model);
     } catch {
       measured = null;
     }
@@ -172,7 +181,7 @@ export class TrackingSession {
       const dt = Math.max(1, tMs - this.last.tMs);
       // Velocity from consecutive measurements only; after a gap it restarts at zero.
       this.velocity =
-        tMs - this.last.tMs <= 100
+        tMs - this.last.tMs <= 250
           ? measured.map((p, i) => ({
               x: 0.7 * ((p.x - this.last!.points[i]!.x) / dt) + 0.3 * this.velocity[i]!.x,
               y: 0.7 * ((p.y - this.last!.points[i]!.y) / dt) + 0.3 * this.velocity[i]!.y,
@@ -221,4 +230,24 @@ export class TrackingSession {
       measured,
     };
   }
+}
+
+/**
+ * Index guard: a measurement that moves the nut or the 12th fret along the neck by more than ~half
+ * a fret spacing from where this frame's search started could be a fret slip, which tracking must never make
+ * (docs/specs/01-vision.md §5). Such frames hold the pose instead.
+ */
+export function slipped(startH: Mat3, measuredH: Mat3, model: InstrumentModel): boolean {
+  const back = invert(startH);
+  // At the nut and at the 12th fret: a lagging search can also snap the closely spaced high frets
+  // to their neighbours, which looks like a change of scale rather than a jump of the nut.
+  for (const n of [0, 12]) {
+    const x = fretX(model, n);
+    const limit = 0.45 * (fretX(model, n + 1) - x);
+    for (const y of [-halfWidth(model, x), halfWidth(model, x)]) {
+      const p = apply(measuredH, x, y);
+      if (Math.abs(apply(back, p.x, p.y).x - x) > limit) return true;
+    }
+  }
+  return false;
 }

@@ -308,6 +308,13 @@ export function Settings() {
           <Link className="btn btn--secondary" to="/help">
             {t('navHelp')}
           </Link>
+          <Link
+            className="btn btn--secondary"
+            to="/settings/field-test"
+            data-testid="field-test-link"
+          >
+            {t('settingsFieldTest')}
+          </Link>
           <Button
             variant="ghost"
             onClick={() => {

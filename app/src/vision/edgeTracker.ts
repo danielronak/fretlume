@@ -20,7 +20,7 @@ import {
   type Mat3,
   type Pt,
 } from './geometry';
-import { sampleLuma, type Image } from './image';
+import type { Image } from './image';
 import { blur1D, blur2D, median, percentile } from './signal';
 
 export const STRIP_W = 768;
@@ -93,6 +93,8 @@ export class EdgeTracker {
   private readonly d2 = new Float32Array(STRIP_W * STRIP_H);
   private readonly valid = new Uint8Array(STRIP_W * STRIP_H);
   private readonly column = new Float32Array(STRIP_H);
+  private readonly scratchA = new Float32Array(STRIP_W);
+  private readonly scratchB = new Float32Array(STRIP_W);
 
   constructor(readonly model: InstrumentModel) {
     this.frets = model.fretCount;
@@ -124,18 +126,61 @@ export class EdgeTracker {
   /** Strip ← image through M (strip px → image px), blurred; returns pixel samples taken. */
   private rectify(image: Image, M: Mat3, mode: 'parity' | 'improved'): number {
     const { raw, valid } = this;
+    const { width, height, data, channels } = image;
+    const [m0, m1, m2, m3, m4, m5, m6, m7, m8] = M as unknown as number[] as [
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+      number,
+    ];
+    const outside = mode === 'parity' ? 0 : Number.NaN;
+    const rgba = channels === 4;
+    const rowStride = width * channels;
     for (let r = 0; r < STRIP_H; r++) {
       for (let c = 0; c < STRIP_W; c++) {
-        const p = apply(M, c, r);
-        const v = sampleLuma(image, p.x, p.y);
+        // Same arithmetic as apply() + sampleLuma(), without allocating per pixel.
+        const w = m6 * c + m7 * r + m8;
+        const x = (m0 * c + m1 * r + m2) / w;
+        const y = (m3 * c + m4 * r + m5) / w;
         const i = r * STRIP_W + c;
-        if (Number.isNaN(v)) {
-          raw[i] = mode === 'parity' ? 0 : Number.NaN;
-          valid[i] = 0;
-        } else {
-          raw[i] = v;
-          valid[i] = 1;
+        const x0 = Math.floor(x);
+        const y0 = Math.floor(y);
+        if (x0 < 0 || y0 < 0 || x0 >= width - 1 || y0 >= height - 1) {
+          if (x0 === width - 1 && y0 >= 0 && y0 < height && x === x0) {
+            const k = (Math.min(y0, height - 1) * width + x0) * channels;
+            raw[i] = rgba
+              ? 0.299 * data[k]! + 0.587 * data[k + 1]! + 0.114 * data[k + 2]!
+              : data[k]!;
+            valid[i] = 1;
+          } else {
+            raw[i] = outside;
+            valid[i] = 0;
+          }
+          continue;
         }
+        const fx = x - x0;
+        const fy = y - y0;
+        const k = (y0 * width + x0) * channels;
+        let a: number, b: number, cc: number, d: number;
+        if (rgba) {
+          const k2 = k + rowStride;
+          a = 0.299 * data[k]! + 0.587 * data[k + 1]! + 0.114 * data[k + 2]!;
+          b = 0.299 * data[k + 4]! + 0.587 * data[k + 5]! + 0.114 * data[k + 6]!;
+          cc = 0.299 * data[k2]! + 0.587 * data[k2 + 1]! + 0.114 * data[k2 + 2]!;
+          d = 0.299 * data[k2 + 4]! + 0.587 * data[k2 + 5]! + 0.114 * data[k2 + 6]!;
+        } else {
+          a = data[k]!;
+          b = data[k + 1]!;
+          cc = data[k + rowStride]!;
+          d = data[k + rowStride + 1]!;
+        }
+        raw[i] = (a * (1 - fx) + b * fx) * (1 - fy) + (cc * (1 - fx) + d * fx) * fy;
+        valid[i] = 1;
       }
     }
     if (mode === 'improved') {
@@ -300,19 +345,19 @@ export class EdgeTracker {
         if (c1 - c0 < 3) continue;
         const profile = new Float32Array(STRIP_H);
         const edges = new Float32Array(STRIP_H);
-        const column: number[] = [];
-        const steps: number[] = [];
+        const column = this.scratchA;
+        const steps = this.scratchB;
         let validCount = 0;
         for (let r = 2; r < STRIP_H - 2; r++) {
-          column.length = 0;
-          steps.length = 0;
+          let m = 0;
           for (let c = c0; c <= c1; c++) {
             if (valid[r * STRIP_W + c]) validCount++;
-            column.push(ridgeAt(r, c, sign));
-            steps.push(r >= 6 && r < STRIP_H - 6 ? wideStep(r, c) : 0);
+            column[m] = ridgeAt(r, c, sign);
+            steps[m++] = r >= 6 && r < STRIP_H - 6 ? wideStep(r, c) : 0;
           }
-          profile[r] = median(column);
-          edges[r] = median(steps);
+          // Typed scratch buffers: median sorts them in place, numerically, without copying.
+          profile[r] = median(column, m);
+          edges[r] = median(steps, m);
         }
         if (validCount < 0.6 * (c1 - c0 + 1) * (STRIP_H - 4)) continue;
         // Each cue is scaled by its own peak so that neither dominates on contrast alone.
