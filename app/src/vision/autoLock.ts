@@ -8,10 +8,11 @@
  */
 import { luma } from './autoLockStats';
 import type { EdgeTracker } from './edgeTracker';
-import { controlPointsPx, type Mat3, type Pt } from './geometry';
+import { apply, controlPointsPx, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
 import { verifyIndex } from './indexCheck';
-import { fullScore, shiftFrets, snapLock } from './lock';
+import { fullScore, homographyFromTaps, shiftFrets, snapLock } from './lock';
+import { fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
 import type { NeckDetection } from './neckNet';
 
 export type AutoState = 'searching' | 'verifying' | 'locked';
@@ -107,13 +108,18 @@ export class AutoLocker {
     const cut = cutOff(det.corners, image.width, image.height);
     // Bass versus treble cannot be seen at the network's resolution; a player's thick string faces
     // up (towards their head) whether or not the picture is mirrored, so the upper corners are bass.
-    let best: { H: Mat3; polarity: 'bright' | 'dark'; confidence: number } | null;
-    try {
-      const out = snapLock(this.tracker, image, bassUp(det.corners));
-      const confidence = out.inliers > 0 ? out.score / fullScore(model) : 0;
-      best = { H: out.H, polarity: out.polarity, confidence };
-    } catch {
-      best = null; // degenerate candidate
+    // Multi-start: the network's 12th fret may really be the 11th or 13th (they look alike), which
+    // the snap cannot correct on its own; try all three and keep the best fit.
+    let best: { H: Mat3; polarity: 'bright' | 'dark'; confidence: number } | null = null;
+    for (const taps of twelfthCandidates(bassUp(det.corners), model)) {
+      try {
+        const out = snapLock(this.tracker, image, taps);
+        const confidence = out.inliers > 0 ? out.score / fullScore(model) : 0;
+        if (!best || confidence > best.confidence)
+          best = { H: out.H, polarity: out.polarity, confidence };
+      } catch {
+        // degenerate candidate
+      }
     }
     if (!best || best.confidence < this.o.minConfidence)
       return { ...base, hint: cut ?? 'lift-hand', detection: det };
@@ -178,4 +184,20 @@ export function bassUp(corners: Pt[]): Pt[] {
   const [nutBass, nutTreble] = c0.y <= c1.y ? [c0, c1] : [c1, c0];
   const [twTreble, twBass] = c3.y <= c2.y ? [c2, c3] : [c3, c2];
   return [nutBass, nutTreble, twTreble, twBass];
+}
+
+/**
+ * Tap sets for the snap: as detected, and with the detected "12th fret" read as the 11th or the 13th
+ * (the taps then move to where fret 12 would be).
+ */
+export function twelfthCandidates(taps: Pt[], model: InstrumentModel): Pt[][] {
+  const H0 = homographyFromTaps(taps, model);
+  const out: Pt[][] = [taps];
+  for (const k of [-1, 1]) {
+    // If the detected line is fret 12 + k, then board x of fret 12 sits at fretX(12 − k) on H0's scale.
+    const x = fretX(model, 12 - k);
+    const hw = halfWidth(model, x);
+    out.push([taps[0]!, taps[1]!, apply(H0, x, hw), apply(H0, x, -hw)]);
+  }
+  return out;
 }

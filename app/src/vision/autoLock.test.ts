@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { INSTRUMENTS } from '@core/guitar/instrument';
-import { AutoLocker, bassUp, cutOff } from './autoLock';
+import { AutoLocker, bassUp, cutOff, twelfthCandidates } from './autoLock';
+import { fretX } from '@core/guitar/instrument';
+import { apply } from './geometry';
 import { luma } from './autoLockStats';
 import type { EdgeTracker, RefineResult } from './edgeTracker';
 import { controlPointsPx, fromControlPoints, type Mat3 } from './geometry';
@@ -103,5 +105,19 @@ describe('bassUp', () => {
       p(9, 60),
       p(9, 20),
     ]);
+  });
+});
+
+describe('twelfthCandidates', () => {
+  it('keeps the nut and moves the 12th-fret taps to where fret 12 is if the detection was fret 11 or 13', () => {
+    const taps = controlPointsPx(H, model);
+    const [same, as11, as13] = twelfthCandidates(taps, model);
+    expect(same).toEqual(taps);
+    expect(as11![0]).toEqual(taps[0]);
+    // Read as fret 11, fret 12 is further from the nut than the detected line: at fretX(13) on H's scale.
+    const p = apply(H, fretX(model, 13), 0);
+    const mid = { x: (as11![2]!.x + as11![3]!.x) / 2, y: (as11![2]!.y + as11![3]!.y) / 2 };
+    expect(Math.hypot(mid.x - p.x, mid.y - p.y)).toBeLessThan(3);
+    expect(as13![2]!.x).not.toBeCloseTo(as11![2]!.x, 0);
   });
 });
