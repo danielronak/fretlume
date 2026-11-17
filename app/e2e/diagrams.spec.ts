@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test.describe('diagram contact sheet @smoke', () => {
   test('renders generated chord boxes and neck diagrams', async ({ page }) => {

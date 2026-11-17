@@ -4,19 +4,24 @@ import { KitchenSink } from '@features/dev/KitchenSink';
 import { MediaProbe } from '@features/dev/MediaProbe';
 import { NotFound } from '@features/NotFound';
 import { PlaceholderScreen } from '@features/PlaceholderScreen';
-import { destinations, settingsDestination } from '@features/routes';
+import { destinations } from '@features/routes';
 import { Shell } from '@features/Shell';
+import { Settings } from '@features/settings/Settings';
+import { Welcome } from '@features/welcome/Welcome';
 import { ToastProvider } from '@ui/index';
+import { useTheme } from '@ui/useTheme';
 import { UpdatePrompt } from './pwa/UpdatePrompt';
 
 // Hash routing: deep links work on static hosting (GitHub Pages) and offline with no server rules.
 const router = createHashRouter([
+  { path: '/welcome', element: <Welcome /> },
   {
     path: '/',
     element: <Shell />,
     children: [
       { index: true, element: <Navigate to="/today" replace /> },
-      ...[...destinations, settingsDestination].map((destination) => ({
+      { path: 'settings', element: <Settings /> },
+      ...destinations.map((destination) => ({
         path: destination.path.slice(1),
         element: <PlaceholderScreen destination={destination} />,
       })),
@@ -29,6 +34,7 @@ const router = createHashRouter([
 ]);
 
 export function App() {
+  useTheme(); // keeps <html data-theme> in step with the settings on every route
   return (
     <ToastProvider>
       <UpdatePrompt />

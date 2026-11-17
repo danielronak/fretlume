@@ -330,9 +330,11 @@ interface ToggleProps {
   label: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  /** Keep the label for screen readers only, when a visible label sits next to the switch. */
+  hideLabel?: boolean;
 }
 
-export function Toggle({ label, checked, onChange }: ToggleProps) {
+export function Toggle({ label, checked, onChange, hideLabel = false }: ToggleProps) {
   return (
     <button
       type="button"
@@ -344,7 +346,7 @@ export function Toggle({ label, checked, onChange }: ToggleProps) {
       <span className="toggle__track">
         <span className="toggle__thumb" />
       </span>
-      {label}
+      {hideLabel ? <span className="visually-hidden">{label}</span> : label}
     </button>
   );
 }

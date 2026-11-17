@@ -1,4 +1,5 @@
-import { expect, test, type Page, type Request } from '@playwright/test';
+import type { Page, Request } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 const isLocal = (url: string) => {
   const { protocol, hostname } = new URL(url);

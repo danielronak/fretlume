@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useSettings } from '@/state/settings';
 import { APP_NAME } from '@/config';
 import { t } from '@i18n/index';
 import { Icon } from '@ui/icons';
@@ -10,6 +11,13 @@ import './shell.css';
 /** App frame: a left rail on wide screens, a bottom bar on phones. */
 export function Shell() {
   const [theme, toggleTheme] = useTheme();
+  const onboarded = useSettings((s) => s.onboarded);
+  const location = useLocation();
+
+  // First visit: show the welcome flow (developer routes stay reachable for tests and review).
+  if (!onboarded && !location.pathname.startsWith('/dev')) {
+    return <Navigate to="/welcome" replace />;
+  }
 
   return (
     <div className="shell">

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test.describe('shell @smoke', () => {
   test('every destination is reachable from the navigation', async ({ page }) => {

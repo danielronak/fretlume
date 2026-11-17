@@ -15,6 +15,25 @@ export interface FakeMedia {
 interface MediaFixtures {
   fakeMedia: FakeMedia;
   mediaPage: Page;
+  /** Settings written to localStorage before the app loads. Default: welcome already done. */
+  seedSettings: Record<string, unknown> | null;
+}
+
+export const SETTINGS_KEY = 'fretlume.settings';
+
+/** Seed the persisted settings store before any page script runs. */
+export async function seed(page: Page, settings: Record<string, unknown> | null) {
+  if (!settings) return;
+  await page.addInitScript(
+    ([key, value]) => {
+      // Only on the first load of this test, so the app's own writes survive reloads.
+      if (!sessionStorage.getItem('__seeded')) {
+        localStorage.setItem(key, value);
+        sessionStorage.setItem('__seeded', '1');
+      }
+    },
+    [SETTINGS_KEY, JSON.stringify({ state: settings, version: 1 })] as const,
+  );
 }
 
 /**
@@ -26,8 +45,14 @@ interface MediaFixtures {
  */
 export const test = base.extend<MediaFixtures>({
   fakeMedia: [{ video: 'bars-720p.mjpeg', audio: 'tone-110hz.wav' }, { option: true }],
+  seedSettings: [{ onboarded: true }, { option: true }],
 
-  mediaPage: async ({ fakeMedia, baseURL, viewport }, use) => {
+  page: async ({ page, seedSettings }, use) => {
+    await seed(page, seedSettings);
+    await use(page);
+  },
+
+  mediaPage: async ({ fakeMedia, baseURL, viewport, seedSettings }, use) => {
     const video = resolve(generatedDir, fakeMedia.video);
     const audio = resolve(generatedDir, fakeMedia.audio);
     for (const file of [video, audio]) {
@@ -48,6 +73,7 @@ export const test = base.extend<MediaFixtures>({
       permissions: ['camera', 'microphone'],
     });
     const page = await context.newPage();
+    await seed(page, seedSettings);
     await use(page);
     await browser.close();
   },

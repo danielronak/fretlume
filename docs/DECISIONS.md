@@ -78,3 +78,11 @@ structured ("sad chords in G", "Am7", "what has C E G").
 then scores items with exact, alias, tag, prefix and one-typo matches. Deterministic, dependency-free,
 covered by 62 query expectations. Revisit if the catalogue grows to free-text content (lessons, songs).
 **Alternatives.** MiniSearch (generic relevance ranking would still need the same query parsing on top).
+
+## D-012 · 2026-11-17 · Settings live in localStorage; collections live in IndexedDB
+**Context.** The plan listed a `settings` table in the Dexie schema. Theme and handedness are needed
+synchronously before the first paint and the first diagram, and IndexedDB is asynchronous.
+**Decision.** Settings are a Zustand store persisted to `localStorage` (`fretlume.settings`, versioned,
+sanitised on load). Favourites, folders, runs, tabs, events, skills and profiles live in Dexie. Backups
+contain both. The Dexie schema has no `settings` table.
+**Alternatives.** Dexie-only with an async startup gate (a blank first frame or a theme flash).
