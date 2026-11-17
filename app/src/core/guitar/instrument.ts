@@ -13,6 +13,10 @@ export interface InstrumentModel {
   scaleMm: number;
   /** Frets drawn and addressable on this profile. */
   frets: number;
+  /** Frets physically on the neck (what the camera sees; the tracker models all of them). */
+  fretCount: number;
+  /** Fret where the neck meets the body. */
+  bodyJointFret: number;
   nutWidthMm: number;
   /** Fretboard width at the 12th fret. */
   width12Mm: number;
@@ -29,6 +33,8 @@ export const INSTRUMENTS = {
     strings: 6,
     scaleMm: 645,
     frets: 15,
+    fretCount: 20,
+    bodyJointFret: 14,
     nutWidthMm: 43,
     width12Mm: 54,
     stringSpreadNutMm: 36,
@@ -41,6 +47,8 @@ export const INSTRUMENTS = {
     strings: 6,
     scaleMm: 648,
     frets: 22,
+    fretCount: 22,
+    bodyJointFret: 16,
     nutWidthMm: 42,
     width12Mm: 52,
     stringSpreadNutMm: 35,
@@ -53,6 +61,8 @@ export const INSTRUMENTS = {
     strings: 6,
     scaleMm: 650,
     frets: 15,
+    fretCount: 19,
+    bodyJointFret: 12,
     nutWidthMm: 52,
     width12Mm: 62,
     stringSpreadNutMm: 43,

@@ -1,0 +1,36 @@
+{
+  "G31": {
+    "gate": "success rates within ±3 points of the Python reference; median along error ≤ 0.03 fret",
+    "frames": 200,
+    "msPerRefine": 66.5,
+    "perSigma": [
+      {
+        "sigma": 2,
+        "cases": 200,
+        "successTs": 0.96,
+        "successPython": 0.965,
+        "caseAgreement": 0.985,
+        "medianAlongTs": 0.0075,
+        "medianAlongPython": 0.0076
+      },
+      {
+        "sigma": 5,
+        "cases": 200,
+        "successTs": 0.76,
+        "successPython": 0.76,
+        "caseAgreement": 0.98,
+        "medianAlongTs": 0.0109,
+        "medianAlongPython": 0.0107
+      },
+      {
+        "sigma": 8,
+        "cases": 200,
+        "successTs": 0.39,
+        "successPython": 0.375,
+        "caseAgreement": 0.975,
+        "medianAlongTs": 0.0137,
+        "medianAlongPython": 0.0131
+      }
+    ]
+  }
+}

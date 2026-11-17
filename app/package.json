@@ -11,7 +11,8 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "test:e2e": "playwright test --trace off",
-    "test:smoke": "playwright test --trace off --grep @smoke"
+    "test:smoke": "playwright test --trace off --grep @smoke",
+    "bench:vision": "vitest run --config vitest.bench.config.ts bench/vision.bench.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.3.0",
