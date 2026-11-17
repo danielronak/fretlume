@@ -60,6 +60,8 @@ const CLIPS = [
   ['capo', 15, ['--frames', '90', '--board', 'rosewood']],
   ['low-light', 16, ['--frames', '90']],
   ['no-guitar', 17, ['--frames', '90']],
+  // Auto-lock (phase 4): any board, wider framing, a hand on the neck, gentle sway.
+  ['lock-hard', 18, ['--kind', 'random', '--frames', '60', '--pingpong', '--max-speed', '1.5']],
 ];
 for (const [kind, seed, extra] of CLIPS) {
   fixtures.push({
@@ -69,7 +71,7 @@ for (const [kind, seed, extra] of CLIPS) {
       const dir = mkdtempSync(resolve(tmpdir(), `fretlume-${kind}-`));
       const result = spawnSync(
         'uv',
-        ['run', '--project', mlDir, 'python', '-m', 'synth.cli', 'clip', '--kind', kind,
+        ['run', '--project', mlDir, 'python', '-m', 'synth.cli', 'clip', ...(extra.includes('--kind') ? [] : ['--kind', kind]),
           '--seed', String(seed), '--format', 'png', '--stamp', '--out', dir, ...extra],
         { cwd: mlDir, stdio: 'inherit' },
       );
