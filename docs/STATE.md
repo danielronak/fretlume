@@ -3,23 +3,17 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 3 — Camera overlay with manual lock (`docs/phases/phase-03-camera-manual-lock.md`)
+- **Current phase:** 4 — next to start (Phase 3 done 2026-11-17, `docs/phases/phase-03-camera-manual-lock.md`)
 - **Next task:** Phase 4 (`docs/phases/phase-04-*.md`) — synthetic data + auto-lock. Carry over from Phase 3: G3.2 at σ 5 px, the G3.3 index slip, G3.4 jitter, index verification (nut/inlays) during recovery (D-016–D-018).
-- **Last release:** 0.2.0 (Phase 3), 2026-11-17 — deploys once GitHub Pages is enabled (see below)
+- **Last release:** 0.2.0 (Phase 3), 2026-11-17 — live at https://danielronak.github.io/fretlume/ (tags v0.1.0, v0.2.0)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
 - **Last updated:** 2026-11-17
 
 ## Waiting on the owner (does not block building)
-- **🎸 Optional field test of 0.2.0 (10 minutes).** Once the app is live (Pages, below) or with `npm run dev`
-  on a laptop: open Settings → Field test and follow the eight steps (lock in good and dim light, play
+- **🎸 Optional field test of 0.2.0 (10 minutes).** At https://danielronak.github.io/fretlume/ on a phone or laptop with a camera: open Settings → Field test and follow the eight steps (lock in good and dim light, play
   with the overlay, move the guitar, re-lock, tune), then *Export diagnostics* and attach the file to the
   next session. Switching on "Include camera frames" first makes the file much more useful.
-- **Switch on GitHub Pages (one click):** repository Settings → Pages → Source = **GitHub Actions**, then
-  re-run the failed "Release" run in the Actions tab. The Release workflow failed on 2026-11-16 with
-  "Create Pages site failed: Resource not accessible by integration", and the session's proxy refuses the
-  Pages API, so only the owner can do this. Afterwards the app is live at
-  `https://danielronak.github.io/fretlume/`.
 
 ## CI status
 Check with `gh run list --repo danielronak/fretlume --limit 3`; every push so far has gone green.
