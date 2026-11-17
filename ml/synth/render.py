@@ -21,6 +21,13 @@ TEX = np.array([[PXMM, 0, -TEX_X0 * PXMM], [0, PXMM, -TEX_Y0 * PXMM], [0, 0, 1]]
 
 BOARD_FAMILIES = ['rosewood', 'ebony', 'maple', 'pau-ferro', 'richlite']
 INLAY_FAMILIES = ['dots', 'blocks', 'none']
+# Generator v2 adds these (docs/specs/06-testing-and-data.md §2).
+INLAY_FAMILIES_V2 = ['dots', 'offset-dots', 'blocks', 'trapezoids', 'blobs', 'none']
+
+
+def tex_matrix(pxmm: float) -> np.ndarray:
+    """Board mm → texture px for a texture drawn at `pxmm` pixels per millimetre."""
+    return np.array([[pxmm, 0, -TEX_X0 * pxmm], [0, pxmm, -TEX_Y0 * pxmm], [0, 0, 1]], np.float64)
 
 
 @dataclass
@@ -43,6 +50,11 @@ class Look:
     wound_rgb: np.ndarray
     capo_fret: int = 0
     seed: int = 0
+    # Generator v2 (defaults reproduce v1 exactly).
+    binding: bool = False
+    nylon: bool = False
+    glare: float = 0.0
+    wear: float = 0.0
 
     @property
     def polarity(self) -> str:
@@ -89,13 +101,16 @@ def sample_look(rng: np.random.Generator, instrument: Instrument, board: str | N
     )
 
 
-def _tex(pts_mm) -> np.ndarray:
-    pts = np.asarray(pts_mm, np.float64)
-    return np.round((pts - [TEX_X0, TEX_Y0]) * PXMM * 16).astype(np.int32)  # 4 fractional bits
+def render_neck_texture(inst: Instrument, look: Look, pxmm: float = PXMM) -> tuple[np.ndarray, np.ndarray]:
+    """BGR float texture of headstock, neck, fretboard and body, plus an alpha mask (`pxmm` px per mm)."""
+    PXMM = pxmm  # noqa: N806 — shadows the module default for everything drawn below
+    TEX_W = int((TEX_X1 - TEX_X0) * PXMM)  # noqa: N806
+    TEX_H = int((TEX_Y1 - TEX_Y0) * PXMM)  # noqa: N806
 
+    def _tex(pts_mm) -> np.ndarray:
+        pts = np.asarray(pts_mm, np.float64)
+        return np.round((pts - [TEX_X0, TEX_Y0]) * PXMM * 16).astype(np.int32)  # 4 fractional bits
 
-def render_neck_texture(inst: Instrument, look: Look) -> tuple[np.ndarray, np.ndarray]:
-    """BGR float texture of headstock, neck, fretboard and body, plus an alpha mask."""
     rng = np.random.default_rng(look.seed)
     img = np.zeros((TEX_H, TEX_W, 3), np.float32)
     alpha = np.zeros((TEX_H, TEX_W), np.float32)
@@ -143,8 +158,17 @@ def render_neck_texture(inst: Instrument, look: Look) -> tuple[np.ndarray, np.nd
     poly(board, look.board_rgb)
     board_mask = np.zeros((TEX_H, TEX_W), np.float32)
     cv2.fillPoly(board_mask, [_tex(board)], 1.0, lineType=cv2.LINE_AA, shift=4)
-    grain = cv2.GaussianBlur(rng.normal(0, 1, (TEX_H, TEX_W)).astype(np.float32), (0, 0), 6, sigmaY=0.8)
+    grain = cv2.GaussianBlur(rng.normal(0, 1, (TEX_H, TEX_W)).astype(np.float32), (0, 0), 6 * PXMM / 2.5, sigmaY=0.8 * PXMM / 2.5)
     img += (grain * (0.05 if look.board != 'maple' else 0.03))[..., None] * board_mask[..., None]
+    if look.binding:  # a light strip along both edges
+        for sgn in (-1, 1):
+            poly([[0, sgn * hw0], [end, sgn * float(inst.half_width(end))],
+                  [end, sgn * (float(inst.half_width(end)) - 1.6)], [0, sgn * (hw0 - 1.6)]], np.array([0.82, 0.86, 0.88]))
+    if look.wear > 0:  # lighter, worn patches where fingers press (frets 1–7)
+        for _ in range(int(rng.integers(3, 9))):
+            x = float(rng.uniform(inst.fret_x(0), inst.fret_x(7)))
+            ellipse(x, float(rng.uniform(-12, 12)), float(rng.uniform(4, 12)), float(rng.uniform(2, 5)),
+                    np.clip(look.board_rgb * (1 + look.wear), 0, 1), 1.0)
     # Inlays.
     if look.inlays != 'none':
         for n in (3, 5, 7, 9, 12, 15, 17, 19, 21):
@@ -156,6 +180,21 @@ def render_neck_texture(inst: Instrument, look: Look) -> tuple[np.ndarray, np.nd
                 r = float(rng.uniform(2.6, 3.6))
                 for y in ((-9.5, 9.5) if n == 12 else (0.0,)):
                     ellipse(xm, y, r, r, look.inlay_rgb)
+            elif look.inlays == 'offset-dots':  # dots near the bass edge
+                r = float(rng.uniform(2.2, 3.0))
+                yb = -float(inst.half_width(xm)) * 0.62
+                for y in ((yb, yb + 6.5) if n == 12 else (yb,)):
+                    ellipse(xm, y, r, r, look.inlay_rgb)
+            elif look.inlays == 'trapezoids':
+                hw = float(inst.half_width(xm)) * 0.8
+                w0, w1 = (b - a) * 0.35, (b - a) * 0.65
+                poly([[xm - w0 / 2, -hw], [xm + w0 / 2, -hw], [xm + w1 / 2, hw], [xm - w1 / 2, hw]], look.inlay_rgb)
+            elif look.inlays == 'blobs':  # abstract shapes, a little like birds or shells
+                for _ in range(2 if n == 12 else 1):
+                    pts = [[xm + (b - a) * 0.3 * np.cos(t) * rng.uniform(0.6, 1.2),
+                            rng.uniform(-6, 6) + 8 * np.sin(t) * rng.uniform(0.6, 1.2)]
+                           for t in np.linspace(0, 2 * np.pi, 7, endpoint=False)]
+                    poly(pts, look.inlay_rgb)
             else:
                 hw = float(inst.half_width(xm)) * 0.75
                 w = (b - a) * 0.55
@@ -175,6 +214,8 @@ def render_neck_texture(inst: Instrument, look: Look) -> tuple[np.ndarray, np.nd
     for s in range(1, inst.strings + 1):
         gauge = 0.25 + 0.12 * (s - 1)  # mm
         color = look.wound_rgb if s >= 4 else look.string_rgb
+        if look.nylon and s <= 3:
+            color = np.array([0.86, 0.88, 0.88])  # clear/white nylon trebles
 
         def line(offset_mm, rgb, width_mm):
             y0 = float(inst.string_y(s, -60)) + offset_mm
@@ -186,6 +227,12 @@ def render_neck_texture(inst: Instrument, look: Look) -> tuple[np.ndarray, np.nd
         line(light_side * (gauge + 0.5), look.board_rgb * 0.45, gauge * 2 + 0.6)  # shadow
         line(0.0, color, gauge * 2)  # string
         line(-light_side * gauge * 0.3, np.minimum(color * 1.6 + 0.15, 1), max(0.3, gauge * 0.6))  # highlight
+    if look.glare > 0:  # a soft specular streak across the frets
+        x0 = float(rng.uniform(0, end * 0.8))
+        streak = np.zeros((TEX_H, TEX_W), np.float32)
+        cv2.fillPoly(streak, [_tex([[x0, -60], [x0 + 40, -60], [x0 + 90, 60], [x0 + 50, 60]])], 1.0, shift=4)
+        streak = cv2.GaussianBlur(streak, (0, 0), 8 * PXMM)
+        img += (streak * look.glare)[..., None]
     # Capo: a bar across all strings just behind the chosen fret.
     if look.capo_fret > 0:
         x = float(inst.fret_x(look.capo_fret)) - 6
@@ -300,7 +347,8 @@ def camera_effects(rng: np.random.Generator, frame: np.ndarray, *, low_light: bo
 
 def composite(texture: np.ndarray, alpha: np.ndarray, H: np.ndarray, bg: np.ndarray) -> np.ndarray:
     h, w = bg.shape[:2]
-    M = H @ np.linalg.inv(TEX)
+    pxmm = texture.shape[1] / (TEX_X1 - TEX_X0)
+    M = H @ np.linalg.inv(tex_matrix(pxmm))
     fg = cv2.warpPerspective(texture, M, (w, h), flags=cv2.INTER_LINEAR)
     a = cv2.warpPerspective(alpha, M, (w, h), flags=cv2.INTER_LINEAR)[..., None]
     return fg * a + bg * (1 - a)

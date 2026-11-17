@@ -8,5 +8,11 @@ dependencies = [
   "opencv-python-headless>=4.10",
 ]
 
+# Training only (`uv run --group train …`); not installed by default, so CI and fixtures stay light.
+[dependency-groups]
+train = [
+  "torch>=2.5",
+]
+
 [tool.uv]
 package = false
