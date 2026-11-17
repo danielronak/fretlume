@@ -87,6 +87,8 @@ test.describe('library @smoke', () => {
       .getByRole('group', { name: 'Root' })
       .getByRole('button', { name: 'A', exact: true })
       .click();
+    // Wait for the new root before choosing a type, as a person would.
+    await expect(page.getByRole('heading', { level: 2, name: 'A major scale' })).toBeVisible();
     await page.getByLabel('Type').selectOption('dorian');
     await expect(page.getByRole('heading', { level: 2, name: 'A Dorian' })).toBeVisible();
     await page.getByRole('link', { name: 'Keys', exact: true }).click();
