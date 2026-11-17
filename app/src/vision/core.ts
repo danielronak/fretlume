@@ -7,7 +7,10 @@ import { INSTRUMENTS, type InstrumentModel } from '@core/guitar/instrument';
 import { EdgeTracker } from './edgeTracker';
 import { multiply, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
+import { AutoLocker, type AutoLockStatus } from './autoLock';
 import { snapLock, VERIFIED_CONFIDENCE } from './lock';
+import { detectNeck } from './neckNet';
+import type { Network } from './nn';
 import { TrackingSession, type Pose } from './tracking';
 
 export type InstrumentId = keyof typeof INSTRUMENTS;
@@ -32,6 +35,9 @@ export class VisionCore {
   private instrument: InstrumentId = 'steelAcoustic';
   /** Processing px per video px of the frames being tracked. */
   private scale = 1;
+  private net: Network | null = null;
+  private auto: AutoLocker | null = null;
+  private autoInstrument: InstrumentId | null = null;
 
   get model(): InstrumentModel {
     return INSTRUMENTS[this.instrument];
@@ -81,6 +87,46 @@ export class VisionCore {
 
   stop(): void {
     this.session = null;
+    this.auto?.reset();
+  }
+
+  get tracking(): boolean {
+    return this.session !== null;
+  }
+
+  /** Give the core a NeckNet; automatic lock is available from then on. */
+  setNetwork(net: Network | null): void {
+    this.net = net;
+    this.auto = null;
+  }
+
+  /**
+   * Automatic lock on one frame (scaled by `scale`); the result's H is in video px. Null without a
+   * network.
+   */
+  autoLock(image: Image, tMs: number, scale: number): AutoLockStatus | null {
+    const net = this.net;
+    if (!net) return null;
+    if (!this.auto || this.autoInstrument !== this.instrument) {
+      this.auto = new AutoLocker(this.tracker(), (img) => detectNeck(net, img));
+      this.autoInstrument = this.instrument;
+    }
+    const status = this.auto.update(image, tMs);
+    const back = scaling(1 / scale);
+    return {
+      ...status,
+      H: status.H ? multiply(back, status.H) : null,
+      detection: status.detection
+        ? {
+            ...status.detection,
+            corners: status.detection.corners.map((p) => ({ x: p.x / scale, y: p.y / scale })),
+          }
+        : null,
+    };
+  }
+
+  resetAuto(): void {
+    this.auto?.reset();
   }
 
   /** Track one frame; returns the pose in video px, or null when not tracking. */

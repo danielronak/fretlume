@@ -454,6 +454,18 @@ export const en = {
   stageEnd: 'End',
   stageDotSize: 'Dot size',
   stageFlat: 'Diagram',
+  stageAutoLock: 'Lock automatically',
+  stageAutoUnavailable: 'Automatic lock is not available on this device; lock by hand instead.',
+  stageHintSearching: 'Looking for your guitar… show the whole neck, nut included.',
+  stageHintVerifying: 'Found it — hold still for a moment.',
+  stageHintDark: 'Too dark — turn on a light or face a window.',
+  stageHintCut: 'Part of the neck is cut off at the {side} — move back or turn the camera.',
+  stageHintHold: 'Hold still for a second.',
+  stageHintHand: 'Lift your fretting hand off the neck for a second.',
+  stageSideLeft: 'left',
+  stageSideRight: 'right',
+  stageSideTop: 'top',
+  stageSideBottom: 'bottom',
   // Field test and diagnostics (phase 3)
   fieldTitle: 'Field test',
   fieldLede:

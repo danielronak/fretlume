@@ -71,6 +71,7 @@ for (const [n, shot] of shots.entries()) {
   page.on('pageerror', (e) => errors.push(`${shot.clip}: ${e.message}`));
   const settings = {
     onboarded: true,
+    autoLock: false,
     theme: shot.theme ?? 'dark',
     guitar: shot.guitar ?? 'steel-acoustic',
     ...(shot.settings ?? {}),

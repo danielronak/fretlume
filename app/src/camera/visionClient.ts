@@ -4,7 +4,10 @@
  */
 import type { InstrumentId, LockReply } from '@vision/core';
 import type { Mat3, Pt } from '@vision/geometry';
-import type { PoseMessage, VisionReply, VisionRequest } from '@vision/messages';
+import type { AutoMessage, PoseMessage, VisionReply, VisionRequest } from '@vision/messages';
+
+/** File name (without extension) of the shipped NeckNet in public/models/. */
+export const NECKNET_MODEL = 'necknet-v1';
 import { TierController } from './tiers';
 
 type VideoWithFrames = HTMLVideoElement & {
@@ -32,6 +35,9 @@ export class VisionClient {
   private pendingLocks = new Map<number, (reply: LockReply & { ms: number }) => void>();
   private readonly poseListeners = new Set<(pose: PoseMessage) => void>();
   readonly tiers = new TierController();
+  private readonly autoListeners = new Set<(status: AutoMessage) => void>();
+  private autoReady: ((ok: boolean) => void) | null = null;
+  latestAuto: AutoMessage | null = null;
   latest: PoseMessage | null = null;
   lastError: string | null = null;
 
@@ -56,10 +62,38 @@ export class VisionClient {
       this.latest = message;
       this.tiers.report(message.ms);
       for (const l of this.poseListeners) l(message);
+    } else if (message.type === 'auto') {
+      this.busy = false;
+      this.latestAuto = message;
+      for (const l of this.autoListeners) l(message);
+    } else if (message.type === 'auto-ready') {
+      this.autoReady?.(message.ok);
+      this.autoReady = null;
+      if (!message.ok) this.lastError = message.message ?? 'model failed to load';
     } else {
       this.busy = false;
       this.lastError = message.message;
     }
+  }
+
+  onAuto(listener: (status: AutoMessage) => void): () => void {
+    this.autoListeners.add(listener);
+    return () => this.autoListeners.delete(listener);
+  }
+
+  /**
+   * Switch automatic lock on or off. On: the worker loads NeckNet from the app's own files (cached
+   * for offline use) and searches on every frame sent while not tracking. Resolves false if the model
+   * could not be loaded.
+   */
+  setAuto(on: boolean): Promise<boolean> {
+    const modelUrl = `${import.meta.env.BASE_URL}models/${NECKNET_MODEL}`;
+    const ready = on
+      ? new Promise<boolean>((resolve) => (this.autoReady = resolve))
+      : Promise.resolve(false);
+    this.post({ type: 'auto', on, modelUrl });
+    if (!on) this.latestAuto = null;
+    return ready;
   }
 
   onPose(listener: (pose: PoseMessage) => void): () => void {

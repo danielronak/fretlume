@@ -17,8 +17,9 @@ import { projectShape, type OverlayItem } from '@overlay/projection';
 import { Button, Slider, Toggle } from '@ui/index';
 import type { InstrumentId, LockReply } from '@vision/core';
 import { apply, type Mat3, type Pt } from '@vision/geometry';
-import { homographyFromTaps, shiftFrets, tapPointsMm } from '@vision/lock';
-import type { PoseMessage } from '@vision/messages';
+import { homographyFromTaps, shiftFrets, tapPointsMm, VERIFIED_CONFIDENCE } from '@vision/lock';
+import type { AutoMessage, PoseMessage } from '@vision/messages';
+import type { SearchHint } from '@vision/autoLock';
 import { readFrameStamp } from '@vision/stamp';
 import { diagnostics } from '@/diagnostics/recorder';
 import { buildDeck, type DeckEntry } from './deck';
@@ -126,6 +127,12 @@ export function StageScreen() {
   const [six, setSix] = useState(false);
   const [activeHandle, setActiveHandle] = useState<number | null>(null);
   const [lock, setLock] = useState<LockReply | null>(null);
+  const autoRef = useRef<AutoMessage | null>(null);
+  const [autoView, setAutoView] = useState<{ state: string; hint: SearchHint | null }>({
+    state: 'off',
+    hint: null,
+  });
+  const [autoAvailable, setAutoAvailable] = useState<boolean | null>(null);
   const [shift, setShift] = useState(0);
 
   const videoSize = { width: cam.width || 1280, height: cam.height || 720 };
@@ -146,6 +153,13 @@ export function StageScreen() {
             ? s
             : { state: pose.state, confidence: pose.confidence },
         );
+      });
+      clientRef.current.onAuto((a) => {
+        autoRef.current = a;
+        setAutoView((v) =>
+          v.state === a.state && v.hint === a.hint ? v : { state: a.state, hint: a.hint },
+        );
+        if (a.state === 'locked' && a.H) void onAutoLocked(a);
       });
     }
     return clientRef.current;
@@ -224,6 +238,53 @@ export function StageScreen() {
     },
     [model],
   );
+
+  /** An automatic lock: freeze that moment and ask the player to confirm, as after a manual snap. */
+  const onAutoLockedRef = useRef<(a: AutoMessage) => Promise<void>>(async () => undefined);
+  onAutoLockedRef.current = async (a: AutoMessage) => {
+    const video = videoRef.current;
+    if (phase !== 'framing' || !video || !a.H) return;
+    video.pause();
+    clientRef.current?.stop();
+    frozenRef.current?.bitmap.close();
+    frozenRef.current = { bitmap: await createImageBitmap(video), tMs: performance.now() };
+    frozenStampRef.current = debugEnabled() ? stampOf(frozenRef.current.bitmap) : null;
+    diagnostics.event(
+      performance.now(),
+      `auto-lock ${a.confidence.toFixed(2)} index ${a.indexSure}`,
+    );
+    setTaps(tapPointsMm(model, 4).map((p) => apply(a.H!, p.x, p.y)));
+    setLock({
+      H: a.H,
+      polarity: a.polarity,
+      confidence: a.confidence,
+      found: true,
+      verified: a.indexSure && a.confidence >= VERIFIED_CONFIDENCE,
+    });
+    setShift(0);
+    setPhase('confirm');
+  };
+  const onAutoLocked = (a: AutoMessage) => onAutoLockedRef.current(a);
+
+  // While framing with the camera on: stream frames to the worker, which looks for the neck.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (phase !== 'framing' || cam.status !== 'running' || !settings.autoLock || !video) {
+      if (phase === 'framing') setAutoView({ state: 'off', hint: null });
+      return;
+    }
+    const c = client();
+    let cancelled = false;
+    void c.setAuto(true).then((ok) => {
+      if (cancelled) return;
+      setAutoAvailable(ok);
+      if (ok) c.start(video);
+    });
+    return () => {
+      cancelled = true;
+      c.stop();
+    };
+  }, [phase, cam.status, settings.autoLock, client]);
 
   const toggleSix = (on: boolean) => {
     setSix(on);
@@ -364,7 +425,10 @@ export function StageScreen() {
       ctx.clearRect(0, 0, w, h);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       let items: OverlayItem[] = [];
-      if (phase === 'marking' && taps.length >= 4) {
+      const auto = autoRef.current;
+      if (phase === 'framing' && auto?.H && auto.state !== 'searching') {
+        drawGrid(ctx, view, auto.H, model, { numbers: true, color: '#9ad7ff' });
+      } else if (phase === 'marking' && taps.length >= 4) {
         try {
           drawGrid(ctx, view, homographyFromTaps(taps, model), model, {
             numbers: false,
@@ -590,7 +654,19 @@ export function StageScreen() {
         <div className="stage__panel">
           {phase === 'framing' ? (
             <>
-              <p>{t('stageFrame')}</p>
+              <p data-testid="stage-hint">
+                {settings.autoLock && autoAvailable !== false
+                  ? hintText(autoView, settings.mirrorView)
+                  : t('stageFrame')}
+              </p>
+              {autoAvailable === false && settings.autoLock ? (
+                <p className="stage__note">{t('stageAutoUnavailable')}</p>
+              ) : null}
+              <Toggle
+                label={t('stageAutoLock')}
+                checked={settings.autoLock}
+                onChange={(v) => update({ autoLock: v })}
+              />
               <div className="stage__actions">
                 <Button variant="primary" onClick={() => void freeze()} data-testid="stage-lock">
                   {t('stageLock')}
@@ -756,4 +832,32 @@ export function StageScreen() {
       ) : null}
     </section>
   );
+}
+
+/** The tip shown while looking for the neck (docs/specs/05-ux.md §3). Sides follow what the player sees. */
+function hintText(view: { state: string; hint: SearchHint | null }, mirror: boolean): string {
+  if (view.state === 'verifying') return t('stageHintVerifying');
+  const flip = (side: 'left' | 'right') => (mirror ? (side === 'left' ? 'right' : 'left') : side);
+  switch (view.hint) {
+    case 'too-dark':
+      return t('stageHintDark');
+    case 'cut-off-left':
+      return t('stageHintCut', {
+        side: t(flip('left') === 'left' ? 'stageSideLeft' : 'stageSideRight'),
+      });
+    case 'cut-off-right':
+      return t('stageHintCut', {
+        side: t(flip('right') === 'left' ? 'stageSideLeft' : 'stageSideRight'),
+      });
+    case 'cut-off-top':
+      return t('stageHintCut', { side: t('stageSideTop') });
+    case 'cut-off-bottom':
+      return t('stageHintCut', { side: t('stageSideBottom') });
+    case 'hold-still':
+      return t('stageHintHold');
+    case 'lift-hand':
+      return t('stageHintHand');
+    default:
+      return t('stageHintSearching');
+  }
 }

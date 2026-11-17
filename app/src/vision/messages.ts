@@ -1,6 +1,7 @@
 /** Messages between the page and the vision worker (docs/specs/01-vision.md §3). */
 import type { InstrumentId, LockReply } from './core';
 import type { Mat3, Pt } from './geometry';
+import type { AutoState, SearchHint } from './autoLock';
 import type { TrackState } from './tracking';
 
 export type VisionRequest =
@@ -17,7 +18,9 @@ export type VisionRequest =
       frame?: ImageBitmap;
     }
   | { type: 'frame'; frame: ImageBitmap; tMs: number; scale: number; debug: boolean }
-  | { type: 'stop' };
+  | { type: 'stop' }
+  /** Load NeckNet (from the app's own files) and search for the neck on frames while not tracking. */
+  | { type: 'auto'; on: boolean; modelUrl: string };
 
 export interface PoseMessage {
   type: 'pose';
@@ -35,7 +38,25 @@ export interface PoseMessage {
   stamp?: number;
 }
 
+export interface AutoMessage {
+  type: 'auto';
+  state: AutoState;
+  hint: SearchHint | null;
+  /** Board → video px while verifying or locked. */
+  H: Mat3 | null;
+  polarity: 'bright' | 'dark';
+  confidence: number;
+  indexSure: boolean;
+  presence: number;
+  profile: string | null;
+  corners: Pt[];
+  ms: number;
+  stamp?: number;
+}
+
 export type VisionReply =
   | ({ type: 'lock'; id: number; ms: number } & LockReply)
+  | AutoMessage
+  | { type: 'auto-ready'; ok: boolean; message?: string }
   | PoseMessage
   | { type: 'error'; message: string };

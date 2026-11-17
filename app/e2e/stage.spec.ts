@@ -158,7 +158,10 @@ async function sampleOverlay(page: Page, labels: Label[], samples: number) {
 const fraction = (xs: number[], ok: (x: number) => boolean) => xs.filter(ok).length / xs.length;
 
 test.describe('stage: lock on a still guitar @smoke', () => {
-  test.use({ fakeMedia: { video: 'clip-lock-easy.mjpeg', audio: 'tone-110hz.wav' } });
+  test.use({
+    fakeMedia: { video: 'clip-lock-easy.mjpeg', audio: 'tone-110hz.wav' },
+    seedSettings: { onboarded: true, autoLock: false },
+  });
 
   test('taps with ±6 px noise snap to a verified lock and the dots land on their cells', async ({
     mediaPage: page,
@@ -192,7 +195,7 @@ for (const [clip, guitar, item, stillUntil] of [
   test.describe(`stage: ${clip}`, () => {
     test.use({
       fakeMedia: { video: `clip-${clip}.mjpeg`, audio: 'tone-110hz.wav' },
-      seedSettings: { onboarded: true, guitar },
+      seedSettings: { onboarded: true, guitar, autoLock: false },
     });
 
     test(`locks and tracks on the ${clip} clip`, async ({ mediaPage: page }) => {
@@ -211,7 +214,10 @@ for (const [clip, guitar, item, stillUntil] of [
 }
 
 test.describe('stage: no guitar in view', () => {
-  test.use({ fakeMedia: { video: 'clip-no-guitar.mjpeg', audio: 'tone-110hz.wav' } });
+  test.use({
+    fakeMedia: { video: 'clip-no-guitar.mjpeg', audio: 'tone-110hz.wav' },
+    seedSettings: { onboarded: true, autoLock: false },
+  });
 
   test('a lock on an empty scene is never shown as verified', async ({ mediaPage: page }) => {
     await openStage(page);

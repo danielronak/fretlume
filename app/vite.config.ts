@@ -54,7 +54,7 @@ export default defineConfig({
       },
       workbox: {
         // Everything the app needs is precached, so it runs with no network after the first visit.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm,onnx,task,json}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,wasm,onnx,task,json,bin}'],
         maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
         clientsClaim: true,
         skipWaiting: false,

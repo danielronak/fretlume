@@ -71,13 +71,38 @@ function conv(x: Tensor, op: Extract<Op, { op: 'conv' }>, weights: Float32Array)
   const src = x.data;
   const xhw = x.h * x.w;
   if (k === 1 && groups === 1 && stride === 1) {
-    // Pointwise: out[co] = b[co] + Σ w[co,ci] · in[ci], vectorised along the pixels.
-    for (let co = 0; co < cout; co++) {
+    // Pointwise: out[co] = b[co] + Σ w[co,ci] · in[ci]. Four output channels per pass, so each input
+    // value is loaded once for four multiply-adds.
+    let co = 0;
+    for (; co + 4 <= cout; co += 4) {
+      const o0 = co * hw;
+      const o1 = o0 + hw;
+      const o2 = o1 + hw;
+      const o3 = o2 + hw;
+      out.fill(weights[op.b + co]!, o0, o1);
+      out.fill(weights[op.b + co + 1]!, o1, o2);
+      out.fill(weights[op.b + co + 2]!, o2, o3);
+      out.fill(weights[op.b + co + 3]!, o3, o3 + hw);
+      for (let ci = 0; ci < cin; ci++) {
+        const w0 = weights[op.w + co * cin + ci]!;
+        const w1 = weights[op.w + (co + 1) * cin + ci]!;
+        const w2 = weights[op.w + (co + 2) * cin + ci]!;
+        const w3 = weights[op.w + (co + 3) * cin + ci]!;
+        const s = ci * xhw;
+        for (let p = 0; p < hw; p++) {
+          const v = src[s + p]!;
+          out[o0 + p]! += w0 * v;
+          out[o1 + p]! += w1 * v;
+          out[o2 + p]! += w2 * v;
+          out[o3 + p]! += w3 * v;
+        }
+      }
+    }
+    for (; co < cout; co++) {
       const o = co * hw;
       out.fill(weights[op.b + co]!, o, o + hw);
       for (let ci = 0; ci < cin; ci++) {
         const wv = weights[op.w + co * cin + ci]!;
-        if (wv === 0) continue;
         const s = ci * xhw;
         for (let p = 0; p < hw; p++) out[o + p]! += wv * src[s + p]!;
       }

@@ -161,3 +161,7 @@
     margin: 0 auto;
   }
 }
+.stage__note {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}

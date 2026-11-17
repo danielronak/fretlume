@@ -4,6 +4,7 @@
  * handed to VisionCore. Camera frames never leave this device and are not kept.
  */
 import { VisionCore } from './core';
+import { Network, type Manifest } from './nn';
 import type { Image } from './image';
 import type { VisionReply, VisionRequest } from './messages';
 import { readFrameStamp } from './stamp';
@@ -11,6 +12,15 @@ import { readFrameStamp } from './stamp';
 declare const self: DedicatedWorkerGlobalScope;
 
 const core = new VisionCore();
+let autoOn = false;
+
+async function loadNetwork(baseUrl: string): Promise<Network> {
+  const [manifest, bin] = await Promise.all([
+    fetch(`${baseUrl}.json`).then((r) => r.json() as Promise<Manifest>),
+    fetch(`${baseUrl}.bin`).then((r) => r.arrayBuffer()),
+  ]);
+  return Network.fromBuffers(manifest, bin);
+}
 let canvas: OffscreenCanvas | null = null;
 let context: OffscreenCanvasRenderingContext2D | null = null;
 
@@ -52,6 +62,26 @@ self.onmessage = (event: MessageEvent<VisionRequest>) => {
         break;
       case 'frame': {
         const image = pixels(message.frame);
+        if (!core.tracking && autoOn) {
+          const status = core.autoLock(image, message.tMs, message.scale);
+          if (status) {
+            reply({
+              type: 'auto',
+              state: status.state,
+              hint: status.hint,
+              H: status.H,
+              polarity: status.polarity,
+              confidence: status.confidence,
+              indexSure: status.indexSure,
+              presence: status.detection?.presence ?? 0,
+              profile: status.detection?.profile.id ?? null,
+              corners: status.detection?.corners ?? [],
+              ms: performance.now() - started,
+              ...(message.debug ? { stamp: readFrameStamp(image, message.scale) } : {}),
+            });
+            break;
+          }
+        }
         const pose = core.track(image, message.tMs, message.scale);
         reply({
           type: 'pose',
@@ -69,6 +99,20 @@ self.onmessage = (event: MessageEvent<VisionRequest>) => {
       }
       case 'stop':
         core.stop();
+        break;
+      case 'auto':
+        autoOn = message.on;
+        core.resetAuto();
+        if (message.on)
+          loadNetwork(message.modelUrl)
+            .then((net) => {
+              core.setNetwork(net);
+              reply({ type: 'auto-ready', ok: true });
+            })
+            .catch((error: unknown) => {
+              autoOn = false;
+              reply({ type: 'auto-ready', ok: false, message: String(error) });
+            });
         break;
     }
   } catch (error) {

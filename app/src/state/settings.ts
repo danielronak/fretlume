@@ -46,6 +46,8 @@ export interface Settings {
   lockTaps: number[];
   /** Stage deck auto-advance in seconds; 0 = off. */
   stageAutoSeconds: number;
+  /** Look for the neck automatically on the Stage (Phase 4). */
+  autoLock: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -70,6 +72,7 @@ export const DEFAULT_SETTINGS: Settings = {
   flipStrings: false,
   lockTaps: [],
   stageAutoSeconds: 0,
+  autoLock: true,
 };
 
 export const TIME_SIGNATURES = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '12/8'] as const;
