@@ -41,7 +41,18 @@ test.describe('offline and private @smoke', () => {
 
     await page.goto('/');
     await waitForServiceWorker(page);
-    for (const hash of ['#/library', '#/stage', '#/tools', '#/dev/kitchen-sink', '#/settings']) {
+    for (const hash of [
+      '#/library',
+      '#/library/scale/A/minor-pentatonic',
+      '#/stage',
+      '#/tools',
+      '#/tools/tuner',
+      '#/tools/metronome',
+      '#/help',
+      '#/help/diagrams',
+      '#/dev/kitchen-sink',
+      '#/settings',
+    ]) {
       await page.goto(`/${hash}`);
       await expect(page.locator('h1')).toBeVisible();
     }

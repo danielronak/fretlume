@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { APP_NAME, APP_VERSION } from '@/config';
 import {
   currentSettings,
@@ -305,6 +305,9 @@ export function Settings() {
         </p>
         <p className="settings__body">{t('settingsLicence')}</p>
         <div className="row">
+          <Link className="btn btn--secondary" to="/help">
+            {t('navHelp')}
+          </Link>
           <Button
             variant="ghost"
             onClick={() => {

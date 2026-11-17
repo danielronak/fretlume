@@ -23,7 +23,7 @@ library, tune the guitar, use a metronome, keep favourites, back up data.
 - [x] **2.6 Plucked-string synth + metronome.** Karplus–Strong worklet (reference tones; "hear this
       shape" button on library items — strum/arpeggiate the marks); look-ahead scheduler; metronome
       (tempo, time signature, subdivision, accent, tap tempo, count-in).
-- [ ] **2.7 Help.** "How it works" guide pages with our own illustrations (SVG drawn in code).
+- [x] **2.7 Help.** "How it works" guide pages with our own illustrations (SVG drawn in code).
 - [ ] **2.8 Release.** Tag `v0.1`, deploy, update `STATE.md`.
 
 ## Acceptance (exit gate)

@@ -19,7 +19,8 @@ export type IconName =
   | 'search'
   | 'play'
   | 'trash'
-  | 'edit';
+  | 'edit'
+  | 'help';
 
 const paths: Record<IconName, ReactNode> = {
   // A sun rising over a horizon line.
@@ -98,6 +99,13 @@ const paths: Record<IconName, ReactNode> = {
   play: <path d="M8 5v14l11-7Z" />,
   trash: <path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" />,
   edit: <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />,
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3" />
+      <path d="M12 17h.01" />
+    </>
+  ),
 };
 
 export function Icon({ name, size = 22 }: { name: IconName; size?: number }) {

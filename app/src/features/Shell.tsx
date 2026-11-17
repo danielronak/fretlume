@@ -37,6 +37,14 @@ export function Shell() {
         </ul>
         <div className="shell__footer">
           <NavLink
+            to="/help"
+            className="shell__link shell__link--icon"
+            aria-label={t('navHelp')}
+            title={t('navHelp')}
+          >
+            <Icon name="help" />
+          </NavLink>
+          <NavLink
             to={settingsDestination.path}
             className="shell__link shell__link--icon"
             aria-label={t(settingsDestination.nav)}
@@ -56,6 +64,9 @@ export function Shell() {
       <header className="shell__topbar">
         <span className="shell__wordmark">{APP_NAME}</span>
         <span className="shell__topbar-actions">
+          <NavLink to="/help" className="icon-btn" aria-label={t('navHelp')}>
+            <Icon name="help" />
+          </NavLink>
           <NavLink
             to={settingsDestination.path}
             className="icon-btn"
