@@ -8,6 +8,7 @@ import { destinations } from '@features/routes';
 import { Shell } from '@features/Shell';
 import { Settings } from '@features/settings/Settings';
 import { LibraryScreen, SavedScreen } from '@features/library/LibraryScreen';
+import { Tools } from '@features/tools/Tools';
 import { Welcome } from '@features/welcome/Welcome';
 import { ToastProvider } from '@ui/index';
 import { useTheme } from '@ui/useTheme';
@@ -24,9 +25,10 @@ const router = createHashRouter([
       { path: 'settings', element: <Settings /> },
       { path: 'library', element: <Navigate to="/library/chord/C/maj" replace /> },
       { path: 'library/saved', element: <SavedScreen /> },
+      { path: 'tools', element: <Tools /> },
       { path: 'library/:kind/:root/:type', element: <LibraryScreen /> },
       ...destinations
-        .filter((destination) => destination.path !== '/library')
+        .filter((destination) => !['/library', '/tools'].includes(destination.path))
         .map((destination) => ({
           path: destination.path.slice(1),
           element: <PlaceholderScreen destination={destination} />,

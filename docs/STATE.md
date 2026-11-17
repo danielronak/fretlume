@@ -4,11 +4,11 @@
 
 ## Now
 - **Current phase:** 2 — App shell, Library, Tuner (`docs/phases/phase-02-shell-library-tuner.md`)
-- **Next task:** 2.1 (settings store, first-run welcome), then 2.2 storage
+- **Done in this phase:** 2.1 settings + welcome, 2.2 storage + backups, 2.3 library screens, 2.4 audio core
+- **Next task:** 2.5 (MPM pitch detection + tuner screen, gate G6.1 through the fake microphone)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
-- **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`). Created
-  2026-11-16; the script was run by hand but is unproven until a fresh session starts on it.
-- **Last updated:** 2026-11-16 (Phase 1 complete)
+- **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
+- **Last updated:** 2026-11-17
 
 ## Waiting on the owner (does not block building)
 - **Switch on GitHub Pages (one click):** repository Settings → Pages → Source = **GitHub Actions**, then
@@ -18,7 +18,7 @@
   `https://danielronak.github.io/fretlume/`.
 
 ## CI status
-CI on `main` is green as of commit `7c365a2` (checked with `gh run list`).
+Check with `gh run list --repo danielronak/fretlume --limit 3`; every push so far has gone green.
 
 ## How to release (DECISIONS D-008)
 Bump `version` in the root `package.json` (and `APP_VERSION` in `app/src/config.ts`) in a commit on `main`.
@@ -44,7 +44,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 |---|---|---|---|
 | 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally and in CI (12 unit, 8 browser tests); first Pages deploy waits for the owner to enable Pages |
 | 1 Theory engine | **done** 2026-11-16 | — | 218 tests; core line coverage 99.2 %; fingering agreement 91.3 %; `docs/benchmarks/catalogue.json` |
-| 2 Shell, Library, Tuner | not started | v0.1 | |
+| 2 Shell, Library, Tuner | in progress (2.1–2.4 done) | v0.1 | |
 | 3 Camera + manual lock | not started | v0.2 🎸 | |
 | 4 Synthetic + auto-lock | not started | v0.3 🎸 | |
 | 5 Runs, playground, tabs (parity) | not started | v0.4 | |
@@ -55,6 +55,15 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 10 Jam tools | not started | v0.9 | |
 | 11 Perf / a11y / mobile | not started | v0.10 🎸 | |
 | 12 Release | not started | v1.0 | |
+
+## Done in Phase 2 so far (2026-11-17)
+- Settings store (`app/src/state/settings.ts`, localStorage, D-012) and three-step welcome.
+- Dexie database (`app/src/storage/db.ts`), favourites/folders, zod-validated backup files, Settings screen.
+- Library screens (`app/src/features/library/`): tabs, pickers, chips, voicing cards, keys, related links,
+  favourites/folders/Saved, search, deep links `/#/library/<kind>/<root>/<type>` (roots: C, Fs, Bb …).
+- Audio core (`app/src/audio/`): `audioEngine` (one AudioContext, unlock on gesture, suspend when hidden),
+  capture worklet → `microphone` manager (ring buffer, blocks, permission states, devices, unplug), input
+  meter on the Tools screen. Tuner (2.5) reads `microphone.ring` / `microphone.onBlock`.
 
 ## Done in Phase 1 (2026-11-16)
 - `app/src/core/theory`: pitch/spelling, degrees, tunings + capo; 26 chord qualities, 80 authored voicings,

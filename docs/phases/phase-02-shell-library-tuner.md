@@ -6,16 +6,16 @@ library, tune the guitar, use a metronome, keep favourites, back up data.
 **Sessions:** 2–3.
 
 ## Tasks
-- [ ] **2.1 Shell.** Responsive navigation (rail / bottom bar), routing, theme switch, settings store
+- [x] **2.1 Shell.** Responsive navigation (rail / bottom bar), routing, theme switch, settings store
       (Zustand + persisted), first-run welcome (handedness, guitar type) — 3 screens, skippable.
-- [ ] **2.2 Storage.** Dexie schema v1: `settings`, `favourites`, `folders`, `runs`, `tabs`, `events`,
+- [x] **2.2 Storage.** Dexie schema v1: `settings`, `favourites`, `folders`, `runs`, `tabs`, `events`,
       `skills`, `profiles`; migration test; **backup export/import** (versioned JSON, validated with a
       schema, round-trip e2e).
-- [ ] **2.3 Library screens.** Tabs Chords / Scales / Triads / Keys / Arpeggios; root and type pickers;
+- [x] **2.3 Library screens.** Tabs Chords / Scales / Triads / Keys / Arpeggios; root and type pickers;
       filter chips (CAGED shape, string set, inversion, position system); label and colour toggles;
       full-neck diagram + card list; item detail (notes, intervals, formula, related items); favourites and
       folders; search box wired to the index with instant results; deep links (`/library/chord/C/maj`).
-- [ ] **2.4 Audio core.** AudioContext lifecycle (user-gesture unlock, suspend on hide), capture worklet,
+- [x] **2.4 Audio core.** AudioContext lifecycle (user-gesture unlock, suspend on hide), capture worklet,
       ring buffer, device picker, input meter, permission UX.
 - [ ] **2.5 Pitch + tuner.** MPM in TS with unit tests on synthesized tones (generator in `tools/`),
       tuner screen (our own layout: six string pills with reference-tone buttons, large note, ±50-cent

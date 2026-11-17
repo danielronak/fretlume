@@ -86,3 +86,12 @@ synchronously before the first paint and the first diagram, and IndexedDB is asy
 sanitised on load). Favourites, folders, runs, tabs, events, skills and profiles live in Dexie. Backups
 contain both. The Dexie schema has no `settings` table.
 **Alternatives.** Dexie-only with an async startup gate (a blank first frame or a theme flash).
+
+## D-013 · 2026-11-17 · Audio capture graph
+**Context.** An AudioWorkletNode that is not connected towards the destination may not be processed
+by every browser, but the microphone must never be heard through the speakers.
+**Decision.** source → capture worklet (mono mix, 1024-sample blocks, RMS and peak) → gain 0 → destination.
+The worklet writes only zeros to its output. The worklet is bundled with Vite's `?worker&url` import so it is
+precached like the rest of the app. Echo cancellation, noise suppression and auto gain are requested off;
+when the browser reports any still on, the panel says so (fallback ladder, phase 2).
+**Alternatives.** A zero-output worklet (not processed reliably everywhere); ScriptProcessorNode (deprecated).
