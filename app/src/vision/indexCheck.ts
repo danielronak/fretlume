@@ -62,7 +62,7 @@ function spaceDeviation(image: Image, H: Mat3, model: InstrumentModel, maxFret: 
 }
 
 /** Strength of a fret-wire-like ridge across the board at x (best within ±1.5 mm). */
-function ridgeAt(image: Image, H: Mat3, model: InstrumentModel, x: number): number {
+export function ridgeAt(image: Image, H: Mat3, model: InstrumentModel, x: number): number {
   const hw = halfWidth(model, Math.max(0, x));
   let best = 0;
   for (let dx = -1.5; dx <= 1.5; dx += 0.5) {
@@ -163,4 +163,22 @@ export function verifyIndex(
     scores,
     inlaysSeen,
   };
+}
+
+/**
+ * Alias check: a fit whose fret n lies on the real fret 2n (or similar) puts every fitted line on a
+ * wire, but then real wires also show halfway between fitted frets. Returns the ridge strength midway
+ * between frets relative to at the frets (plain fret spaces only, so inlays do not count): ≈ 0 for a
+ * right fit, high for an alias.
+ */
+export function midwayRidgeRatio(image: Image, H: Mat3, model: InstrumentModel): number {
+  const atFrets: number[] = [];
+  const midway: number[] = [];
+  for (let n = 1; n <= 12; n++) {
+    atFrets.push(ridgeAt(image, H, model, fretX(model, n)));
+    if (!INLAY_SPACES.has(n)) midway.push(ridgeAt(image, H, model, fretX(model, n - 0.5)));
+  }
+  const f = median(atFrets);
+  // No wires seen at all is no evidence of an alias (the fit's own confidence handles that case).
+  return f > 1e-6 ? median(midway) / f : 0;
 }

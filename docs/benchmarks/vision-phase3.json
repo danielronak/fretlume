@@ -189,5 +189,15 @@
     "jitterRmsPx": 1.047,
     "worstClipRmsPx": 3.291,
     "medianBiasPx": 0.79
+  },
+  "G43": {
+    "gate": "≥ 95 % correct, ≤ 1 % wrong index, ≤ 0.5 % false lock without a guitar (single-frame proxy)",
+    "frames": 200,
+    "locked": 0.96,
+    "correct": 0.85,
+    "wrongIndex": 0.03,
+    "negatives": 200,
+    "falseLock": 0,
+    "msPerAttempt": 860
   }
 }

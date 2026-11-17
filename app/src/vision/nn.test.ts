@@ -59,3 +59,31 @@ describe('nn runtime', () => {
     });
   });
 });
+
+describe('shipped NeckNet', () => {
+  it('runs the shipped weights like PyTorch did when they were exported', () => {
+    const dir = resolve(__dirname, '../../public/models');
+    const manifest = JSON.parse(readFileSync(resolve(dir, 'necknet-v1.json'), 'utf8')) as Manifest;
+    const bin = readFileSync(resolve(dir, 'necknet-v1.bin'));
+    const net = Network.fromBuffers(
+      manifest,
+      bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength),
+    );
+    const parity = JSON.parse(readFileSync(fixture('necknet-v1.parity.json'), 'utf8')) as {
+      globals: number[];
+      headPeak: number[];
+    };
+    const out = net.run(parityInput(...manifest.input));
+    const tol = (v: number) => 2e-2 + 2e-2 * Math.abs(v);
+    parity.globals.forEach((v, i) =>
+      expect(Math.abs(out.globals!.data[i]! - v)).toBeLessThan(tol(v)),
+    );
+    const head = out.head!;
+    parity.headPeak.forEach((v, ch) => {
+      let peak = -Infinity;
+      for (let i = 0; i < head.h * head.w; i++)
+        peak = Math.max(peak, head.data[ch * head.h * head.w + i]!);
+      expect(Math.abs(peak - v)).toBeLessThan(tol(v));
+    });
+  });
+});

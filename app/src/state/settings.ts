@@ -72,7 +72,8 @@ export const DEFAULT_SETTINGS: Settings = {
   flipStrings: false,
   lockTaps: [],
   stageAutoSeconds: 0,
-  autoLock: true,
+  // Off until the real-photo gate (G4.4) is measured: auto-lock is beta (DECISIONS D-021).
+  autoLock: false,
 };
 
 export const TIME_SIGNATURES = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '12/8'] as const;

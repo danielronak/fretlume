@@ -454,7 +454,7 @@ export const en = {
   stageEnd: 'End',
   stageDotSize: 'Dot size',
   stageFlat: 'Diagram',
-  stageAutoLock: 'Lock automatically',
+  stageAutoLock: 'Lock automatically (beta)',
   stageProfileSuggest: 'This looks like {type}.',
   stageProfileSwitch: 'Switch guitar type',
   stageProfileSteel: 'a steel-string acoustic',

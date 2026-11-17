@@ -10,7 +10,10 @@ import { luma } from './autoLockStats';
 import type { EdgeTracker } from './edgeTracker';
 import { apply, controlPointsPx, invert, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
-import { verifyIndex } from './indexCheck';
+import { midwayRidgeRatio, verifyIndex } from './indexCheck';
+
+/** Above this midway/fret ridge ratio a fit is taken for an alias (calibrated on held-out frames). */
+const ALIAS_RATIO = 0.6;
 import { fullScore, homographyFromTaps, shiftFrets, snapLock } from './lock';
 import { fretAtX, fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
 import type { NeckDetection } from './neckNet';
@@ -53,7 +56,8 @@ export interface AutoLockStatus {
 const DEFAULTS = {
   detectEverySec: 0.25,
   minPresence: 0.6,
-  minConfidence: 0.45,
+  // Calibrated on held-out frames (G4.3): below this, fits were mostly wrong-scale (DECISIONS D-021).
+  minConfidence: 0.62,
   verifyFrames: 5,
   maxMove: 0.6,
 };
@@ -122,7 +126,9 @@ export class AutoLocker {
           taps,
           i === 0 || !best ? {} : { polarity: best.polarity },
         );
-        const confidence = out.inliers > 0 ? out.score / fullScore(model) : 0;
+        let confidence = out.inliers > 0 ? out.score / fullScore(model) : 0;
+        // A fit on every second wire (or similar alias) also shows wires midway between its frets.
+        if (confidence > 0 && midwayRidgeRatio(image, out.H, model) > ALIAS_RATIO) confidence = 0;
         if (!best || confidence > best.confidence)
           best = { H: out.H, polarity: out.polarity, confidence };
       } catch {
@@ -135,7 +141,10 @@ export class AutoLocker {
     // which one (when the network is sure of it), then the inlays and nut check the last ±2.
     const anchored = anchorAtNut(best.H, det, model);
     const verdict = verifyIndex(image, anchored, model);
-    const H = verdict.shift ? shiftFrets(anchored, model, verdict.shift) : anchored;
+    // A nut NeckNet saw clearly outweighs a weak inlay/nut verdict.
+    const nutSeen = Math.min(det.cornerScores[0] ?? 0, det.cornerScores[1] ?? 0) >= 0.8;
+    const shift = nutSeen && verdict.margin < 0.5 ? 0 : verdict.shift;
+    const H = shift ? shiftFrets(anchored, model, shift) : anchored;
     this.verified = 0;
     return {
       state: 'verifying',
@@ -143,7 +152,7 @@ export class AutoLocker {
       H,
       polarity: best.polarity,
       confidence: best.confidence,
-      indexSure: verdict.margin > 0.15,
+      indexSure: nutSeen ? shift === 0 || verdict.margin >= 0.5 : verdict.margin > 0.15,
       detection: det,
     };
   }
