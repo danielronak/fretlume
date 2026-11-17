@@ -136,3 +136,20 @@ Following step 3, the remainder is carried to Phase 4 (learned strip model). The
 confirm step, so the player checks the grid; "verified" is shown only at confidence ≥ 0.9.
 **Alternatives.** More hand-tuning against renderer details (risk of fitting the generator, not guitars);
 multi-start (the score does not separate right from wrong fits, measured on 39 failures: 20 vs 19).
+
+## D-017 · 2026-11-17 · Tracking loop: anchored to the confirmed lock, 3 rounds, faster filter
+**Context.** First G3.3 run (60 synthetic clips, moving neck, hand): 81.5 % frames good. On light boards the
+tracker settles a few mm away from the true pose; the One-Euro filter (β = 0.02) lagged behind a moving neck,
+causing most remaining across-neck failures (202 of 275 bad frames vanished with the filter off).
+**Decision.** (1) At lock, the tracker measures the lock frame once and keeps the board-space map from its
+own fit to the confirmed pose; every later measurement is corrected by it, so the confirmed pose (including
+corner adjustments by the player) is what stays on the neck. (2) Three refinement rounds per frame
+(0.29 M pixel samples, budget 2.0 M). (3) One-Euro min cutoff 1.5 Hz, β = 0.3.
+**Measured.** G3.3: 98.2 % frames good (pass), 1 of 60 clips slips the fret index (gate 0, fail: maple board,
+dark wires, a hand whose fingers look like wires; the pose drifts along the neck over ~10 frames). G3.4:
+0.93 px RMS (gate 0.7, fail; one clip's nut, near the image edge, scatters ±6 px along the neck; 10 of 12
+clips are below 0.7). G3.5: 0.29 M samples per frame (pass).
+**Tried and dropped.** A slower speed estimate (d-cutoff 0.3 Hz): jitter 0.83 px but G3.3 falls to 97.7 %.
+The prediction as a soft prior in the fit: jitter got worse (1.2 px) because the prediction carries noise.
+**Next.** The fallback ladder's remaining steps (weight the unoccluded half of each fret; hold-and-fade) and
+an index guard against slow along-neck drift; real-camera field data will show whether nut jitter matters.

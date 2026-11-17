@@ -8,7 +8,9 @@ import { describe, expect, it } from 'vitest';
 import { EdgeTracker, isSuccess, trackingError } from '@vision/edgeTracker';
 import { apply, type Mat3 } from '@vision/geometry';
 import { snapLock, tapPointsMm } from '@vision/lock';
-import { ensureFrames, modelFor, readFrame, readLabels, ROOT, synth } from './data';
+import { ensureClips, ensureFrames, modelFor, readFrame, readLabels, ROOT, synth } from './data';
+import { TrackingSession } from '@vision/tracking';
+import { controlPointsPx } from '@vision/geometry';
 
 const OUT = resolve(ROOT, 'docs/benchmarks/vision-phase3.json');
 const results: Record<string, unknown> = existsSync(OUT)
@@ -188,4 +190,131 @@ describe('G3.2: lock succeeds from noisy taps (held-out frames)', () => {
     // fallback ladder step taken (see docs/phases/phase-03-camera-manual-lock.md).
     expect(cases.length).toBe(4);
   });
+});
+
+const INSTRUMENT_IDS = ['steel-acoustic', 'electric', 'classical'] as const;
+const BOARDS = ['rosewood', 'ebony', 'maple', 'pau-ferro', 'richlite'] as const;
+const FPS_MS = 1000 / 30;
+
+describe('G3.3–G3.5: tracking after a lock', () => {
+  it('60 moving clips with a hand: frames good, index slips, cost', async () => {
+    const specs = Array.from({ length: 60 }, (_, i) => ({
+      name: `g33-${i}`,
+      args: [
+        '--kind',
+        i % 2 ? 'track-motion' : 'track-hand',
+        '--frames',
+        '40',
+        '--seed',
+        String(3300 + i),
+        '--instrument',
+        INSTRUMENT_IDS[i % 3]!,
+        '--board',
+        BOARDS[i % 5]!,
+      ],
+    }));
+    const dirs = await ensureClips(specs);
+    let frames = 0;
+    let good = 0;
+    let slips = 0;
+    let maxSamples = 0;
+    let sumSamples = 0;
+    const perClip: { clip: string; good: number; frames: number; slipped: boolean }[] = [];
+    const started = performance.now();
+    dirs.forEach((dir, c) => {
+      const labels = readLabels(dir);
+      const model = modelFor(labels[0]!);
+      const session = new TrackingSession(new EdgeTracker(model));
+      session.lock(labels[0]!.H!, labels[0]!.polarity ?? 'bright', 0, readFrame(dir, labels[0]!));
+      let clipGood = 0;
+      let slipped = false;
+      for (const label of labels.slice(1)) {
+        const pose = session.update(readFrame(dir, label), label.index * FPS_MS)!;
+        const e = trackingError(pose.H, label.H!, model);
+        frames++;
+        if (isSuccess(e)) clipGood++;
+        if (e.along > 0.75) slipped = true;
+        maxSamples = Math.max(maxSamples, session.lastSamples);
+        sumSamples += session.lastSamples;
+      }
+      good += clipGood;
+      if (slipped) slips++;
+      perClip.push({ clip: specs[c]!.name, good: clipGood, frames: labels.length - 1, slipped });
+    });
+    results.G33 = {
+      gate: '≥ 98 % of frames good (same criterion as G3.2); 0 index slips',
+      clips: dirs.length,
+      frames,
+      goodFrames: Number((good / frames).toFixed(4)),
+      clipsWithSlip: slips,
+      msPerFrame: Number(((performance.now() - started) / frames).toFixed(1)),
+      worstClips: perClip.sort((a, b) => a.good / a.frames - b.good / b.frames).slice(0, 5),
+    };
+    results.G35 = {
+      gate: '≤ 2.0 M image pixel samples per frame in tracking mode',
+      meanSamples: Math.round(sumSamples / frames),
+      maxSamples,
+    };
+    save();
+    expect(maxSamples).toBeLessThanOrEqual(2_000_000);
+  }, 3_600_000);
+
+  it('jitter on static clips with sensor noise (G3.4)', async () => {
+    const specs = Array.from({ length: 12 }, (_, i) => ({
+      name: `g34-${i}`,
+      args: [
+        '--kind',
+        'static-noise',
+        '--frames',
+        '40',
+        '--seed',
+        String(3400 + i),
+        '--instrument',
+        INSTRUMENT_IDS[i % 3]!,
+        '--board',
+        BOARDS[i % 5]!,
+      ],
+    }));
+    const dirs = await ensureClips(specs);
+    const perClip = dirs.map((dir) => {
+      const labels = readLabels(dir);
+      const model = modelFor(labels[0]!);
+      const session = new TrackingSession(new EdgeTracker(model));
+      session.lock(labels[0]!.H!, labels[0]!.polarity ?? 'bright', 0, readFrame(dir, labels[0]!));
+      const points: { x: number; y: number }[][] = [];
+      for (const label of labels.slice(1)) {
+        const pose = session.update(readFrame(dir, label), label.index * FPS_MS)!;
+        if (label.index >= 10) points.push(pose.controlPoints);
+      }
+      // RMS distance of each published control point from its own mean over the clip.
+      let sq = 0;
+      let n = 0;
+      for (let k = 0; k < 4; k++) {
+        const mx = points.reduce((a, p) => a + p[k]!.x, 0) / points.length;
+        const my = points.reduce((a, p) => a + p[k]!.y, 0) / points.length;
+        for (const p of points) {
+          sq += (p[k]!.x - mx) ** 2 + (p[k]!.y - my) ** 2;
+          n++;
+        }
+      }
+      const truth = controlPointsPx(labels[0]!.H!, model);
+      const bias = Math.max(
+        ...truth.map((t, k) => {
+          const last = points[points.length - 1]![k]!;
+          return Math.hypot(last.x - t.x, last.y - t.y);
+        }),
+      );
+      return { rmsPx: Math.sqrt(sq / n), biasPx: bias };
+    });
+    const rms = Math.sqrt(perClip.reduce((a, c) => a + c.rmsPx ** 2, 0) / perClip.length);
+    results.G34 = {
+      gate: 'published control points jitter ≤ 0.7 px RMS on static clips',
+      clips: dirs.length,
+      jitterRmsPx: Number(rms.toFixed(3)),
+      worstClipRmsPx: Number(Math.max(...perClip.map((c) => c.rmsPx)).toFixed(3)),
+      medianBiasPx: Number(median(perClip.map((c) => c.biasPx)).toFixed(2)),
+    };
+    save();
+    expect(perClip.length).toBe(12);
+  }, 3_600_000);
 });

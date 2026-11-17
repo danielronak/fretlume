@@ -20,10 +20,10 @@ feature with an always-works lock.
       `proto.py` on 200 seeded frames exported from Python (gate **G3.1**).
 - [x] **3.4 Tracker improvements:** half-resolution pyramid pass, string-ridge across cue, wire polarity
       detection, out-of-frame masking, multi-start wrapper, confidence calibration (gate **G3.2**).
-- [ ] **3.5 Camera pipeline:** device selection, 1280×720 preferred, `requestVideoFrameCallback`,
+- [x] **3.5 Camera pipeline:** device selection, 1280×720 preferred, `requestVideoFrameCallback`,
       frame → Worker (transfer `VideoFrame`/`ImageBitmap`), grayscale extraction, pose messages back with
       capture timestamps; quality tiers (process at 720p / 540p / 360p-strip-only).
-- [ ] **3.6 Tracking loop + filter:** state machine (spec §3) for manual lock; constant-velocity
+- [x] **3.6 Tracking loop + filter:** state machine (spec §3) for manual lock; constant-velocity
       prediction; One-Euro filter on control points; RECOVERING with wide ranges; index never changes
       (gates **G3.3**, **G3.4**, **G3.5**).
 - [ ] **3.7 Manual lock UI:** freeze frame, four handles with loupe, live grid preview, snap with
@@ -45,6 +45,9 @@ feature with an always-works lock.
 | Gate | Result |
 |---|---|
 | G3.1 TS vs Python reference | Pass on the current frames: success 27.5/30.5 % (σ 2), 11.5/13 % (σ 5), 6/6 % (σ 8); case agreement ≥ 96 %; median along ≤ 0.015 fret. |
+| G3.3 tracking, 60 clips with motion and a hand | Frames good 98.2 % (pass); 1 clip slips the index (gate 0, **fail**; D-017). |
+| G3.4 jitter, 12 static clips | 0.93 px RMS (gate 0.7, **fail**; one clip's nut; D-017). |
+| G3.5 tracker cost | 0.29 M pixel samples per frame (budget 2.0 M, pass). |
 | G3.2 lock basin (held-out frames) | **Fail at σ 5**: 4 taps 91.5 % (σ 5), 86.5 % (σ 8); 6 taps 91.5 % / 91.5 %. Fallback steps 2 and 3 taken (D-016): optional 5th-fret taps, remainder carried to Phase 4. |
 
 ## Acceptance (exit gate)

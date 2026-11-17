@@ -83,7 +83,8 @@ def cmd_clip(args) -> None:
     rng = np.random.default_rng(args.seed)
     w, h, kind = args.width, args.height, args.kind
     inst = INSTRUMENTS[args.instrument or ('electric' if kind == 'lefty' else 'steel-acoustic')]
-    look = sample_look(rng, inst, board='rosewood' if kind in ('lock-easy', 'track-hand', 'track-motion') else None,
+    board = args.board or ('rosewood' if kind in ('lock-easy', 'track-hand', 'track-motion') else None)
+    look = sample_look(rng, inst, board=board if board != 'any' else None,
                        capo_fret=2 if kind == 'capo' else 0)
     if kind in ('lock-easy', 'track-hand', 'track-motion', 'capo') and look.inlays == 'none':
         look.inlays = 'dots'
@@ -131,6 +132,7 @@ def main() -> None:
     sub.choices['clip'].add_argument('--kind', choices=KINDS, required=True)
     sub.choices['clip'].add_argument('--frames', type=int, default=45)
     sub.choices['clip'].add_argument('--instrument', choices=list(INSTRUMENTS))
+    sub.choices['clip'].add_argument('--board', help="board family, or 'any' (default depends on kind)")
     sub.choices['clip'].add_argument('--stamp', action='store_true', help='write the frame number into the image')
     args = parser.parse_args()
     {'frames': cmd_frames, 'clip': cmd_clip}[args.command](args)
