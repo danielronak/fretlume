@@ -8,11 +8,11 @@
  */
 import { luma } from './autoLockStats';
 import type { EdgeTracker } from './edgeTracker';
-import { apply, controlPointsPx, type Mat3, type Pt } from './geometry';
+import { apply, controlPointsPx, invert, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
 import { verifyIndex } from './indexCheck';
 import { fullScore, homographyFromTaps, shiftFrets, snapLock } from './lock';
-import { fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
+import { fretAtX, fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
 import type { NeckDetection } from './neckNet';
 
 export type AutoState = 'searching' | 'verifying' | 'locked';
@@ -108,12 +108,20 @@ export class AutoLocker {
     const cut = cutOff(det.corners, image.width, image.height);
     // Bass versus treble cannot be seen at the network's resolution; a player's thick string faces
     // up (towards their head) whether or not the picture is mirrored, so the upper corners are bass.
-    // Multi-start: the network's 12th fret may really be the 11th or 13th (they look alike), which
-    // the snap cannot correct on its own; try all three and keep the best fit.
+    // Multi-start: the network's 12th fret may really be the 11th or 13th (they look alike), and a
+    // hand can hide one 12th-fret corner; the snap cannot fix either alone. Try each and keep the
+    // best fit. The wire polarity found on the first candidate is reused for the others.
     let best: { H: Mat3; polarity: 'bright' | 'dark'; confidence: number } | null = null;
-    for (const taps of twelfthCandidates(bassUp(det.corners), model)) {
+    const base4 = bassUp(endsByOrientation(det));
+    const candidates = [...twelfthCandidates(base4, model), ...threeCornerCandidates(base4, model)];
+    for (const [i, taps] of candidates.entries()) {
       try {
-        const out = snapLock(this.tracker, image, taps);
+        const out = snapLock(
+          this.tracker,
+          image,
+          taps,
+          i === 0 || !best ? {} : { polarity: best.polarity },
+        );
         const confidence = out.inliers > 0 ? out.score / fullScore(model) : 0;
         if (!best || confidence > best.confidence)
           best = { H: out.H, polarity: out.polarity, confidence };
@@ -123,8 +131,11 @@ export class AutoLocker {
     }
     if (!best || best.confidence < this.o.minConfidence)
       return { ...base, hint: cut ?? 'lift-hand', detection: det };
-    const verdict = verifyIndex(image, best.H, model);
-    const H = verdict.shift ? shiftFrets(best.H, model, verdict.shift) : best.H;
+    // Every whole-fret shift of the comb fits the wires equally well; the detected nut decides
+    // which one (when the network is sure of it), then the inlays and nut check the last ±2.
+    const anchored = anchorAtNut(best.H, det, model);
+    const verdict = verifyIndex(image, anchored, model);
+    const H = verdict.shift ? shiftFrets(anchored, model, verdict.shift) : anchored;
     this.verified = 0;
     return {
       state: 'verifying',
@@ -200,4 +211,49 @@ export function twelfthCandidates(taps: Pt[], model: InstrumentModel): Pt[][] {
     out.push([taps[0]!, taps[1]!, apply(H0, x, hw), apply(H0, x, -hw)]);
   }
   return out;
+}
+
+/**
+ * The corner heatmaps can confuse the nut with the 12th fret; the orientation head (which side the
+ * headstock is on, ≥ 99 % right on validation) settles it when it is confident.
+ */
+export function endsByOrientation(det: Pick<NeckDetection, 'corners' | 'headstockRight'>): Pt[] {
+  const [c0, c1, c2, c3] = det.corners as [Pt, Pt, Pt, Pt];
+  const nutX = (c0.x + c1.x) / 2;
+  const twelveX = (c2.x + c3.x) / 2;
+  const cornersSayRight = nutX > twelveX;
+  const confident = det.headstockRight > 0.85 || det.headstockRight < 0.15;
+  if (!confident || cornersSayRight === det.headstockRight > 0.5) return det.corners;
+  return [c3, c2, c1, c0];
+}
+
+/**
+ * Tap sets that rebuild one 12th-fret corner from the other and the nut (the board's width ratio
+ * between nut and 12th fret is known), for when a hand hides that corner.
+ */
+export function threeCornerCandidates(taps: Pt[], model: InstrumentModel): Pt[][] {
+  const [c0, c1, c2, c3] = taps as [Pt, Pt, Pt, Pt];
+  const ratio = halfWidth(model, fretX(model, 12)) / halfWidth(model, 0);
+  const across = { x: (c1.x - c0.x) * ratio, y: (c1.y - c0.y) * ratio }; // bass → treble at the 12th
+  return [
+    [c0, c1, { x: c3.x + across.x, y: c3.y + across.y }, c3],
+    [c0, c1, c2, { x: c2.x - across.x, y: c2.y - across.y }],
+  ];
+}
+
+/**
+ * Shift a fit by whole frets so that its nut sits where NeckNet saw the nut (if it saw it clearly).
+ * The fit's fret at the detected nut tells how many frets the comb slipped.
+ */
+export function anchorAtNut(
+  H: Mat3,
+  det: Pick<NeckDetection, 'corners' | 'cornerScores'>,
+  model: InstrumentModel,
+): Mat3 {
+  if (Math.min(det.cornerScores[0] ?? 0, det.cornerScores[1] ?? 0) < 0.3) return H;
+  const [a, b] = bassUp(det.corners) as [Pt, Pt];
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  const board = apply(invert(H), mid.x, mid.y);
+  const k = Math.round(fretAtX(model, board.x));
+  return k === 0 || Math.abs(k) > model.fretCount - 12 ? H : shiftFrets(H, model, k);
 }

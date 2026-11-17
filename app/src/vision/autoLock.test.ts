@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { INSTRUMENTS } from '@core/guitar/instrument';
-import { AutoLocker, bassUp, cutOff, twelfthCandidates } from './autoLock';
+import {
+  AutoLocker,
+  anchorAtNut,
+  bassUp,
+  cutOff,
+  endsByOrientation,
+  threeCornerCandidates,
+  twelfthCandidates,
+} from './autoLock';
 import { fretX } from '@core/guitar/instrument';
+import { shiftFrets } from './lock';
 import { apply } from './geometry';
 import { luma } from './autoLockStats';
 import type { EdgeTracker, RefineResult } from './edgeTracker';
@@ -119,5 +128,45 @@ describe('twelfthCandidates', () => {
     const mid = { x: (as11![2]!.x + as11![3]!.x) / 2, y: (as11![2]!.y + as11![3]!.y) / 2 };
     expect(Math.hypot(mid.x - p.x, mid.y - p.y)).toBeLessThan(3);
     expect(as13![2]!.x).not.toBeCloseTo(as11![2]!.x, 0);
+  });
+});
+
+describe('endsByOrientation', () => {
+  const p = (x: number, y: number) => ({ x, y });
+  const corners = [p(1100, 240), p(1110, 330), p(560, 450), p(550, 350)]; // nut on the right
+  it('keeps corners that agree with a confident orientation, or when unsure', () => {
+    expect(endsByOrientation({ corners, headstockRight: 0.95 })).toBe(corners);
+    expect(endsByOrientation({ corners, headstockRight: 0.5 })).toBe(corners);
+  });
+  it('swaps the nut and 12th-fret ends when the orientation head disagrees', () => {
+    const out = endsByOrientation({ corners, headstockRight: 0.05 });
+    expect(out[0]).toEqual(corners[3]);
+    expect(out[2]).toEqual(corners[1]);
+  });
+});
+
+describe('threeCornerCandidates', () => {
+  it('rebuilds a hidden 12th-fret corner close to the truth for a gently foreshortened neck', () => {
+    const truth = controlPointsPx(H, model);
+    const hidden = [truth[0]!, truth[1]!, { x: 0, y: 0 }, truth[3]!];
+    const [rebuilt] = threeCornerCandidates(hidden, model);
+    expect(Math.hypot(rebuilt![2]!.x - truth[2]!.x, rebuilt![2]!.y - truth[2]!.y)).toBeLessThan(25);
+  });
+});
+
+describe('anchorAtNut', () => {
+  it('undoes a whole-fret slip using the detected nut', () => {
+    const det = { corners: controlPointsPx(H, model), cornerScores: [0.9, 0.9, 0.9, 0.9] };
+    for (const k of [-3, 1, 7]) {
+      const fixed = anchorAtNut(shiftFrets(H, model, k), det, model);
+      const p = apply(fixed, fretX(model, 5), 0);
+      const q = apply(H, fretX(model, 5), 0);
+      expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeLessThan(1e-6);
+    }
+  });
+  it('leaves the fit alone when the nut was not seen clearly', () => {
+    const det = { corners: controlPointsPx(H, model), cornerScores: [0.1, 0.9, 0.9, 0.9] };
+    const slipped = shiftFrets(H, model, 2);
+    expect(anchorAtNut(slipped, det, model)).toBe(slipped);
   });
 });
