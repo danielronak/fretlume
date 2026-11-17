@@ -1,0 +1,41 @@
+{
+  "step": 5774,
+  "checkpoint": "necknet-ema.pt",
+  "val-a": {
+    "frames": 2048,
+    "median_px_720p": 4.106296539306641,
+    "p90_px_720p": 20.064495086669922,
+    "frames_all_corners_within_12px_720p": 0.6289966923925028,
+    "presence_auc": 0.9999952883084084,
+    "orientation_acc": 0.9988974641675854,
+    "profile_acc": 0.9531422271223815
+  },
+  "val-b": {
+    "frames": 2048,
+    "median_px_720p": 3.544734477996826,
+    "p90_px_720p": 13.818766593933105,
+    "frames_all_corners_within_12px_720p": 0.7323628219484882,
+    "presence_auc": 1.0,
+    "orientation_acc": 1.0,
+    "profile_acc": 0.9664053751399776
+  },
+  "val-c": {
+    "frames": 2048,
+    "median_px_720p": 4.127890110015869,
+    "p90_px_720p": 26.138877868652344,
+    "frames_all_corners_within_12px_720p": 0.5900826446280992,
+    "presence_auc": 0.9998841319949396,
+    "orientation_acc": 0.9972451790633609,
+    "profile_acc": 0.9421487603305785
+  },
+  "gates": {
+    "G4.1": {
+      "rule": "val-B median corner error \u2264 6 px at 720p and presence AUC \u2265 0.99",
+      "pass": true
+    },
+    "G4.2": {
+      "rule": "val-C (photo-composite style) median corner error \u2264 9 px at 720p",
+      "pass": true
+    }
+  }
+}
