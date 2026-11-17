@@ -32,7 +32,15 @@ defined as the upper ones (a player's thick string faces up, mirrored or not); t
 Median corner error, scaled to a 1280×720 frame; presence AUC over frames with and without a guitar.
 `docs/benchmarks/necknet-phase4.json` holds the latest numbers (written by `python -m train.bench`).
 
-*(Final numbers are added when training completes; step 5774: val-A 4.1 px, val-B 3.5 px, val-C 4.1 px, presence AUC 1.0.)*
+| Split | Frames | Median px @720p | 90th pct px | Presence AUC | Orientation | Guitar type |
+|---|---|---|---|---|---|---|
+| val-A (training families) | 2048 | 3.6 | 13.9 | 1.0000 | 99.9 % | 95.5 % |
+| val-B (held-out families) | 2048 | 3.3 | 11.4 | 1.0000 | 100.0 % | 97.6 % |
+| val-C (photo-composite style) | 2048 | 3.9 | 20.0 | 0.9999 | 99.7 % | 95.4 % |
+
+Step 9375 (450 k training samples, about 4.5 h on 4 CPU cores). Gates G4.1 and G4.2 pass.
+End to end with the EdgeTracker and index check (G4.3, single-frame proxy on 200 held-out 720p frames): 85.0 % correct, 3.0 % wrong fret index, 0.0 % false locks on 200 frames without a guitar — the gate (95 / 1 / 0.5) is not met (DECISIONS D-021).
+Speed: 174 ms per frame in the build container's JavaScript engine.
 
 ## Limits
 - Trained on drawings, not photographs. The real-photo golden set (gate G4.4) is the honest check of how it

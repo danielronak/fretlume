@@ -200,3 +200,24 @@ the cost; the real-photo golden set (4.9) is the stronger check.
 inlay pattern (spaces 3·5·7·9·12·15·17) and the nut (wires in front, none behind, brightness change): 97.2 %
 correct over shifts −2…+2 on held-out frames (dots 98.3, blocks 95.5, plain boards 94.7). Ties keep the
 fit's index. A weak margin makes the confirm step ask the player.
+
+## D-021 · 2026-11-17 · Automatic lock ships as an opt-in beta; G4.3 fails, G4.4 not measured
+**Context.** NeckNet v1 passes its own gates (val-B 3.3 px, val-C 3.9 px median at 720p; presence AUC 1.0).
+End to end, on 200 held-out 720p frames in the Phase 3 style (single-frame proxy for G4.3): 85 % correct,
+3 % wrong fret index, 0 % false locks without a guitar (gate 95 / 1 / 0.5). Failures are mostly a hand over
+the 12th fret pulling that corner off, which leads the fret fit to a wrong scale. The browser e2e
+(`autolock.spec.ts`) passes on lock-easy, lock-hard, lefty, capo and low-light and never locks on no-guitar.
+**What was added to reach that.** Bass corners are the upper ones (labels and app); multi-start over the
+detected 12th fret (as 11, 12, 13) and over a rebuilt hidden corner; the fit's index re-anchored at the
+detected nut; a clearly seen nut outweighs a weak inlay verdict; fits showing wires midway between their
+frets are rejected as aliases (ratio 0.6); minimum fit confidence 0.62 (calibrated: no correct lock lost).
+**Decision (fallback ladder step 3).** Manual lock stays the default; "Lock automatically (beta)" is an opt-in
+toggle on the Stage. Every automatic lock goes through the same "Looks right?" step with fret numbers, so a
+wrong index is visible before playing. StripNet (task 4.7) is not attempted yet: the remaining errors come
+from the corner detector under occlusion, which retraining with more hand-over-12th cases or a second
+detection at a different frame is likelier to fix; revisit with field data.
+**G4.4 (real photos).** The owner approved commons.wikimedia.org and upload.wikimedia.org for the environment,
+but this session's automatic permission check refused the first download, so no real frames were
+collected. G4.4 is "not measured"; the owner's field test (diagnostics with frames) is the next real check.
+**Speed.** NeckNet takes 174 ms per frame in this container (budget 120 ms): searching runs at ~3–4 Hz
+instead of 5. Acceptable while it only runs before a lock; to be confirmed on real devices.

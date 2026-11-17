@@ -20,32 +20,53 @@ if (!outDir) {
 mkdirSync(outDir, { recursive: true });
 
 const only = process.argv[3] ? new RegExp(process.argv[3]) : null;
-const shots = [
-  { clip: 'lock-easy', item: 'chord/C/maj', next: 0, confirm: true },
-  { clip: 'lock-easy', item: 'chord/C/maj', next: 2, settings: { labelMode: 'fingers' } },
-  { clip: 'track-hand', item: 'chord/G/maj', next: 6, still: 30 },
-  { clip: 'track-motion', item: 'scale/A/minor-pentatonic', next: 0, still: 30, wait: 3500 },
-  { clip: 'track-motion', item: 'scale/A/minor-pentatonic', next: 2, still: 30, wait: 1500 },
-  { clip: 'lefty', item: 'chord/D/min', next: 5, guitar: 'electric', confirm: true },
-  { clip: 'capo', item: 'chord/C/maj', next: 6, confirm: true },
-  { clip: 'low-light', item: 'chord/E/min', next: 0 },
-  { clip: 'lock-easy', item: 'triad/G/maj', next: 0, theme: 'light' },
-  {
-    clip: 'lock-easy',
-    item: 'key/D/major',
-    next: 1,
-    settings: { labelMode: 'intervals', dotScale: 1.4 },
-  },
-  {
-    clip: 'track-hand',
-    item: 'chord/A/m7',
-    next: 0,
-    still: 30,
-    viewport: [844, 390],
-    name: 'phone',
-  },
-  { clip: 'lock-easy', item: 'chord/C/maj', next: 0, marking: true },
-];
+const shots = process.env.AUTO
+  ? [
+      { clip: 'lock-easy', item: 'chord/C/maj', auto: true, name: 'auto-easy' },
+      { clip: 'lock-hard', item: 'chord/G/maj', auto: true, name: 'auto-hard' },
+      { clip: 'lefty', item: 'chord/D/min', auto: true, guitar: 'electric', name: 'auto-lefty' },
+      { clip: 'low-light', item: 'scale/A/minor-pentatonic', auto: true, name: 'auto-low-light' },
+      {
+        clip: 'no-guitar',
+        item: 'chord/C/maj',
+        auto: true,
+        name: 'auto-no-guitar',
+        searchOnly: true,
+      },
+      {
+        clip: 'lock-hard',
+        item: 'chord/E/min',
+        auto: true,
+        name: 'auto-phone',
+        viewport: [844, 390],
+      },
+    ]
+  : [
+      { clip: 'lock-easy', item: 'chord/C/maj', next: 0, confirm: true },
+      { clip: 'lock-easy', item: 'chord/C/maj', next: 2, settings: { labelMode: 'fingers' } },
+      { clip: 'track-hand', item: 'chord/G/maj', next: 6, still: 30 },
+      { clip: 'track-motion', item: 'scale/A/minor-pentatonic', next: 0, still: 30, wait: 3500 },
+      { clip: 'track-motion', item: 'scale/A/minor-pentatonic', next: 2, still: 30, wait: 1500 },
+      { clip: 'lefty', item: 'chord/D/min', next: 5, guitar: 'electric', confirm: true },
+      { clip: 'capo', item: 'chord/C/maj', next: 6, confirm: true },
+      { clip: 'low-light', item: 'chord/E/min', next: 0 },
+      { clip: 'lock-easy', item: 'triad/G/maj', next: 0, theme: 'light' },
+      {
+        clip: 'lock-easy',
+        item: 'key/D/major',
+        next: 1,
+        settings: { labelMode: 'intervals', dotScale: 1.4 },
+      },
+      {
+        clip: 'track-hand',
+        item: 'chord/A/m7',
+        next: 0,
+        still: 30,
+        viewport: [844, 390],
+        name: 'phone',
+      },
+      { clip: 'lock-easy', item: 'chord/C/maj', next: 0, marking: true },
+    ];
 
 const errors = [];
 for (const [n, shot] of shots.entries()) {
@@ -71,7 +92,7 @@ for (const [n, shot] of shots.entries()) {
   page.on('pageerror', (e) => errors.push(`${shot.clip}: ${e.message}`));
   const settings = {
     onboarded: true,
-    autoLock: false,
+    autoLock: !!shot.auto,
     theme: shot.theme ?? 'dark',
     guitar: shot.guitar ?? 'steel-acoustic',
     ...(shot.settings ?? {}),
@@ -87,6 +108,32 @@ for (const [n, shot] of shots.entries()) {
   await page.waitForTimeout(300);
   for (const close of await page.locator('.toast button').all())
     await close.click().catch(() => {});
+  if (shot.auto) {
+    const name = `${String(n + 1).padStart(2, '0')}-${shot.name}`;
+    await page.waitForTimeout(1200);
+    await page.screenshot({ path: `${outDir}/${name}-searching.png` });
+    if (shot.searchOnly) {
+      await page.waitForTimeout(6000);
+      await page.screenshot({ path: `${outDir}/${name}-still-searching.png` });
+      await browser.close();
+      console.log('saved', name);
+      continue;
+    }
+    await page.getByTestId('stage-confirm').waitFor({ timeout: 45000 });
+    await page.evaluate(() =>
+      document.querySelector('.stage__box')?.scrollIntoView({ block: 'start' }),
+    );
+    await page.screenshot({ path: `${outDir}/${name}-confirm.png` });
+    await page.getByTestId('stage-confirm').click();
+    await page.waitForTimeout(1500);
+    await page.evaluate(() =>
+      document.querySelector('.stage__box')?.scrollIntoView({ block: 'start' }),
+    );
+    await page.screenshot({ path: `${outDir}/${name}-overlay.png` });
+    await browser.close();
+    console.log('saved', name);
+    continue;
+  }
   for (let i = 0; i < shot.next; i++) await page.getByTestId('deck-next').click();
   let frozen = 0;
   for (let attempt = 0; attempt < 40; attempt++) {

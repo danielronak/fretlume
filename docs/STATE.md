@@ -3,14 +3,19 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 4 — next to start (Phase 3 done 2026-11-17, `docs/phases/phase-03-camera-manual-lock.md`)
-- **Next task:** Phase 4 (`docs/phases/phase-04-*.md`) — synthetic data + auto-lock. Carry over from Phase 3: G3.2 at σ 5 px, the G3.3 index slip, G3.4 jitter, index verification (nut/inlays) during recovery (D-016–D-018).
-- **Last release:** 0.2.0 (Phase 3), 2026-11-17 — live at https://danielronak.github.io/fretlume/ (tags v0.1.0, v0.2.0)
+- **Current phase:** 5 — next to start (Phase 4 done 2026-11-17 with auto-lock as an opt-in beta)
+- **Next task:** Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5, G3.3 slip, G3.4 jitter (D-016–D-018); G4.3 (85 % / 3 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
+- **Last release:** 0.3.0 (Phase 4), 2026-11-17 — live at https://danielronak.github.io/fretlume/ (tags v0.1.0–v0.3.0)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
 - **Last updated:** 2026-11-17
 
 ## Waiting on the owner (does not block building)
+- **Golden set downloads (optional).** Wikimedia hosts are allowed on the environment, but this session's
+  automatic permission check refused the download. To let a future session collect real guitar photos for
+  gate G4.4, allow it when asked (or add a permission rule for fetching from upload.wikimedia.org).
+- **🎸 Field test of 0.3.0:** besides the steps below, switch on Stage → "Lock automatically (beta)" and tell
+  us: did it lock on your guitar, and were the fret numbers right?
 - **🎸 Optional field test of 0.2.0 (10 minutes).** At https://danielronak.github.io/fretlume/ on a phone or laptop with a camera: open Settings → Field test and follow the eight steps (lock in good and dim light, play
   with the overlay, move the guitar, re-lock, tune), then *Export diagnostics* and attach the file to the
   next session. Switching on "Include camera frames" first makes the file much more useful.
@@ -44,7 +49,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 1 Theory engine | **done** 2026-11-16 | — | 218 tests; core line coverage 99.2 %; fingering agreement 91.3 %; `docs/benchmarks/catalogue.json` |
 | 2 Shell, Library, Tuner | **done** 2026-11-17 | v0.1 (0.1.0) | G6.1 18/18 within 1 cent; first load 1.41 MB; 283 unit + 29 smoke e2e |
 | 3 Camera + manual lock | **done** 2026-11-17, 3 gates failing (recorded) | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 91.5 % σ5 / 91.5 % σ8 with 6 taps (fail σ5, D-016); G3.3 98.2 % frames, 1 slip in 60 (fail); G3.4 1.05 px (fail); G3.5 pass; e2e 60/60 |
-| 4 Synthetic + auto-lock | not started | v0.3 🎸 | |
+| 4 Synthetic + auto-lock | **done** 2026-11-17, G4.3 failing, G4.4 not measured | v0.3 (0.3.0) 🎸 | G4.1 3.3 px, G4.2 3.9 px pass; G4.3 85 % / 3 % wrong index / 0 % false (fail); auto-lock opt-in beta (D-021) |
 | 5 Runs, playground, tabs (parity) | not started | v0.4 | |
 | 6 Listening | not started | v0.5 🎸 | |
 | 7 Hand vision | not started | v0.6 🎸 | |
@@ -53,6 +58,14 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 10 Jam tools | not started | v0.9 | |
 | 11 Perf / a11y / mobile | not started | v0.10 🎸 | |
 | 12 Release | not started | v1.0 | |
+
+## Done in Phase 4 (2026-11-17)
+- `ml/synth/dataset.py` (generator v2, splits, shards; `data/` not committed — regenerate with
+  `uv run python -m synth.dataset shards …`), `ml/train/` (NeckNet, training in chunks, export, bench),
+  `ml/MODEL_CARD.md`, checkpoints in `ml/checkpoints/` (resume with `bash ml/train/run_chunk.sh`).
+- App: `vision/nn.ts` (runtime), `neckNet.ts`, `indexCheck.ts`, `autoLock.ts`; worker `auto` mode; Stage tips,
+  verifying grid, auto-lock confirmation, guitar-type suggestion; model in `app/public/models/`.
+- Benchmarks: `docs/benchmarks/necknet-phase4.json` (G4.1/G4.2), `vision-phase3.json` (G43 entry).
 
 ## Done in Phase 3 (2026-11-17)
 - `ml/synth`: synthetic guitar frames and clips (boards, inlays, strings with shadows, hand, camera
