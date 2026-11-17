@@ -24,7 +24,21 @@ library, tune the guitar, use a metronome, keep favourites, back up data.
       shape" button on library items — strum/arpeggiate the marks); look-ahead scheduler; metronome
       (tempo, time signature, subdivision, accent, tap tempo, count-in).
 - [x] **2.7 Help.** "How it works" guide pages with our own illustrations (SVG drawn in code).
-- [ ] **2.8 Release.** Tag `v0.1`, deploy, update `STATE.md`.
+- [x] **2.8 Release.** Tag `v0.1`, deploy, update `STATE.md`.
+
+## Result (2026-11-17)
+| Gate | Result |
+|---|---|
+| 1. Library and backup e2e | Pass: search "sad chords in G" → G minor first; C major shows 5 CAGED chips that dim the other shapes; notes / intervals / fingers labels switch; a favourite survives reload; backup → delete everything → restore brings it back (`library.spec.ts`, `backup.spec.ts`). |
+| 2. Tuner G6.1 via the fake microphone | Pass: 18 of 18 cases (each open string at −20, 0, +20 cents, plucked tone with realistic string stiffness) read within 1 cent (`tuner.spec.ts`, full suite). Unit level: ≤ 1 cent clean, ≤ 3 cents at 20 dB SNR, first stable reading ≤ 150 ms (within 5 cents), within 1 cent by 400 ms (D-014). |
+| 3. Offline, first load | Pass: no external requests on any screen; cold start offline; first load including the offline cache is 1.41 MB (budget 5 MB) (`offline.spec.ts`, `pwa.spec.ts`). |
+| 4. Screens at 1440×900, 820×1180, 844×390, dark and light | 60 screenshots of 10 screens reviewed via contact sheets; phone landscape led to a side-rail layout (see below). Curated set and contact sheets in `docs/screens/phase-2/`. |
+| 5. PWA checks | Pass: manifest (name, start URL, standalone, colours, 192/512/maskable icons), manifest and theme-colour links, service worker takes control (`pwa.spec.ts`). |
+
+Changes found during the gate: phones held sideways now get a narrow icon rail instead of top and bottom bars
+(content kept 150 px of 390 before); the guided tuner did not advance while a string kept ringing (fixed).
+Totals at release: 283 unit/component tests (core line coverage 99.2 %), 29 smoke e2e tests plus the 18-case
+tuner matrix. Release 0.1.0 is tagged and deployed by the Release workflow once GitHub Pages is enabled.
 
 ## Acceptance (exit gate)
 1. E2E: search "sad chords in G" → results; open C major → 5 CAGED chips filter the diagram; toggle

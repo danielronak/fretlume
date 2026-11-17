@@ -228,3 +228,56 @@
   color: var(--text-muted);
   font: 400 var(--text-xs) var(--font-mono);
 }
+
+/* Phones held sideways: a narrow icon rail instead of top and bottom bars, so content keeps its height. */
+@media (max-width: 1023px) and (orientation: landscape) and (max-height: 560px) {
+  .shell {
+    grid-template-rows: 1fr;
+    grid-template-columns: calc(64px + env(safe-area-inset-left, 0px)) 1fr;
+    grid-template-areas: 'nav main';
+  }
+  .shell__topbar {
+    display: none;
+  }
+  .shell__nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-1);
+    padding-left: max(var(--space-1), env(safe-area-inset-left, 0px));
+    border-top: 0;
+    border-right: 1px solid var(--hairline);
+    overflow-y: auto;
+  }
+  .shell__links {
+    flex-direction: column;
+    gap: 2px;
+  }
+  .shell__links li {
+    flex: none;
+  }
+  .shell__link {
+    min-height: var(--touch);
+  }
+  .shell__links .shell__link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .shell__link.active {
+    background: var(--accent-soft);
+  }
+  .shell__footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .shell__link--icon {
+    width: var(--touch);
+    border-radius: var(--radius-pill);
+  }
+}

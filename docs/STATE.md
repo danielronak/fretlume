@@ -3,10 +3,9 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 2 — App shell, Library, Tuner (`docs/phases/phase-02-shell-library-tuner.md`)
-- **Done in this phase:** 2.1 settings + welcome, 2.2 storage + backups, 2.3 library screens, 2.4 audio core,
-  2.5 tuner (G6.1 passes: 18/18 cases within 1 cent through the fake microphone), 2.6 reference tones + metronome
-- **Next task:** 2.7 (help pages), then 2.8 (screenshots, PWA checks, release 0.1.0)
+- **Current phase:** 3 — Camera overlay with manual lock (`docs/phases/phase-03-camera-manual-lock.md`)
+- **Next task:** 3.1 (synthetic generator v1 in `ml/synth`, fixture clips for e2e)
+- **Last release:** 0.1.0 (Phase 2), 2026-11-17 — deploys once GitHub Pages is enabled (see below)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
 - **Last updated:** 2026-11-17
@@ -45,7 +44,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 |---|---|---|---|
 | 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally and in CI (12 unit, 8 browser tests); first Pages deploy waits for the owner to enable Pages |
 | 1 Theory engine | **done** 2026-11-16 | — | 218 tests; core line coverage 99.2 %; fingering agreement 91.3 %; `docs/benchmarks/catalogue.json` |
-| 2 Shell, Library, Tuner | in progress (2.1–2.6 done) | v0.1 | G6.1: 18/18 within 1 cent (fake mic) |
+| 2 Shell, Library, Tuner | **done** 2026-11-17 | v0.1 (0.1.0) | G6.1 18/18 within 1 cent; first load 1.41 MB; 283 unit + 29 smoke e2e |
 | 3 Camera + manual lock | not started | v0.2 🎸 | |
 | 4 Synthetic + auto-lock | not started | v0.3 🎸 | |
 | 5 Runs, playground, tabs (parity) | not started | v0.4 | |
@@ -57,7 +56,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 11 Perf / a11y / mobile | not started | v0.10 🎸 | |
 | 12 Release | not started | v1.0 | |
 
-## Done in Phase 2 so far (2026-11-17)
+## Done in Phase 2 (2026-11-17)
 - Settings store (`app/src/state/settings.ts`, localStorage, D-012) and three-step welcome.
 - Dexie database (`app/src/storage/db.ts`), favourites/folders, zod-validated backup files, Settings screen.
 - Library screens (`app/src/features/library/`): tabs, pickers, chips, voicing cards, keys, related links,
@@ -65,6 +64,10 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 - Audio core (`app/src/audio/`): `audioEngine` (one AudioContext, unlock on gesture, suspend when hidden),
   capture worklet → `microphone` manager (ring buffer, blocks, permission states, devices, unplug), input
   meter on the Tools screen. Tuner (2.5) reads `microphone.ring` / `microphone.onBlock`.
+- Tuner (`app/src/audio/dsp/mpm.ts` + `tuner.ts` + `useTuner.ts`, screen `features/tools/Tuner.tsx`), reference
+  tones (`audio/player.ts`, Karplus–Strong `dsp/karplus.ts`), metronome (`audio/beats.ts`, `audio/metronome.ts`,
+  `features/tools/MetronomeScreen.tsx`), Hear-it buttons in the library, help guides (`features/help/`).
+- Short landscape screens use a side rail (`features/shell.css`). Screenshots: `docs/screens/phase-2/`.
 
 ## Done in Phase 1 (2026-11-16)
 - `app/src/core/theory`: pitch/spelling, degrees, tunings + capo; 26 chord qualities, 80 authored voicings,

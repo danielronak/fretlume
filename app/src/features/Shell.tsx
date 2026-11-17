@@ -28,7 +28,7 @@ export function Shell() {
         <ul className="shell__links">
           {destinations.map((d) => (
             <li key={d.path}>
-              <NavLink to={d.path} className="shell__link">
+              <NavLink to={d.path} className="shell__link" title={t(d.nav)}>
                 <Icon name={d.icon} />
                 <span>{t(d.nav)}</span>
               </NavLink>

@@ -1,8 +1,8 @@
 # Fretlume
 
 Free, offline, open-source guitar learning with live overlays on your real guitar.
-*(Working name. Early development: Phase 0 of 13 is done — the app shell, offline support and the test
-harness exist; the guitar features arrive phase by phase. See `docs/STATE.md`.)*
+*(Working name. Version 0.1: a library of chords, scales, triads and keys with diagrams and search, a
+tuner, a metronome and help guides, all offline. The camera overlay arrives next. See `docs/STATE.md`.)*
 
 ```bash
 npm ci

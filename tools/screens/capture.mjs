@@ -19,12 +19,35 @@ const shots = JSON.parse(readFileSync(specFile, 'utf8'));
 mkdirSync(outDir, { recursive: true });
 
 const browser = await chromium.launch();
+// Shots with `fakeAudio` (a file in fixtures/generated) get a browser whose microphone plays it.
+const fakeBrowsers = new Map();
+async function browserFor(shot) {
+  if (!shot.fakeAudio) return browser;
+  if (!fakeBrowsers.has(shot.fakeAudio)) {
+    const dir = resolve(root, 'fixtures/generated');
+    fakeBrowsers.set(
+      shot.fakeAudio,
+      await chromium.launch({
+        args: [
+          '--use-fake-device-for-media-stream',
+          '--use-fake-ui-for-media-stream',
+          `--use-file-for-fake-video-capture=${dir}/bars-720p.mjpeg`,
+          `--use-file-for-fake-audio-capture=${dir}/${shot.fakeAudio}`,
+        ],
+      }),
+    );
+  }
+  return fakeBrowsers.get(shot.fakeAudio);
+}
 const errors = [];
 try {
   for (const shot of shots) {
-    const context = await browser.newContext({
+    const context = await (
+      await browserFor(shot)
+    ).newContext({
       viewport: { width: shot.width ?? 1440, height: shot.height ?? 900 },
       deviceScaleFactor: shot.scale ?? 1,
+      ...(shot.fakeAudio ? { permissions: ['microphone'] } : {}),
     });
     const page = await context.newPage();
     page.on('pageerror', (e) => errors.push(`${shot.name}: ${e.message}`));
@@ -59,6 +82,7 @@ try {
   }
 } finally {
   await browser.close();
+  for (const b of fakeBrowsers.values()) await b.close();
 }
 if (errors.length) {
   console.error('page errors:\n' + errors.join('\n'));
