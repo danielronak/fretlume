@@ -73,6 +73,20 @@ describe('PitchDetector (gate G6.1, unit level)', () => {
     }
   });
 
+  it('measures the fundamental of a stiff (inharmonic) string, not its sharp overtones', () => {
+    for (const f of OPEN_STRINGS) {
+      // Slowly fading overtones, stretched by stiffness, as on a real steel string.
+      const tone = pluck(f, 2, 48000, { inharmonicity: 1e-4, seed: Math.round(f) });
+      for (const tMs of [100, 300, 600]) {
+        const end = Math.round(tMs * 48);
+        const result = detector.detect(tone.subarray(end - 4096, end), 48000)!;
+        expect(Math.abs(cents(result.fHz, f)), `${f} Hz at ${tMs} ms`).toBeLessThanOrEqual(0.5);
+        const plain = detector.detect(tone.subarray(end - 4096, end), 48000, { refine: false })!;
+        if (tMs === 100) expect(cents(plain.fHz, f)).toBeGreaterThan(1); // the bias the refinement removes
+      }
+    }
+  });
+
   it('does not jump an octave on a pluck with a weak fundamental', () => {
     const f = 82.407;
     // Second harmonic stronger than the fundamental, as on a low string through a small mic.

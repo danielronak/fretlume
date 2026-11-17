@@ -9,6 +9,8 @@ import { Shell } from '@features/Shell';
 import { Settings } from '@features/settings/Settings';
 import { LibraryScreen, SavedScreen } from '@features/library/LibraryScreen';
 import { Tools } from '@features/tools/Tools';
+import { Tuner } from '@features/tools/Tuner';
+import { MetronomeScreen } from '@features/tools/MetronomeScreen';
 import { Welcome } from '@features/welcome/Welcome';
 import { ToastProvider } from '@ui/index';
 import { useTheme } from '@ui/useTheme';
@@ -26,6 +28,8 @@ const router = createHashRouter([
       { path: 'library', element: <Navigate to="/library/chord/C/maj" replace /> },
       { path: 'library/saved', element: <SavedScreen /> },
       { path: 'tools', element: <Tools /> },
+      { path: 'tools/tuner', element: <Tuner /> },
+      { path: 'tools/metronome', element: <MetronomeScreen /> },
       { path: 'library/:kind/:root/:type', element: <LibraryScreen /> },
       ...destinations
         .filter((destination) => !['/library', '/tools'].includes(destination.path))

@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useSettings } from '@/state/settings';
+import { playNotes, shapeNotes, type NoteEvent } from '@audio/player';
 import {
   cagedChordShape,
   chordVoicings,
@@ -22,7 +23,8 @@ import type { PitchClass, Shape, Tuning } from '@core/theory/types';
 import { t, type MessageKey } from '@i18n/index';
 import { groupColor, type ColorMode, type LabelMode } from '@overlay/display';
 import { FlatFretboard } from '@overlay/FlatFretboard';
-import { Chip } from '@ui/index';
+import { Icon } from '@ui/icons';
+import { Button, Chip } from '@ui/index';
 import { activeGroupIds, chipGroups, hasCagedChordShapes, libraryPath } from './model';
 
 export interface ViewProps {
@@ -171,6 +173,43 @@ function Neck({
 
 const shapeLabel = (base: string) => t('libShape', { form: base });
 
+/** Plays what is on the neck: a strum for a chord, the notes of one position otherwise. */
+function HearButton({ notes, label }: { notes: () => NoteEvent[]; label: string }) {
+  const a4Hz = useSettings((st) => st.a4Hz);
+  return (
+    <Button onClick={() => void playNotes(notes(), a4Hz)} aria-label={label} data-testid="hear-it">
+      <Icon name="play" size={18} />
+      {t('hearIt')}
+    </Button>
+  );
+}
+
+/**
+ * The notes of one position: the highlighted shapes if any, otherwise the first one on the neck.
+ * Where a group holds several voicings (triads), the one nearest the nut is used.
+ */
+function positionNotes(shape: Shape, active: string[]): NoteEvent[] {
+  const groupIds = shape.groups.map((g) => g.id);
+  const chosen = activeGroupIds(groupIds, active);
+  const groups = chosen.length ? chosen : groupIds.slice(0, 1);
+  if (shape.kind === 'triad') {
+    const marks = shape.marks
+      .filter((m) => m.groups.some((g) => groups.includes(g)))
+      .sort((a, b) => a.fret - b.fret);
+    const strings = new Set<number>();
+    const voicing = marks.filter((m) => !strings.has(m.string) && strings.add(m.string));
+    return shapeNotes({ marks: voicing }, 'strum');
+  }
+  if (groups.length > 0) return shapeNotes(shape, 'arpeggio', groups);
+  // Whole neck: one octave up from the lowest root.
+  const all = shapeNotes(shape, 'arpeggio');
+  const root = shape.marks.filter((m) => m.role === 'root').sort((a, b) => a.midi - b.midi)[0];
+  const from = root?.midi ?? all[0]?.midi ?? 0;
+  return all
+    .filter((n) => n.midi >= from && n.midi <= from + 12)
+    .map((n, i) => ({ ...n, offset: i * 0.28 }));
+}
+
 /* ---------- chords ---------- */
 
 export function ChordView({ root, typeId, tuning, frets, leftHanded }: ViewProps) {
@@ -214,6 +253,17 @@ export function ChordView({ root, typeId, tuning, frets, leftHanded }: ViewProps
             chipLabel={shapeLabel}
           />
         ) : null}
+        <div className="row">
+          <HearButton
+            label={t('hearItChord')}
+            notes={() => {
+              const voicing = chosen ?? voicings[0];
+              return voicing
+                ? shapeNotes(voicingToShape(root, typeId, voicing, tuning), 'strum')
+                : [];
+            }}
+          />
+        </div>
       </div>
       <Neck
         shape={shape}
@@ -312,6 +362,9 @@ export function ScaleView({ root, typeId, tuning, frets, leftHanded }: ViewProps
             base.startsWith('nps') ? t('libPosition', { n: base.slice(3) }) : shapeLabel(base)
           }
         />
+        <div className="row">
+          <HearButton label={t('hearItNotes')} notes={() => positionNotes(shape, positions)} />
+        </div>
       </div>
       {!standard ? <p className="lib-hint">{t('libNoCaged')}</p> : null}
       <Neck
@@ -365,6 +418,9 @@ export function TriadView({ root, typeId, tuning, frets, leftHanded }: ViewProps
           onChange={setInversions}
           chipLabel={(base) => t(INVERSION_KEYS[base as Inversion])}
         />
+        <div className="row">
+          <HearButton label={t('hearItChord')} notes={() => positionNotes(shape, inversions)} />
+        </div>
       </div>
       <Neck
         shape={shape}
@@ -402,6 +458,9 @@ export function ArpeggioView({ root, typeId, tuning, frets, leftHanded }: ViewPr
           onChange={setPositions}
           chipLabel={shapeLabel}
         />
+        <div className="row">
+          <HearButton label={t('hearItNotes')} notes={() => positionNotes(shape, positions)} />
+        </div>
       </div>
       <Neck
         shape={shape}
@@ -506,6 +565,9 @@ export function KeyView({ root, typeId, tuning, frets, leftHanded }: ViewProps) 
           onChange={setPositions}
           chipLabel={shapeLabel}
         />
+        <div className="row">
+          <HearButton label={t('hearItNotes')} notes={() => positionNotes(shape, positions)} />
+        </div>
       </div>
       <Neck
         shape={shape}

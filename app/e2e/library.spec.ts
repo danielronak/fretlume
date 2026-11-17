@@ -94,6 +94,17 @@ test.describe('library @smoke', () => {
     await expect(page).toHaveURL(/#\/library\/chord\/E\/maj$/);
   });
 
+  test('hear it plays the chord and the scale without errors', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/#/library/chord/G/maj');
+    await page.getByRole('button', { name: 'Strum this chord' }).click();
+    await page.goto('/#/library/scale/A/minor-pentatonic');
+    await page.getByRole('button', { name: 'Play these notes' }).click();
+    await page.waitForTimeout(300);
+    expect(errors).toEqual([]);
+  });
+
   test('a broken address falls back to C major', async ({ page }) => {
     await page.goto('/#/library/chord/H/maj');
     await expect(page.getByRole('heading', { level: 2, name: 'C major' })).toBeVisible();

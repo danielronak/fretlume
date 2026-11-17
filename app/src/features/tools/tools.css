@@ -138,3 +138,307 @@
 .meter[data-verdict='loud'] .meter__verdict {
   color: var(--danger);
 }
+
+/* Tool pages */
+.tool-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.tool-header__back {
+  align-self: flex-start;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+.tool-header__back::before {
+  content: '← ';
+}
+.tool-header__back:hover {
+  color: var(--text);
+}
+.tool-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-3);
+  max-width: 720px;
+}
+.tool-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color var(--dur) var(--ease);
+}
+.tool-card:hover {
+  border-color: var(--accent);
+}
+.tool-card h2 {
+  font-size: var(--text-lg);
+}
+.tool-card p {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.field-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+/* Tuner */
+.tuner__options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+}
+.tuner__strings {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-width: 720px;
+}
+.tuner-string {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  overflow: hidden;
+  transition: border-color var(--dur) var(--ease);
+}
+.tuner-string[data-target='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.tuner-string[data-tuned='true'] {
+  border-color: var(--success);
+}
+.tuner-string__choose {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-3) var(--space-1) var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.tuner-string__note {
+  font: 700 var(--text-xl) / 1 var(--font-display);
+}
+.tuner-string__octave {
+  color: var(--text-muted);
+  font: 500 var(--text-xs) var(--font-mono);
+}
+.tuner-string__number {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+.tuner-string__tick {
+  color: var(--success);
+  font: 600 var(--text-xs) var(--font-mono);
+  text-transform: uppercase;
+}
+.tuner-string__hear {
+  width: 100%;
+  border-radius: 0;
+  border-top: 1px solid var(--hairline);
+}
+.tuner__display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  max-width: 720px;
+  text-align: center;
+}
+.tuner__note {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+.tuner__note-name {
+  font: 700 5rem / 1 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.tuner__note-octave {
+  color: var(--text-muted);
+  font: 600 var(--text-xl) var(--font-mono);
+}
+.tuner__readout {
+  display: flex;
+  gap: var(--space-5);
+  color: var(--text-muted);
+  font: 500 var(--text-sm) var(--font-mono);
+}
+.tuner__advice {
+  min-height: 1.5em;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+.tuner__advice[data-tone='good'] {
+  color: var(--success);
+}
+.tuner__big {
+  font: 650 var(--text-xl) var(--font-display);
+}
+.tuner__mic {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Cents meter */
+.cents {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.cents__labels,
+.cents__scale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--text-muted);
+  font: 600 var(--text-xs) var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cents__track {
+  position: relative;
+  height: 56px;
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+.cents__zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 10%;
+  background: var(--success);
+  opacity: 0.2;
+  border-radius: var(--radius-sm);
+}
+.cents__tick {
+  position: absolute;
+  top: 35%;
+  bottom: 35%;
+  width: 1px;
+  background: var(--hairline-strong);
+}
+.cents__tick--zero {
+  top: 15%;
+  bottom: 15%;
+  width: 2px;
+  background: var(--text-muted);
+}
+.cents__needle {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  width: 6px;
+  margin-left: -3px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  transition: left 80ms linear;
+}
+.cents[data-in-tune='true'] .cents__needle {
+  background: var(--success);
+  box-shadow: 0 0 0 6px var(--accent-soft);
+}
+@media (max-width: 640px) {
+  .tuner__strings {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .tuner__note-name {
+    font-size: 3.75rem;
+  }
+}
+
+/* Metronome */
+.metronome__main {
+  align-items: stretch;
+}
+.metronome__lights {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.metronome__light {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--hairline-strong);
+  background: transparent;
+  transition: background 60ms linear;
+}
+.metronome__light[data-first='true'] {
+  width: 30px;
+  height: 30px;
+}
+.metronome__light[data-on='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.metronome__countin {
+  min-height: 1.5em;
+  text-align: center;
+  color: var(--text-muted);
+  font: 600 var(--text-sm) var(--font-mono);
+  text-transform: uppercase;
+}
+.metronome__tempo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+}
+.metronome__tempo .btn {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  font-size: var(--text-xl);
+}
+.metronome__bpm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4ch;
+  font: 700 4rem / 1 var(--font-display);
+}
+.metronome__bpm small {
+  color: var(--text-muted);
+  font: 600 var(--text-xs) var(--font-mono);
+  letter-spacing: 0.1em;
+}
+.metronome__actions {
+  justify-content: center;
+}
+.metronome__start {
+  min-width: 160px;
+}

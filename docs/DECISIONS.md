@@ -95,3 +95,21 @@ The worklet writes only zeros to its output. The worklet is bundled with Vite's 
 precached like the rest of the app. Echo cancellation, noise suppression and auto gain are requested off;
 when the browser reports any still on, the panel says so (fallback ladder, phase 2).
 **Alternatives.** A zero-output worklet (not processed reliably everywhere); ScriptProcessorNode (deprecated).
+
+## D-014 · 2026-11-17 · Pitch detector refinement for stiff strings
+**Context.** On a plucked tone with realistic string stiffness (inharmonicity B ≈ 1e-4), plain MPM read up
+to 4.5 cents sharp just after the attack, fading over about a second; through the fake microphone every
+open string read 1.2–1.7 cents sharp, failing G6.1.
+**Decision.** `PitchDetector.detect` runs a second pass on a copy low-passed (two Butterworth sections) at
+1.5 × the first estimate, measured from 512 samples after the note onset so the filter has settled.
+Steady-state error drops to ≤ 0.2 cents. The first stable reading still comes within 150 ms (within 5 cents)
+and is within 1 cent by 400 ms, the in-tune hold time.
+**Alternatives.** Harmonic-sum estimation (more code, no measured benefit here); ignoring the bias (fails G6.1).
+
+## D-015 · 2026-11-17 · Reference tones and clicks are pre-rendered buffers
+**Context.** The plan named a Karplus–Strong AudioWorklet.
+**Decision.** Tones are rendered once per pitch (Karplus–Strong with an all-pass tuning stage, within
+1 cent from E2 to E5) into AudioBuffers and scheduled with `start(time)` on the audio clock; metronome
+clicks likewise. Simpler, sample-accurate, and testable in Node. A worklet is only needed for live,
+parameter-varying synthesis (Phase 10 band).
+**Alternatives.** Worklet synthesis now (more moving parts, nothing gained yet).

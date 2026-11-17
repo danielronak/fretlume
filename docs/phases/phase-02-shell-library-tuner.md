@@ -17,10 +17,10 @@ library, tune the guitar, use a metronome, keep favourites, back up data.
       folders; search box wired to the index with instant results; deep links (`/library/chord/C/maj`).
 - [x] **2.4 Audio core.** AudioContext lifecycle (user-gesture unlock, suspend on hide), capture worklet,
       ring buffer, device picker, input meter, permission UX.
-- [ ] **2.5 Pitch + tuner.** MPM in TS with unit tests on synthesized tones (generator in `tools/`),
+- [x] **2.5 Pitch + tuner.** MPM in TS with unit tests on synthesized tones (generator in `tools/`),
       tuner screen (our own layout: six string pills with reference-tone buttons, large note, ±50-cent
       meter, auto/guided mode, tuning presets, A4 setting, "above range" and "mic lost" states).
-- [ ] **2.6 Plucked-string synth + metronome.** Karplus–Strong worklet (reference tones; "hear this
+- [x] **2.6 Plucked-string synth + metronome.** Karplus–Strong worklet (reference tones; "hear this
       shape" button on library items — strum/arpeggiate the marks); look-ahead scheduler; metronome
       (tempo, time signature, subdivision, accent, tap tempo, count-in).
 - [ ] **2.7 Help.** "How it works" guide pages with our own illustrations (SVG drawn in code).

@@ -20,6 +20,7 @@ import {
   type BackupCounts,
 } from '@storage/backup';
 import { Button, Chip, Dialog, Toggle, useToast } from '@ui/index';
+import { TUNING_OPTIONS } from '@features/tools/tuningOptions';
 import './settings.css';
 
 function Section({ title, children, body }: { title: string; body?: string; children: ReactNode }) {
@@ -76,15 +77,6 @@ function ChoiceChips<T extends string>({
     </div>
   );
 }
-
-const TUNINGS: [TuningId, MessageKey][] = [
-  ['standard', 'tuningStandard'],
-  ['dropD', 'tuningDropD'],
-  ['halfStepDown', 'tuningHalfStepDown'],
-  ['dadgad', 'tuningDadgad'],
-  ['openG', 'tuningOpenG'],
-  ['openD', 'tuningOpenD'],
-];
 
 const GUITARS: [GuitarProfileId, MessageKey][] = [
   ['steel-acoustic', 'guitarSteel'],
@@ -227,7 +219,7 @@ export function Settings() {
             value={settings.tuning}
             onChange={(e) => settings.update({ tuning: e.target.value as TuningId })}
           >
-            {TUNINGS.map(([id, key]) => (
+            {TUNING_OPTIONS.map(([id, key]) => (
               <option key={id} value={id}>
                 {t(key)}
               </option>

@@ -4,8 +4,9 @@
 
 ## Now
 - **Current phase:** 2 — App shell, Library, Tuner (`docs/phases/phase-02-shell-library-tuner.md`)
-- **Done in this phase:** 2.1 settings + welcome, 2.2 storage + backups, 2.3 library screens, 2.4 audio core
-- **Next task:** 2.5 (MPM pitch detection + tuner screen, gate G6.1 through the fake microphone)
+- **Done in this phase:** 2.1 settings + welcome, 2.2 storage + backups, 2.3 library screens, 2.4 audio core,
+  2.5 tuner (G6.1 passes: 18/18 cases within 1 cent through the fake microphone), 2.6 reference tones + metronome
+- **Next task:** 2.7 (help pages), then 2.8 (screenshots, PWA checks, release 0.1.0)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
 - **Last updated:** 2026-11-17
@@ -44,7 +45,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 |---|---|---|---|
 | 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally and in CI (12 unit, 8 browser tests); first Pages deploy waits for the owner to enable Pages |
 | 1 Theory engine | **done** 2026-11-16 | — | 218 tests; core line coverage 99.2 %; fingering agreement 91.3 %; `docs/benchmarks/catalogue.json` |
-| 2 Shell, Library, Tuner | in progress (2.1–2.4 done) | v0.1 | |
+| 2 Shell, Library, Tuner | in progress (2.1–2.6 done) | v0.1 | G6.1: 18/18 within 1 cent (fake mic) |
 | 3 Camera + manual lock | not started | v0.2 🎸 | |
 | 4 Synthetic + auto-lock | not started | v0.3 🎸 | |
 | 5 Runs, playground, tabs (parity) | not started | v0.4 | |

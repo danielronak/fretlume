@@ -4,6 +4,7 @@
  * parabolic interpolation. Monophonic; used by the tuner and single-note checks.
  */
 import { FFT } from './fft';
+import { lowpass } from './filters';
 
 export interface PitchResult {
   fHz: number;
@@ -18,13 +19,23 @@ export interface MpmOptions {
   maxHz?: number;
   /** Peak-picking threshold relative to the highest key maximum. Default 0.93. */
   k?: number;
+  /**
+   * Second pass on a copy low-passed at 1.5 × the first estimate. Real strings are slightly
+   * inharmonic (upper partials run sharp), which pulls a plain estimate up to ~4 cents sharp just
+   * after the pluck; the second pass measures the fundamental. Default true.
+   */
+  refine?: boolean;
 }
+
+/** Samples skipped at the start of the filtered copy, while the filter settles. */
+const REFINE_SETTLE = 512;
 
 export class PitchDetector {
   private readonly fft: FFT;
   private readonly re: Float64Array;
   private readonly im: Float64Array;
   private readonly nsdf: Float64Array;
+  private readonly scratch: Float32Array;
 
   constructor(readonly windowSize: number) {
     let size = 1;
@@ -33,9 +44,36 @@ export class PitchDetector {
     this.re = new Float64Array(size);
     this.im = new Float64Array(size);
     this.nsdf = new Float64Array(windowSize);
+    this.scratch = new Float32Array(windowSize);
   }
 
   detect(frame: Float32Array, sampleRate: number, options: MpmOptions = {}): PitchResult | null {
+    const first = this.detectOnce(frame, sampleRate, options);
+    if (!first || options.refine === false) return first;
+    const n = Math.min(frame.length, this.windowSize);
+    const window = frame.subarray(frame.length - n);
+    // Let the filter settle after the note starts (a pluck part-way through the window), not just
+    // after the window starts; a filtered onset rings and would bias the estimate.
+    let peak = 0;
+    for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(window[i]!));
+    let onset = 0;
+    while (onset < n && Math.abs(window[onset]!) < peak * 0.02) onset++;
+    const from = onset + REFINE_SETTLE;
+    if (n - from < (2 * sampleRate) / first.fHz) return first; // too little settled signal
+    const filtered = lowpass(window, this.scratch, sampleRate, first.fHz * 1.5);
+    const second = this.detectOnce(filtered.subarray(from, n), sampleRate, {
+      ...options,
+      minHz: first.fHz / 1.3,
+      maxHz: first.fHz * 1.3,
+    });
+    return second ? { fHz: second.fHz, clarity: first.clarity } : first;
+  }
+
+  private detectOnce(
+    frame: Float32Array,
+    sampleRate: number,
+    options: MpmOptions,
+  ): PitchResult | null {
     const n = Math.min(frame.length, this.windowSize);
     const minLag = Math.max(2, Math.floor(sampleRate / (options.maxHz ?? 1400)));
     const maxLag = Math.min(n - 2, Math.ceil(sampleRate / (options.minHz ?? 60)));

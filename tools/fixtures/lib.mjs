@@ -77,3 +77,44 @@ export function sineTone(fHz, seconds, sampleRate, amplitude = 0.5) {
   }
   return out;
 }
+
+/** Seeded PRNG (mulberry32), same as app/src/audio/dsp/synth.ts. */
+export function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * A guitar-like pluck (12 slightly inharmonic partials, higher ones fading faster), normalised to
+ * `amplitude`. Mirrors `pluck` in app/src/audio/dsp/synth.ts, with a slower decay so a looping
+ * fixture keeps sounding.
+ */
+export function pluckTone(fHz, seconds, sampleRate, { amplitude = 0.5, seed = 1, decayScale = 0.35 } = {}) {
+  const out = new Float32Array(Math.round(seconds * sampleRate));
+  const random = rng(seed);
+  for (let h = 1; h <= 12; h++) {
+    const fh = h * fHz * Math.sqrt(1 + 1e-4 * h * h);
+    if (fh > sampleRate / 2.2) break;
+    const amp = (1 / h) * (0.6 + 0.4 * random());
+    const decay = (1.2 + 0.9 * h) * decayScale;
+    const phase = random() * 2 * Math.PI;
+    for (let i = 0; i < out.length; i++) {
+      const t = i / sampleRate;
+      out[i] += amp * Math.exp(-decay * t) * Math.sin(2 * Math.PI * fh * t + phase);
+    }
+  }
+  let peak = 0;
+  for (const v of out) peak = Math.max(peak, Math.abs(v));
+  const fade = Math.round(0.01 * sampleRate);
+  for (let i = 0; i < out.length; i++) {
+    const envelope = Math.min(1, (out.length - 1 - i) / fade);
+    out[i] = (out[i] / (peak || 1)) * amplitude * envelope;
+  }
+  return out;
+}

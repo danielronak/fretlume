@@ -30,6 +30,14 @@ export interface Settings {
   audioInputId: string;
   /** First-run welcome finished or skipped. */
   onboarded: boolean;
+  metronomeBpm: number;
+  /** "4/4", "6/8" … */
+  metronomeTime: string;
+  metronomeSubdivision: number;
+  metronomeAccent: boolean;
+  metronomeCountIn: boolean;
+  /** Tuner: true = one string at a time from the low E. */
+  tunerGuided: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -44,7 +52,15 @@ export const DEFAULT_SETTINGS: Settings = {
   colorMode: 'group',
   audioInputId: '',
   onboarded: false,
+  metronomeBpm: 90,
+  metronomeTime: '4/4',
+  metronomeSubdivision: 1,
+  metronomeAccent: true,
+  metronomeCountIn: false,
+  tunerGuided: false,
 };
+
+export const TIME_SIGNATURES = ['2/4', '3/4', '4/4', '5/4', '6/8', '7/8', '12/8'] as const;
 
 export const SETTINGS_STORAGE_KEY = `${STORAGE_PREFIX}.settings`;
 export const SETTINGS_VERSION = 1;
@@ -65,6 +81,7 @@ const ALLOWED: Partial<Record<keyof Settings, readonly string[]>> = {
   tuning: ['standard', 'dropD', 'halfStepDown', 'dadgad', 'openG', 'openD'],
   labelMode: ['notes', 'intervals', 'fingers', 'none'],
   colorMode: ['group', 'note', 'degree', 'finger', 'single'],
+  metronomeTime: TIME_SIGNATURES,
 };
 
 /** Keep only known keys with values of the right type (and, for choices, a known value). */
@@ -82,6 +99,8 @@ export function sanitizeSettings(input: unknown): Settings {
   }
   out.capo = Math.min(12, Math.max(0, Math.round(out.capo)));
   out.a4Hz = Math.min(450, Math.max(430, out.a4Hz));
+  out.metronomeBpm = Math.min(260, Math.max(30, Math.round(out.metronomeBpm)));
+  if (![1, 2, 3, 4].includes(out.metronomeSubdivision)) out.metronomeSubdivision = 1;
   return out;
 }
 
