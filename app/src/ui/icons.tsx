@@ -12,7 +12,14 @@ export type IconName =
   | 'settings'
   | 'sun'
   | 'moon'
-  | 'close';
+  | 'close'
+  | 'heart'
+  | 'heartFilled'
+  | 'folder'
+  | 'search'
+  | 'play'
+  | 'trash'
+  | 'edit';
 
 const paths: Record<IconName, ReactNode> = {
   // A sun rising over a horizon line.
@@ -74,6 +81,23 @@ const paths: Record<IconName, ReactNode> = {
   ),
   moon: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />,
   close: <path d="M6 6l12 12M18 6 6 18" />,
+  heart: <path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" />,
+  heartFilled: (
+    <path
+      d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z"
+      fill="currentColor"
+    />
+  ),
+  folder: <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />,
+  search: (
+    <>
+      <circle cx="11" cy="11" r="6" />
+      <path d="m16 16 4 4" />
+    </>
+  ),
+  play: <path d="M8 5v14l11-7Z" />,
+  trash: <path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" />,
+  edit: <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4" />,
 };
 
 export function Icon({ name, size = 22 }: { name: IconName; size?: number }) {

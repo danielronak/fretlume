@@ -1,27 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 
-/** Put a favourite straight into the app's database (the library UI arrives in task 2.3). */
-async function addFavouriteDirectly(page: Page, id: string) {
-  await page.evaluate(
-    (itemId) =>
-      new Promise<void>((resolve, reject) => {
-        const open = indexedDB.open('fretlume');
-        open.onerror = () => reject(open.error);
-        open.onsuccess = () => {
-          const tx = open.result.transaction('favourites', 'readwrite');
-          tx.objectStore('favourites').put({ id: itemId, addedAt: Date.now() });
-          tx.oncomplete = () => {
-            open.result.close();
-            resolve();
-          };
-          tx.onerror = () => reject(tx.error);
-        };
-      }),
-    id,
-  );
-}
-
 async function countFavourites(page: Page): Promise<number> {
   return page.evaluate(
     () =>
@@ -44,11 +23,10 @@ test.describe('backup @smoke', () => {
     await page.goto('/#/settings');
     await page.getByRole('button', { name: 'Right hand on the neck' }).click();
 
-    // First export opens the database; then add a favourite and export again.
-    const first = page.waitForEvent('download');
-    await page.getByRole('button', { name: 'Save a backup file' }).click();
-    await first;
-    await addFavouriteDirectly(page, 'chord-0-maj');
+    await page.goto('/#/library/chord/C/maj');
+    await page.getByTestId('favourite-toggle').click();
+    await expect(page.getByTestId('favourite-toggle')).toHaveAttribute('aria-pressed', 'true');
+    await page.goto('/#/settings');
 
     const second = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Save a backup file' }).click();
@@ -82,6 +60,8 @@ test.describe('backup @smoke', () => {
       'aria-pressed',
       'true',
     );
+    await page.goto('/#/library/chord/C/maj');
+    await expect(page.getByTestId('favourite-toggle')).toHaveAttribute('aria-pressed', 'true');
   });
 
   test('a file that is not a backup changes nothing', async ({ page }) => {
