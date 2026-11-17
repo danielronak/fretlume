@@ -195,11 +195,39 @@ def torso_v2(rng: np.random.Generator, bg: np.ndarray, H: np.ndarray, inst: Inst
         cv2.line(bg, tuple(int(v) for v in a), tuple(int(v) for v in b), color, width, cv2.LINE_AA)
 
 
+def background_c(rng: np.random.Generator, w: int, h: int) -> np.ndarray:
+    """val-C style: a defocused 'photo' — smooth multi-scale colour fields with bokeh highlights."""
+    bg = np.zeros((h, w, 3), np.float32)
+    for scale, amp in ((24, 0.35), (64, 0.5), (160, 0.4)):
+        field = rng.normal(0, 1, (max(2, h // scale), max(2, w // scale), 3)).astype(np.float32)
+        bg += cv2.resize(field, (w, h), interpolation=cv2.INTER_CUBIC) * amp
+    bg = 0.45 + 0.18 * bg + np.array(muted(rng, -0.1, 0.1), np.float32)
+    for _ in range(int(rng.integers(0, 12))):  # out-of-focus lights
+        c = (int(rng.uniform(0, w)), int(rng.uniform(0, h)))
+        r = int(w * rng.uniform(0.01, 0.04))
+        disc = np.zeros((h, w), np.float32)
+        cv2.circle(disc, c, r, 1.0, -1, cv2.LINE_AA)
+        bg += cv2.GaussianBlur(disc, (0, 0), r * 0.3)[..., None] * rng.uniform(0.2, 0.6) * np.array(muted(rng, 0.6, 1.0), np.float32)
+    return np.clip(cv2.GaussianBlur(bg, (0, 0), w * 0.012), 0, 1)
+
+
+def light_c(rng: np.random.Generator, frame: np.ndarray) -> np.ndarray:
+    """val-C lighting: a directional gradient and a warm or cool cast over the whole picture."""
+    h, w = frame.shape[:2]
+    ang = rng.uniform(0, 2 * np.pi)
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    g = ((xx / w - 0.5) * np.cos(ang) + (yy / h - 0.5) * np.sin(ang))
+    gain = 1 + g * rng.uniform(0.4, 1.0)
+    cast = np.array([rng.uniform(0.85, 1.15), 1.0, rng.uniform(0.85, 1.15)], np.float32)
+    return np.clip(frame * gain[..., None] * cast, 0, 1)
+
+
 class Worker:
     """One process's generator: a texture pool and the frame sampler."""
 
     def __init__(self, split: str, seed: int, pool: int = 40):
         self.rng = np.random.default_rng(seed)
+        self.split = split
         self.fam = families(split)
         self.pool: list[tuple[Instrument, object, np.ndarray, np.ndarray]] = []
         for _ in range(pool):
@@ -208,6 +236,8 @@ class Worker:
     def _texture(self):
         inst = INSTRUMENTS[str(self.rng.choice(PROFILES, p=[0.45, 0.4, 0.15]))]
         look = sample_look_v2(self.rng, inst, self.fam)
+        if self.split == 'val-c':  # stronger specular glare on the board
+            look = replace(look, glare=float(self.rng.uniform(0.3, 0.8)))
         tex, alpha = render_neck_texture(inst, look, pxmm=1.0)
         return inst, look, tex, alpha
 
@@ -216,7 +246,8 @@ class Worker:
         if rng.random() < 0.01:  # refresh the pool slowly
             self.pool[int(rng.integers(len(self.pool)))] = self._texture()
         w, h = IN_W * RENDER_SCALE, IN_H * RENDER_SCALE
-        bg = background_v2(rng, w, h).astype(np.float32)
+        style_c = self.split == 'val-c'
+        bg = (background_c if style_c else background_v2)(rng, w, h).astype(np.float32)
         inst, look, tex, alpha = self.pool[int(rng.integers(len(self.pool)))]
         label: dict = {'presence': 0, 'profile': PROFILES.index(inst.id), 'board': -1, 'inlay': -1}
         if negative:
@@ -234,6 +265,8 @@ class Worker:
             down = np.diag([1 / RENDER_SCALE, 1 / RENDER_SCALE, 1.0])
             Hin = down @ H
             label.update(presence=1, H=Hin, inst=inst, look=look)
+        if style_c:
+            frame = light_c(rng, frame)
         small = cv2.resize(frame.astype(np.float32), (IN_W, IN_H), interpolation=cv2.INTER_AREA)
         return camera_v2(rng, small, low_light=rng.random() < 0.15), label
 
@@ -292,7 +325,8 @@ def cmd_shards(args) -> None:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     n_shards = (args.frames + args.shard - 1) // args.shard
-    base = {'train': 1_000_000, 'val-a': 2_000_000, 'val-b': 3_000_000, 'negatives': 4_000_000}[args.split] + args.seed
+    base = {'train': 1_000_000, 'val-a': 2_000_000, 'val-b': 3_000_000, 'val-c': 5_000_000,
+            'negatives': 4_000_000}[args.split] + args.seed
     jobs = []
     for i in range(n_shards):
         path = out / f'{i:06d}.npz'
@@ -345,7 +379,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest='cmd', required=True)
     s = sub.add_parser('shards')
-    s.add_argument('--split', choices=['train', 'val-a', 'val-b', 'negatives'], required=True)
+    s.add_argument('--split', choices=['train', 'val-a', 'val-b', 'val-c', 'negatives'], required=True)
     s.add_argument('--frames', type=int, required=True)
     s.add_argument('--shard', type=int, default=2048)
     s.add_argument('--out', required=True)
