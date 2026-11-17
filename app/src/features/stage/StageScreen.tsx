@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useSettings } from '@/state/settings';
+import { useSettings, type GuitarProfileId } from '@/state/settings';
 import { camera, type CameraStatus } from '@/camera/camera';
 import { debugEnabled, VisionClient } from '@/camera/visionClient';
 import { INSTRUMENTS, type InstrumentModel } from '@core/guitar/instrument';
@@ -27,6 +27,12 @@ import { clearColorCache, drawGrid, drawOverlay, toCanvas, toVideo, type View } 
 import './stage.css';
 
 type Phase = 'framing' | 'marking' | 'snapping' | 'confirm' | 'tracking';
+
+const PROFILE_LABEL: Record<string, MessageKey> = {
+  'steel-acoustic': 'stageProfileSteel',
+  electric: 'stageProfileElectric',
+  classical: 'stageProfileClassical',
+};
 
 const INSTRUMENT_ID: Record<string, InstrumentId> = {
   'steel-acoustic': 'steelAcoustic',
@@ -133,6 +139,9 @@ export function StageScreen() {
     hint: null,
   });
   const [autoAvailable, setAutoAvailable] = useState<boolean | null>(null);
+  /** Guitar type NeckNet keeps seeing, when it differs from the one in settings (task 4.8). */
+  const [suggested, setSuggested] = useState<string | null>(null);
+  const profileVotes = useRef<string[]>([]);
   const [shift, setShift] = useState(0);
 
   const videoSize = { width: cam.width || 1280, height: cam.height || 720 };
@@ -156,6 +165,13 @@ export function StageScreen() {
       });
       clientRef.current.onAuto((a) => {
         autoRef.current = a;
+        if (a.profile && a.presence > 0.8) {
+          const votes = [...profileVotes.current, a.profile].slice(-8);
+          profileVotes.current = votes;
+          const current = useSettings.getState().guitar;
+          const agree = votes.length >= 6 && votes.every((v) => v === a.profile);
+          setSuggested(agree && a.profile !== current ? a.profile : null);
+        }
         setAutoView((v) =>
           v.state === a.state && v.hint === a.hint ? v : { state: a.state, hint: a.hint },
         );
@@ -659,6 +675,25 @@ export function StageScreen() {
                   ? hintText(autoView, settings.mirrorView)
                   : t('stageFrame')}
               </p>
+              {suggested ? (
+                <div className="stage__actions" data-testid="profile-suggestion">
+                  <span>
+                    {t('stageProfileSuggest', {
+                      type: t(PROFILE_LABEL[suggested] ?? 'stageProfileSteel'),
+                    })}
+                  </span>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      update({ guitar: suggested as GuitarProfileId });
+                      setSuggested(null);
+                      profileVotes.current = [];
+                    }}
+                  >
+                    {t('stageProfileSwitch')}
+                  </Button>
+                </div>
+              ) : null}
               {autoAvailable === false && settings.autoLock ? (
                 <p className="stage__note">{t('stageAutoUnavailable')}</p>
               ) : null}

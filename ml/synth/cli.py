@@ -73,9 +73,10 @@ def cmd_frames(args) -> None:
             pose = sample_pose(rng, w, h)
             hand = sample_hand(rng, inst) if rng.random() < args.hand_prob else None
             bg = render_background(rng, w, h)
-            frame8, H = render_one(rng, inst, look, texture, alpha, pose, bg, hand, w=w, h=h)
+            guitar = not args.no_guitar
+            frame8, H = render_one(rng, inst, look, texture, alpha, pose, bg, hand, w=w, h=h, guitar=guitar)
             write_frame(out, i, frame8, args.format)
-            labels.write(json.dumps(label(i, w, h, inst, H, look, hand, True)) + '\n')
+            labels.write(json.dumps(label(i, w, h, inst, H if guitar else None, look, hand, guitar)) + '\n')
 
 
 def cmd_clip(args) -> None:
@@ -140,6 +141,7 @@ def main() -> None:
         p.add_argument('--format', choices=['gray', 'png'], default='gray')
     sub.choices['frames'].add_argument('--count', type=int, default=200)
     sub.choices['frames'].add_argument('--hand-prob', type=float, default=0.5)
+    sub.choices['frames'].add_argument('--no-guitar', action='store_true', help='scenes without a guitar (negatives)')
     sub.choices['clip'].add_argument('--kind', choices=KINDS, required=True)
     sub.choices['clip'].add_argument('--frames', type=int, default=45)
     sub.choices['clip'].add_argument('--instrument', choices=list(INSTRUMENTS))

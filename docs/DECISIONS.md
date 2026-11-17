@@ -177,3 +177,26 @@ an index guard against slow along-neck drift; real-camera field data will show w
   Settings → Field test; they live in memory (last 15 s, 2 per second) and are deleted when switched off.
 **Alternatives.** A zip library (MIT, small) when frame volume grows; index guard always on (rejected,
 above); a clip per tracked motion speed (later, with field data).
+
+## D-019 · 2026-11-17 · NeckNet runs on our own small runtime, not onnxruntime-web
+**Context.** Spec 01 §8 planned ONNX + onnxruntime-web. Its WASM binaries are ~10 MB against the 12 MB budget
+for model + runtime, and the multi-threaded build needs cross-origin isolation headers that GitHub Pages
+cannot send.
+**Decision.** NeckNet uses only ops a ~250-line TypeScript runtime implements (`app/src/vision/nn.ts`):
+1×1/3×3/depthwise convolutions with batch norm folded in, ReLU6, add, nearest ×2 upsampling, global pooling,
+linear. `ml/train/export.py` writes fp16 weights (≈ 1 MB) and the op list; parity with PyTorch is a unit test
+(`nn.test.ts`, the spec's < 1e-2 criterion relative to the output size). Bundle cost: the model file only.
+**Alternatives.** onnxruntime-web (size, threads); TF.js (size, its own WebGL quirks).
+
+## D-020 · 2026-11-17 · Generator v2 and the evaluation splits
+**Decision.** Training frames are rendered at 576×320 and area-downscaled to the network's 288×160 (as a
+camera frame is), with camera effects applied at the final size; neck textures come from a per-worker pool
+(≈ 200 frames/s on 4 cores). Splits: train (300 k frames, 12 % without a guitar), val-A (same families, new
+seeds), val-B (held-out pau-ferro board, trapezoid and blob inlays, checked clothing), val-C (instead of 3-D
+renders: a photo-composite style — defocused backgrounds with bokeh, a lighting gradient and strong glare),
+negatives. The `bpy` 3-D route (task 4.2) is skipped: val-C covers the domain-gap check at a fraction of
+the cost; the real-photo golden set (4.9) is the stronger check.
+**Index verification.** Fret wires cannot fix the index, so after any lock the index is checked from the
+inlay pattern (spaces 3·5·7·9·12·15·17) and the nut (wires in front, none behind, brightness change): 97.2 %
+correct over shifts −2…+2 on held-out frames (dots 98.3, blocks 95.5, plain boards 94.7). Ties keep the
+fit's index. A weak margin makes the confirm step ask the player.

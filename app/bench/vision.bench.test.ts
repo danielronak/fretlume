@@ -10,6 +10,9 @@ import { apply, type Mat3 } from '@vision/geometry';
 import { snapLock, tapPointsMm } from '@vision/lock';
 import { ensureClips, ensureFrames, modelFor, readFrame, readLabels, ROOT, synth } from './data';
 import { TrackingSession } from '@vision/tracking';
+import { AutoLocker } from '@vision/autoLock';
+import { detectNeck } from '@vision/neckNet';
+import { Network, type Manifest } from '@vision/nn';
 import { controlPointsPx } from '@vision/geometry';
 
 const OUT = resolve(ROOT, 'docs/benchmarks/vision-phase3.json');
@@ -317,4 +320,69 @@ describe('G3.3–G3.5: tracking after a lock', () => {
     save();
     expect(perClip.length).toBe(12);
   }, 3_600_000);
+});
+
+const MODEL = resolve(ROOT, 'app/public/models/necknet-v1');
+
+describe('G4.3: automatic lock, end to end', () => {
+  it.skipIf(!existsSync(`${MODEL}.bin`))(
+    'detect → snap → index check on held-out frames; false locks on scenes without a guitar',
+    () => {
+      const bin = readFileSync(`${MODEL}.bin`);
+      const net = Network.fromBuffers(
+        JSON.parse(readFileSync(`${MODEL}.json`, 'utf8')) as Manifest,
+        bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength),
+      );
+      const trackers = new Map<string, EdgeTracker>();
+      const attempt = (dir: string, label: ReturnType<typeof readLabels>[number]) => {
+        const model = modelFor(label);
+        if (!trackers.has(model.id)) trackers.set(model.id, new EdgeTracker(model));
+        const image = readFrame(dir, label);
+        const locker = new AutoLocker(trackers.get(model.id)!, (img) => detectNeck(net, img));
+        const started = performance.now();
+        const status = locker.update(image, 0);
+        return { status, ms: performance.now() - started };
+      };
+      const dir = ensureFrames('g32', ['frames', '--count', '200', '--seed', '32']);
+      let found = 0;
+      let correct = 0;
+      let wrongIndex = 0;
+      const ms: number[] = [];
+      const labels = readLabels(dir);
+      for (const label of labels) {
+        const { status, ms: t } = attempt(dir, label);
+        ms.push(t);
+        if (status.state !== 'verifying' || !status.H) continue;
+        found++;
+        const e = trackingError(status.H, label.H!, modelFor(label));
+        if (isSuccess(e)) correct++;
+        else if (e.along > 0.75) wrongIndex++;
+      }
+      const negDir = ensureFrames('g43-neg', [
+        'frames',
+        '--count',
+        '200',
+        '--seed',
+        '43',
+        '--no-guitar',
+      ]);
+      let falseLocks = 0;
+      const negatives = readLabels(negDir);
+      for (const label of negatives)
+        if (attempt(negDir, label).status.state !== 'searching') falseLocks++;
+      results.G43 = {
+        gate: '≥ 95 % correct, ≤ 1 % wrong index, ≤ 0.5 % false lock without a guitar (single-frame proxy)',
+        frames: labels.length,
+        locked: Number((found / labels.length).toFixed(3)),
+        correct: Number((correct / labels.length).toFixed(3)),
+        wrongIndex: Number((wrongIndex / labels.length).toFixed(3)),
+        negatives: negatives.length,
+        falseLock: Number((falseLocks / negatives.length).toFixed(3)),
+        msPerAttempt: Number(median(ms).toFixed(0)),
+      };
+      save();
+      expect(labels.length).toBe(200);
+    },
+    3_600_000,
+  );
 });
