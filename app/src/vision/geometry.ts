@@ -211,7 +211,12 @@ export function fitInverseFromLines(constraints: LineConstraint[]): Mat3 {
   const axis = (key: 'x' | 'y') => {
     let sw = 0;
     let m = 0;
-    for (const c of used) if (c[key] !== undefined) (sw += c.weight), (m += c.weight * c[key]);
+    for (const c of used) {
+      const v = c[key];
+      if (v === undefined) continue;
+      sw += c.weight;
+      m += c.weight * v;
+    }
     m = sw ? m / sw : 0;
     let d = 0;
     for (const c of used) if (c[key] !== undefined) d += c.weight * Math.abs(c[key] - m);
