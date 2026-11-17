@@ -1,0 +1,43 @@
+import { describe, expect, it } from 'vitest';
+import { INSTRUMENTS } from '@core/guitar/instrument';
+import { apply, fromControlPoints, type Mat3 } from './geometry';
+import { homographyFromTaps, tapPointsMm } from './lock';
+
+const model = INSTRUMENTS.steelAcoustic;
+const H: Mat3 = fromControlPoints(
+  [
+    { x: 1100, y: 240 },
+    { x: 1112, y: 330 },
+    { x: 560, y: 450 },
+    { x: 548, y: 352 },
+  ],
+  model,
+);
+
+describe('lock taps', () => {
+  it('4 and 6 exact taps give back the homography', () => {
+    for (const count of [4, 6] as const) {
+      const taps = tapPointsMm(model, count).map((p) => apply(H, p.x, p.y));
+      const fitted = homographyFromTaps(taps, model);
+      for (const q of [
+        { x: 0, y: 0 },
+        { x: 400, y: 20 },
+      ]) {
+        const a = apply(fitted, q.x, q.y);
+        const b = apply(H, q.x, q.y);
+        expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeLessThan(1e-6);
+      }
+    }
+  });
+
+  it('the first four tap points are the control points', () => {
+    const four = tapPointsMm(model, 4);
+    expect(tapPointsMm(model, 6).slice(0, 4)).toEqual(four);
+    expect(four[0]!.x).toBe(0);
+    expect(four[0]!.y).toBeLessThan(0);
+  });
+
+  it('rejects other tap counts', () => {
+    expect(() => homographyFromTaps([], model)).toThrow();
+  });
+});

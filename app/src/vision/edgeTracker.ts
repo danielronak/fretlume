@@ -9,8 +9,10 @@
 import { fretX, halfWidth, stringY, type InstrumentModel } from '@core/guitar/instrument';
 import {
   apply,
+  controlPointsPx,
   fitHomography,
   fitInverseFromLines,
+  IDENTITY,
   invert,
   multiply,
   normalize,
@@ -23,7 +25,10 @@ import { blur1D, blur2D, median, percentile } from './signal';
 
 export const STRIP_W = 768;
 export const STRIP_H = 128;
-const SYH = 36;
+/** Strip half-height in mm: the reference tracker's ±36, and wider for the improved mode so both
+ * board edges of a classical neck stay inside with room to search. */
+const SYH_PARITY = 36;
+const SYH_IMPROVED = 48;
 
 export interface RefineOptions {
   /** Refinement rounds. Default 5 (lock); tracking uses 1–2. */
@@ -75,9 +80,10 @@ export class EdgeTracker {
   readonly sx0: number;
   readonly sx1: number;
   readonly kx: number;
-  readonly ky = STRIP_H / (2 * SYH);
-  readonly S: Mat3;
-  readonly Sinv: Mat3;
+  private syh = SYH_PARITY;
+  ky = STRIP_H / (2 * SYH_PARITY);
+  S: Mat3;
+  Sinv: Mat3;
   readonly xs: number[];
   readonly cols0: number[];
   readonly spacing: number[];
@@ -93,8 +99,9 @@ export class EdgeTracker {
     this.sx0 = -14;
     this.sx1 = fretX(model, model.fretCount) + 6 + 6;
     this.kx = STRIP_W / (this.sx1 - this.sx0);
-    this.S = [this.kx, 0, -this.sx0 * this.kx, 0, this.ky, STRIP_H / 2, 0, 0, 1];
-    this.Sinv = invert(this.S);
+    this.S = IDENTITY;
+    this.Sinv = IDENTITY;
+    this.setStripHeight(SYH_PARITY);
     this.xs = Array.from({ length: this.frets + 1 }, (_, n) => fretX(model, n));
     this.cols0 = this.xs.map((x) => (x - this.sx0) * this.kx);
     this.spacing = this.cols0.map((c, n) =>
@@ -102,8 +109,16 @@ export class EdgeTracker {
     );
   }
 
+  private setStripHeight(syh: number): void {
+    if (syh === this.syh && this.S !== IDENTITY) return;
+    this.syh = syh;
+    this.ky = STRIP_H / (2 * syh);
+    this.S = [this.kx, 0, -this.sx0 * this.kx, 0, this.ky, STRIP_H / 2, 0, 0, 1];
+    this.Sinv = invert(this.S);
+  }
+
   private row(yMm: number): number {
-    return Math.trunc((yMm + SYH) * this.ky);
+    return Math.trunc((yMm + this.syh) * this.ky);
   }
 
   /** Strip ← image through M (strip px → image px), blurred; returns pixel samples taken. */
@@ -274,7 +289,7 @@ export class EdgeTracker {
       edges: Float32Array;
       edgeRows: [number, number];
     }
-    const centreRow = SYH * ky;
+    const centreRow = this.syh * ky;
     const stations: Station[] = [];
     for (const sign of [1, -1]) {
       for (let n = 1; n <= maxFret; n++) {
@@ -306,10 +321,10 @@ export class EdgeTracker {
         const x = (0.5 * (a + b)) / this.kx + this.sx0;
         const rows = Array.from(
           { length: strings },
-          (_, s) => (stringY(model, s + 1, x) + SYH) * ky,
+          (_, s) => (stringY(model, s + 1, x) + this.syh) * ky,
         );
         const hw = halfWidth(model, x);
-        const edgeRows: [number, number] = [(-hw + SYH) * ky, (hw + SYH) * ky];
+        const edgeRows: [number, number] = [(-hw + this.syh) * ky, (hw + this.syh) * ky];
         stations.push({ x, col: 0.5 * (a + b), profile, rows, edges, edgeRows, sign } as Station & {
           sign: number;
         });
@@ -502,13 +517,25 @@ export class EdgeTracker {
     const wide = options.wide ?? true;
     const mode = options.mode ?? 'improved';
     const polarity = options.polarity ?? 'bright';
+    this.setStripHeight(mode === 'parity' ? SYH_PARITY : SYH_IMPROVED);
     const { ky, xs, spacing, cols0, model } = this;
     let H = H0;
     let inliers = 0;
     let score = 0;
     let samples = 0;
     let debugInfo: RefineResult['debug'];
-    for (let it = 0; it < iterations; it++) {
+    // Measurements too few or an update too large: a failed first round fails the refinement;
+    // a later one keeps what the earlier rounds found (improved mode).
+    let it = 0;
+    const stop = (): RefineResult =>
+      it === 0 || mode === 'parity'
+        ? { H: H0, inliers: 0, score: 0, samples }
+        : { H, inliers, score, samples, ...(debugInfo ? { debug: debugInfo } : {}) };
+    const nutPx = (G: Mat3) => {
+      const [a, b] = controlPointsPx(G, model);
+      return Math.hypot(b!.x - a!.x, b!.y - a!.y);
+    };
+    for (; it < iterations; it++) {
       const M = multiply(H, this.Sinv);
       samples += this.rectify(image, M, mode);
       this.evidence(polarity, mode);
@@ -599,7 +626,7 @@ export class EdgeTracker {
           const cs = c0 + k + offset;
           const ym = 0.5 * (yLo + yHi);
           src.push({ x, y: ym });
-          dst.push({ x: cs, y: (ym + SYH) * ky });
+          dst.push({ x: cs, y: (ym + this.syh) * ky });
           weights.push(Math.min(peak / (8 * noise), 1));
           axes.push('x');
           found.push(cs);
@@ -621,7 +648,7 @@ export class EdgeTracker {
           const inside =
             median(Array.from(Eb.subarray(this.row(-0.6 * hw), this.row(0.6 * hw)))) + 1e-3;
           for (const sgn of [-1, 1]) {
-            const re = (sgn * hw + SYH) * ky;
+            const re = (sgn * hw + this.syh) * ky;
             const Rr = Math.trunc((it === 0 ? 13 : 5) * ky);
             let best = 0;
             let bestR: number | null = null;
@@ -656,7 +683,7 @@ export class EdgeTracker {
         weights.push(...cue.weights);
         for (let i = 0; i < cue.src.length; i++) axes.push('y');
       }
-      if (src.length < 14) return { H: H0, inliers: 0, score: 0, samples };
+      if (src.length < 14) return stop();
       const dstImage = dst.map((p) => apply(M, p.x, p.y));
       let w = weights.slice();
       let Hn = H;
@@ -678,18 +705,22 @@ export class EdgeTracker {
             const b = apply(G, p.x, p.y);
             return axes[i] === 'x' ? Math.abs(b.x - src[i]!.x) : Math.abs(b.y - src[i]!.y);
           });
-          const scale = 1.4826 * median(residuals.slice()) + 0.25;
+          // Along and across residuals have different sizes; each gets its own robust scale.
+          const scaleOf = (axis: 'x' | 'y') =>
+            1.4826 * median(residuals.filter((_, i) => axes[i] === axis)) + 0.25;
+          const scales = { x: scaleOf('x'), y: scaleOf('y') };
           w = weights.map((w0, i) => {
             const r = residuals[i]!;
+            const scale = scales[axes[i]!];
             return r < 3 * scale ? w0 * (1 - (r / (3 * scale)) ** 2) ** 2 : 0;
           });
           const kept = (axis: 'x' | 'y') => w.filter((v, i) => v > 0 && axes[i] === axis).length;
-          if (kept('x') < 8 || kept('y') < 6) return { H: H0, inliers: 0, score: 0, samples };
+          if (kept('x') < 8 || kept('y') < 6) return stop();
         }
         try {
           Hn = normalize(invert(G));
         } catch {
-          return { H: H0, inliers: 0, score: 0, samples };
+          return stop();
         }
       } else
         for (let round = 0; round < 4; round++) {
@@ -703,8 +734,16 @@ export class EdgeTracker {
             const r = residuals[i]!;
             return r < 3 * scale ? w0 * (1 - (r / (3 * scale)) ** 2) ** 2 : 0;
           });
-          if (w.filter((v) => v > 0).length < 12) return { H: H0, inliers: 0, score: 0, samples };
+          if (w.filter((v) => v > 0).length < 12) return stop();
         }
+      if (mode === 'improved') {
+        // No round moves a control point by more than the nut's width (twice that when locking).
+        const before = controlPointsPx(H, model);
+        const after = controlPointsPx(Hn, model);
+        const limit = (it === 0 ? 2 : 1) * nutPx(H);
+        if (after.some((p, i) => !(Math.hypot(p.x - before[i]!.x, p.y - before[i]!.y) < limit)))
+          return stop();
+      }
       H = Hn;
       inliers = w.filter((v) => v > 0).length;
       score = w.reduce((a, b) => a + b, 0);

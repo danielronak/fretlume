@@ -113,3 +113,26 @@ and is within 1 cent by 400 ms, the in-tune hold time.
 clicks likewise. Simpler, sample-accurate, and testable in Node. A worklet is only needed for live,
 parameter-varying synthesis (Phase 10 band).
 **Alternatives.** Worklet synthesis now (more moving parts, nothing gained yet).
+
+## D-016 · 2026-11-17 · Lock refinement: one-coordinate measurements, tap-anchored search, G3.2 fallback
+**Context.** Gate G3.2 asks for ≥ 97 % lock success at σ = 5 px tap noise and ≥ 90 % at σ = 8 px. The ported
+reference tracker reaches 13 % / 6 % on the current synthetic frames (strings with shadows). Diagnosis on the
+seed-31 frames showed three causes: (1) each fret wire and string was fitted as a full 2-D point, so the
+coordinate it does not measure was pinned to the starting estimate; (2) tap noise appears as perspective, off
+by up to 2 fret spacings at fret 7 and 12 at fret 17, outside the comb search range; (3) the six-string
+pattern aliases by one string when the start is off across the neck.
+**Decision.** In the improved mode: fit the inverse homography from line constraints (fret wires fix board x,
+strings and the board-edge midpoint fix board y; separate robust scales per axis); anchor the wide comb at
+frets 0, 7, 12 (taps at 0 and 12, wide range at 7) and re-run a narrow comb every round; widen the strip to
+±48 mm and score the board edges (wide step filter, midpoint only, since the neck side shows 1–2 mm outside the
+board); cap per-round control-point moves; try both wire polarities and keep the better score. Parity mode
+is unchanged (G3.1 still passes). Offer two optional taps at the 5th-fret corners (6-point fit).
+**Measured (held-out seed-32 frames, `docs/benchmarks/vision-phase3.json` G32).** 4 taps: 91.5 % (σ 5),
+86.5 % (σ 8). 6 taps: 91.5 % (σ 5), 91.5 % (σ 8). From exact taps 93.5 %: the remaining failures are mostly
+maple boards with dark wires, where strings show as their offset shadows, and fits are self-consistent, so
+the score cannot flag them (verified threshold 0.9 accepts 18 % of locks at 100 % precision).
+**Gate.** G3.2 fails at σ = 5 px (91.5 % < 97 %); σ = 8 px passes with 6 taps (fallback ladder step 2).
+Following step 3, the remainder is carried to Phase 4 (learned strip model). The lock UI always shows the
+confirm step, so the player checks the grid; "verified" is shown only at confidence ≥ 0.9.
+**Alternatives.** More hand-tuning against renderer details (risk of fitting the generator, not guitars);
+multi-start (the score does not separate right from wrong fits, measured on 39 failures: 20 vs 19).

@@ -2,35 +2,140 @@
   "G31": {
     "gate": "success rates within ±3 points of the Python reference; median along error ≤ 0.03 fret",
     "frames": 200,
-    "msPerRefine": 66.5,
+    "msPerRefine": 69.3,
     "perSigma": [
       {
         "sigma": 2,
         "cases": 200,
-        "successTs": 0.96,
-        "successPython": 0.965,
-        "caseAgreement": 0.985,
-        "medianAlongTs": 0.0075,
-        "medianAlongPython": 0.0076
+        "successTs": 0.275,
+        "successPython": 0.305,
+        "caseAgreement": 0.96,
+        "medianAlongTs": 0.0123,
+        "medianAlongPython": 0.0126
       },
       {
         "sigma": 5,
         "cases": 200,
-        "successTs": 0.76,
-        "successPython": 0.76,
-        "caseAgreement": 0.98,
-        "medianAlongTs": 0.0109,
-        "medianAlongPython": 0.0107
+        "successTs": 0.115,
+        "successPython": 0.13,
+        "caseAgreement": 0.985,
+        "medianAlongTs": 0.0123,
+        "medianAlongPython": 0.0127
       },
       {
         "sigma": 8,
         "cases": 200,
-        "successTs": 0.39,
-        "successPython": 0.375,
-        "caseAgreement": 0.975,
-        "medianAlongTs": 0.0137,
-        "medianAlongPython": 0.0131
+        "successTs": 0.06,
+        "successPython": 0.06,
+        "caseAgreement": 0.99,
+        "medianAlongTs": 0.015,
+        "medianAlongPython": 0.0147
       }
     ]
+  },
+  "G32": {
+    "gate": "success ≥ 0.97 at σ = 5 px and ≥ 0.90 at σ = 8 px (worst along < 0.25 fret, across < 0.35 string spacing, frets 0–17)",
+    "frames": 200,
+    "msPerLock": 261.4,
+    "cases": [
+      {
+        "taps": 4,
+        "sigma": 5,
+        "frames": 200,
+        "success": 0.915,
+        "polarityDetected": 0.915
+      },
+      {
+        "taps": 4,
+        "sigma": 8,
+        "frames": 200,
+        "success": 0.865,
+        "polarityDetected": 0.955
+      },
+      {
+        "taps": 6,
+        "sigma": 5,
+        "frames": 200,
+        "success": 0.915,
+        "polarityDetected": 0.945
+      },
+      {
+        "taps": 6,
+        "sigma": 8,
+        "frames": 200,
+        "success": 0.915,
+        "polarityDetected": 0.945
+      }
+    ],
+    "confidence": {
+      "verifiedThreshold": 0.9,
+      "calibration": [
+        {
+          "threshold": 0.3,
+          "accepted": 0.996,
+          "precision": 0.906
+        },
+        {
+          "threshold": 0.35,
+          "accepted": 0.996,
+          "precision": 0.906
+        },
+        {
+          "threshold": 0.4,
+          "accepted": 0.991,
+          "precision": 0.905
+        },
+        {
+          "threshold": 0.45,
+          "accepted": 0.981,
+          "precision": 0.912
+        },
+        {
+          "threshold": 0.5,
+          "accepted": 0.971,
+          "precision": 0.912
+        },
+        {
+          "threshold": 0.55,
+          "accepted": 0.97,
+          "precision": 0.914
+        },
+        {
+          "threshold": 0.6,
+          "accepted": 0.965,
+          "precision": 0.913
+        },
+        {
+          "threshold": 0.65,
+          "accepted": 0.931,
+          "precision": 0.921
+        },
+        {
+          "threshold": 0.7,
+          "accepted": 0.88,
+          "precision": 0.929
+        },
+        {
+          "threshold": 0.75,
+          "accepted": 0.806,
+          "precision": 0.941
+        },
+        {
+          "threshold": 0.8,
+          "accepted": 0.615,
+          "precision": 0.951
+        },
+        {
+          "threshold": 0.85,
+          "accepted": 0.391,
+          "precision": 0.968
+        },
+        {
+          "threshold": 0.9,
+          "accepted": 0.177,
+          "precision": 1
+        }
+      ]
+    }
   }
 }

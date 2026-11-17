@@ -8,17 +8,17 @@ feature with an always-works lock.
 **Sessions:** 3–4.
 
 ## Tasks
-- [ ] **3.1 Synthetic generator v1** (`ml/synth`): port and extend the spike renderer — instrument
+- [x] **3.1 Synthetic generator v1** (`ml/synth`): port and extend the spike renderer — instrument
       profiles, ≥ 4 board families, inlays, nut, strings, body/headstock, procedural torso + room,
       capsule-finger hand occluder, camera effects, **sequences** with smooth pose trajectories; exact
       labels. `npm run fixtures` emits the e2e clips listed in `specs/06` §2 with label JSON.
-- [ ] **3.2 Geometry kernel** (`vision/geometry.ts`): homography from 4 points, weighted DLT with Hartley
+- [x] **3.2 Geometry kernel** (`vision/geometry.ts`): homography from 4 points, weighted DLT with Hartley
       normalisation, inverse, projection, control-point ↔ `H`, local Jacobian (for ellipse dots), 1-D
       projective map from 3 pairs. Unit + property tests; numeric parity with the Python reference.
-- [ ] **3.3 EdgeTracker port** (`vision/edgeTracker.ts`): strip rectification (bilinear, typed arrays),
+- [x] **3.3 EdgeTracker port** (`vision/edgeTracker.ts`): strip rectification (bilinear, typed arrays),
       evidence filters, comb search, per-fret refinement, fret-end cue, IRLS. Cross-check against
       `proto.py` on 200 seeded frames exported from Python (gate **G3.1**).
-- [ ] **3.4 Tracker improvements:** half-resolution pyramid pass, string-ridge across cue, wire polarity
+- [x] **3.4 Tracker improvements:** half-resolution pyramid pass, string-ridge across cue, wire polarity
       detection, out-of-frame masking, multi-start wrapper, confidence calibration (gate **G3.2**).
 - [ ] **3.5 Camera pipeline:** device selection, 1280×720 preferred, `requestVideoFrameCallback`,
       frame → Worker (transfer `VideoFrame`/`ImageBitmap`), grayscale extraction, pose messages back with
@@ -40,6 +40,12 @@ feature with an always-works lock.
       (read the overlay's projected positions through a test hook, compare with labels).
 - [ ] **3.11 Field-test checklist** screen (`Settings → Field test`) and the diagnostics exporter skeleton
       (pose logs + optional frames, `specs/06` §4). Tag `v0.2`, deploy, post the 🎸 request, keep working.
+
+## Gate results so far (2026-11-17)
+| Gate | Result |
+|---|---|
+| G3.1 TS vs Python reference | Pass on the current frames: success 27.5/30.5 % (σ 2), 11.5/13 % (σ 5), 6/6 % (σ 8); case agreement ≥ 96 %; median along ≤ 0.015 fret. |
+| G3.2 lock basin (held-out frames) | **Fail at σ 5**: 4 taps 91.5 % (σ 5), 86.5 % (σ 8); 6 taps 91.5 % / 91.5 %. Fallback steps 2 and 3 taken (D-016): optional 5th-fret taps, remainder carried to Phase 4. |
 
 ## Acceptance (exit gate)
 Gates **G3.1–G3.5** pass (numbers recorded); e2e lock + tracking tests pass on all fixture clips incl.
