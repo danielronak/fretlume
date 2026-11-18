@@ -63,9 +63,13 @@ def control_points_px(pose: Pose, inst: Instrument) -> np.ndarray:
 
 def trajectory(rng: np.random.Generator, base: Pose, inst: Instrument, frames: int, *,
                motion: str = 'sway', max_px_per_frame: float = 15.0) -> list[Pose]:
-    """Smooth pose sequence. 'static' adds nothing; 'sway' breathes a little; 'move' also repositions."""
+    """Smooth pose sequence. 'static' adds nothing; 'sway' breathes a little; 'move' also repositions;
+    'tilt' turns the guitar in the picture and towards or away from the camera (angle, perspective,
+    foreshortening), as a player changing their posture or the camera being moved."""
     if motion == 'static':
         return [base] * frames
+    if motion == 'tilt':
+        return tilt_trajectory(rng, base, inst, frames, max_px_per_frame)
     t = np.arange(frames) / 30.0
     f1, f2 = rng.uniform(0.15, 0.45, 2)
     ph = rng.uniform(0, 2 * np.pi, 4)
@@ -94,3 +98,52 @@ def trajectory(rng: np.random.Generator, base: Pose, inst: Instrument, frames: i
         poses = [replace(base, nut_x=base.nut_x + dx[i] * k, nut_y=base.nut_y + dy[i] * k,
                          angle=base.angle + da[i] * k, scale=base.scale * (1 + ds[i] * k)) for i in range(frames)]
     return poses
+
+
+def tilt_trajectory(rng: np.random.Generator, base: Pose, inst: Instrument, frames: int,
+                    max_px_per_frame: float) -> list[Pose]:
+    """Two smooth changes of angle and perspective (each over about a second), with some drift."""
+    keys = [base]
+    for _ in range(2):
+        prev = keys[-1]
+        keys.append(replace(
+            base,
+            nut_x=base.nut_x + rng.uniform(-60, 60), nut_y=base.nut_y + rng.uniform(-50, 50),
+            angle=base.angle + np.deg2rad(rng.choice([-1, 1]) * rng.uniform(8, 25)),
+            scale=base.scale * rng.uniform(0.85, 1.15),
+            persp=float(np.clip(prev.persp + rng.uniform(-0.15, 0.15), 0.8, 1.2)),
+            squash=float(np.clip(prev.squash + rng.uniform(-0.25, 0.1), 0.55, 1.0)),
+        ))
+    # Hold a moment, move to key 1, hold, move to key 2, hold.
+    seg = max(1, frames // 5)
+    plan = [(0, 0)] * seg + [(0, 1)] * seg + [(1, 1)] * seg + [(1, 2)] * seg
+    plan += [(2, 2)] * (frames - len(plan))
+    poses = []
+    for i, (a, b) in enumerate(plan):
+        t = 0.0 if a == b else (i % seg + 1) / seg
+        t = t * t * (3 - 2 * t)
+        p, q = keys[a], keys[b]
+        lerp = lambda u, v: u + (v - u) * t  # noqa: E731
+        poses.append(replace(base, nut_x=lerp(p.nut_x, q.nut_x), nut_y=lerp(p.nut_y, q.nut_y),
+                             angle=lerp(p.angle, q.angle), scale=lerp(p.scale, q.scale),
+                             persp=lerp(p.persp, q.persp), squash=lerp(p.squash, q.squash)))
+    pts = np.array([control_points_px(p, inst) for p in poses])
+    speed = np.max(np.linalg.norm(np.diff(pts, axis=0), axis=2), initial=0)
+    if speed > max_px_per_frame:
+        # Too fast: spread the same motion over more frames and keep the first `frames`.
+        stretch = int(np.ceil(speed / max_px_per_frame))
+        return _resample(poses, stretch)[:frames]
+    return poses
+
+
+def _resample(poses: list[Pose], k: int) -> list[Pose]:
+    """Each step of the motion split into k smaller steps."""
+    out = []
+    for p, q in zip(poses, poses[1:]):
+        for j in range(k):
+            t = j / k
+            out.append(replace(p, nut_x=p.nut_x + (q.nut_x - p.nut_x) * t, nut_y=p.nut_y + (q.nut_y - p.nut_y) * t,
+                               angle=p.angle + (q.angle - p.angle) * t, scale=p.scale + (q.scale - p.scale) * t,
+                               persp=p.persp + (q.persp - p.persp) * t, squash=p.squash + (q.squash - p.squash) * t))
+    out.append(poses[-1])
+    return out

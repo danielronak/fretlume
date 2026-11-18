@@ -23,7 +23,7 @@ from .render import (camera_effects, composite, draw_hand, draw_torso, render_ba
                      render_neck_texture, sample_hand, sample_look, stamp_index)
 from .scenes import Pose, sample_pose, trajectory
 
-KINDS = ['lock-easy', 'track-hand', 'track-motion', 'lefty', 'capo', 'low-light', 'no-guitar', 'static-noise', 'random']
+KINDS = ['lock-easy', 'track-hand', 'track-motion', 'track-tilt', 'lefty', 'capo', 'low-light', 'no-guitar', 'static-noise', 'random']
 
 
 def write_frame(out: Path, index: int, frame8: np.ndarray, fmt: str) -> None:
@@ -85,15 +85,16 @@ def cmd_clip(args) -> None:
     rng = np.random.default_rng(args.seed)
     w, h, kind = args.width, args.height, args.kind
     inst = INSTRUMENTS[args.instrument or ('electric' if kind == 'lefty' else 'steel-acoustic')]
-    board = args.board or ('rosewood' if kind in ('lock-easy', 'track-hand', 'track-motion') else None)
+    board = args.board or ('rosewood' if kind in ('lock-easy', 'track-hand', 'track-motion', 'track-tilt') else None)
     look = sample_look(rng, inst, board=board if board != 'any' else None,
                        capo_fret=2 if kind == 'capo' else 0)
-    if kind in ('lock-easy', 'track-hand', 'track-motion', 'capo') and look.inlays == 'none':
+    if kind in ('lock-easy', 'track-hand', 'track-motion', 'track-tilt', 'capo') and look.inlays == 'none':
         look.inlays = 'dots'
     texture, alpha = render_neck_texture(inst, look)
     base = sample_pose(rng, w, h, headstock='left' if kind == 'lefty' else 'right' if kind != 'random' else None,
-                       easy=kind in ('lock-easy', 'track-hand', 'track-motion', 'lefty', 'capo', 'low-light', 'static-noise'))
-    motion = {'lock-easy': 'static', 'static-noise': 'static', 'track-motion': 'move', 'no-guitar': 'static'}.get(kind, 'sway')
+                       easy=kind in ('lock-easy', 'track-hand', 'track-motion', 'track-tilt', 'lefty', 'capo', 'low-light', 'static-noise'))
+    motion = {'lock-easy': 'static', 'static-noise': 'static', 'track-motion': 'move', 'track-tilt': 'tilt',
+              'no-guitar': 'static'}.get(kind, 'sway')
     poses = trajectory(rng, base, inst, args.frames, motion=motion, max_px_per_frame=args.max_speed)
     if args.hold:
         # Hold still first (the player locking), then move from that same pose.
@@ -107,7 +108,7 @@ def cmd_clip(args) -> None:
         poses = poses + poses[-2:0:-1]
     bg = render_background(rng, w, h)
     hand_rng = np.random.default_rng(args.seed + 1)
-    hand = sample_hand(hand_rng, inst, fret=3) if kind in ('track-hand', 'track-motion', 'random') else None
+    hand = sample_hand(hand_rng, inst, fret=3) if kind in ('track-hand', 'track-motion', 'track-tilt', 'random') else None
     with open(out / 'labels.jsonl', 'w') as labels:
         prev = None
         for i, pose in enumerate(poses):

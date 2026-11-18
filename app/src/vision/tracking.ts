@@ -1,8 +1,9 @@
 /**
  * Tracking loop after a lock (docs/specs/01-vision.md §3): predict → EdgeTracker (narrow) → filter →
  * publish. Low confidence holds the last pose; after 0.3 s it starts RECOVERING (wide search from the
- * last good pose); after 1.5 s more it reports SEARCHING (the player re-locks). The fret index is never
- * changed here: the narrow search moves the nut by at most a fraction of a fret spacing.
+ * last good pose); after 1.5 s more it reports SEARCHING (the player re-locks). The narrow search moves
+ * the nut by at most a fraction of a fret spacing; the fret index changes only when the inlay/nut check
+ * clearly asks for it twice in a row (see update).
  */
 import type { EdgeTracker } from './edgeTracker';
 import { fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
@@ -18,7 +19,8 @@ import {
   type Pt,
 } from './geometry';
 import type { Image } from './image';
-import { fullScore } from './lock';
+import { verifyIndex } from './indexCheck';
+import { fullScore, shiftFrets } from './lock';
 import { OneEuroFilter, type OneEuroOptions } from './oneEuro';
 
 export type TrackState = 'searching' | 'locked' | 'recovering';
@@ -44,14 +46,24 @@ export interface TrackingOptions {
   recoverAfterMs?: number;
   /** Time spent recovering before reporting SEARCHING (ms). Default 1500. */
   searchAfterMs?: number;
+  /** Milliseconds between fret-index checks while tracking (0 = off). Default 200. */
+  indexCheckMs?: number;
   filter?: OneEuroOptions;
 }
+
+/**
+ * Index-check margin (score of the best shift over the runner-up) needed to move the grid. With the
+ * hand over the inlays only the nut cue is left, worth ≈ 0.8 on the owner's guitar; at 0.6 no
+ * correction was made in 84 synthetic tracking runs without a slip (D-023).
+ */
+const INDEX_MARGIN = 0.6;
 
 const DEFAULTS = {
   iterations: 3,
   lowConfidence: 0.3,
   recoverAfterMs: 300,
   searchAfterMs: 1500,
+  indexCheckMs: 200,
   // Tuned on the G3.3 clips: a lower beta lags behind a moving neck (DECISIONS D-017).
   filter: { minCutoffHz: 1.5, beta: 0.3 },
 };
@@ -68,8 +80,13 @@ export class TrackingSession {
   private correction: Mat3 = IDENTITY;
   private lastGoodMs = 0;
   private state: TrackState = 'searching';
-  /** The board's shape in the image at the lock (see warped). */
+  /** Index check (see update): time of the last check and the shift it asked for. */
+  private lastIndexMs = -Infinity;
+  private pendingShift = 0;
+  /** The board's shape in the image at the last accepted measurement (see warped). */
   private shape: Shape | null = null;
+  /** Fret-index corrections made so far (diagnostics, benches). */
+  indexCorrections = 0;
   /** Image pixel samples taken by the last update (cost proxy, gate G3.5). */
   lastSamples = 0;
 
@@ -175,11 +192,32 @@ export class TrackingSession {
       if (
         confidence >= this.options.lowConfidence &&
         !(recovering && slipped(startH, out.H, model)) &&
-        !(this.shape && warped(this.shape, start, points))
+        !(this.shape && warped(this.shape, start, points, tMs - this.last.tMs))
       )
         measured = points;
     } catch {
       measured = null;
+    }
+
+    if (
+      measured &&
+      this.options.indexCheckMs > 0 &&
+      tMs - this.lastIndexMs >= this.options.indexCheckMs
+    ) {
+      // A fast move can make the narrow search land a whole fret or two off (field test 2026-11-18:
+      // lifting the guitar). The inlays and the nut tell; two clear verdicts in a row move it back.
+      this.lastIndexMs = tMs;
+      const H = fromControlPoints(measured, model);
+      const verdict = verifyIndex(image, H, model);
+      const k = verdict.margin >= INDEX_MARGIN ? verdict.shift : 0;
+      if (k !== 0 && k === this.pendingShift) {
+        measured = controlPointsPx(shiftFrets(H, model, k), model);
+        this.velocity = measured.map(() => ({ x: 0, y: 0 }));
+        for (const f of this.filters) f.reset();
+        this.last = { points: measured, tMs };
+        this.pendingShift = 0;
+        this.indexCorrections++;
+      } else this.pendingShift = k;
     }
 
     if (measured) {
@@ -193,6 +231,7 @@ export class TrackingSession {
             }))
           : measured.map(() => ({ x: 0, y: 0 }));
       if (recovering) for (const f of this.filters) f.reset();
+      this.shape = shapeOf(measured);
       this.last = { points: measured, tMs };
       this.lastGoodMs = tMs;
       this.state = 'locked';
@@ -261,27 +300,43 @@ export function slipped(startH: Mat3, measuredH: Mat3, model: InstrumentModel): 
 interface Shape {
   nut: number;
   twelfth: number;
+  /** Nut to 12th fret, px. */
+  length: number;
 }
 
 function shapeOf(points: Pt[]): Shape {
   const [a, b, c, d] = points as [Pt, Pt, Pt, Pt];
   const dist = (p: Pt, q: Pt) => Math.hypot(p.x - q.x, p.y - q.y);
   const length = (dist(a, d) + dist(b, c)) / 2;
-  return { nut: dist(a, b) / length, twelfth: dist(c, d) / length };
+  return { nut: dist(a, b) / length, twelfth: dist(c, d) / length, length };
 }
+
+/** Largest change of the board's length in the image per 133 ms (one frame at the app's ~7.5 Hz). */
+const LENGTH_STEP = 1.08;
 
 /**
  * Plausibility guard (field test 2026-11-18): a measurement is refused when it moves a control point
  * by more than a nut width from where this frame's search started (the narrow search cannot find
- * a real move that large), or when it changes the board's proportions by more than 35 % from the lock
- * (a turned guitar changes them slowly; a fit dragged onto a hand or the body changes them at once).
+ * a real move that large), or when it changes the board's proportions by more than 35 % from the last
+ * accepted frame (a turned guitar changes them gradually; a fit dragged onto a hand or the body
+ * changes them at once). Compared with the last frame rather than the lock, so that a guitar tilted
+ * a long way is still followed (field test 2026-11-18). The board's length may change by at most 8 %
+ * per 133 ms.
  */
-export function warped(lockShape: Shape, start: Pt[], measured: Pt[]): boolean {
+export function warped(previous: Shape, start: Pt[], measured: Pt[], dtMs = 133): boolean {
   const [a, b] = start as [Pt, Pt];
   const nutPx = Math.hypot(b.x - a.x, b.y - a.y);
   if (measured.some((p, i) => !(Math.hypot(p.x - start[i]!.x, p.y - start[i]!.y) <= nutPx)))
     return true;
   const s = shapeOf(measured);
-  const off = (v: number, ref: number) => !(Math.abs(Math.log(v / ref)) <= Math.log(1.35));
-  return off(s.nut, lockShape.nut) || off(s.twelfth, lockShape.twelfth);
+  const off = (v: number, ref: number, limit: number) =>
+    !(Math.abs(Math.log(v / ref)) <= Math.log(limit));
+  // Stretching along the neck is how a fit slides onto the headstock or the body while the guitar
+  // moves fast (field test 2026-11-18: +10–15 % per frame); a real move changes it by a few %.
+  const steps = Math.max(1, dtMs / 133);
+  return (
+    off(s.nut, previous.nut, 1.35) ||
+    off(s.twelfth, previous.twelfth, 1.35) ||
+    off(s.length, previous.length, LENGTH_STEP ** steps)
+  );
 }

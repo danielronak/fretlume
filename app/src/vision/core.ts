@@ -12,6 +12,7 @@ import { snapLock, VERIFIED_CONFIDENCE } from './lock';
 import { detectNeck } from './neckNet';
 import type { Network } from './nn';
 import { TrackingSession, type Pose } from './tracking';
+import { compare, TrackingWatchdog } from './watchdog';
 
 export type InstrumentId = keyof typeof INSTRUMENTS;
 
@@ -38,6 +39,8 @@ export class VisionCore {
   private net: Network | null = null;
   private auto: AutoLocker | null = null;
   private autoInstrument: InstrumentId | null = null;
+  // Twice a second: a wrong grid shows for at most about a second before the search takes over.
+  private watchdog = new TrackingWatchdog({ everyMs: 500 });
 
   get model(): InstrumentModel {
     return INSTRUMENTS[this.instrument];
@@ -83,6 +86,7 @@ export class VisionCore {
     this.scale = scale;
     this.session = new TrackingSession(this.tracker());
     this.session.lock(multiply(scaling(scale), Hvideo), polarity, tMs, image);
+    this.watchdog.reset(tMs);
   }
 
   stop(): void {
@@ -136,14 +140,24 @@ export class VisionCore {
       this.session.rescale(scale / this.scale);
       this.scale = scale;
     }
-    const pose = this.session.update(image, tMs);
+    let pose = this.session.update(image, tMs);
     if (!pose) return null;
+    // With NeckNet loaded (automatic lock on), check now and then that the grid is still on the neck.
+    if (this.net && pose.state === 'locked' && this.watchdog.due(tMs)) {
+      const verdict = compare(detectNeck(this.net, image), pose.controlPoints);
+      if (this.watchdog.record(verdict, tMs)) {
+        // Lost for good: report it, and let the automatic lock search from the next frame.
+        pose = { ...pose, state: 'searching', confidence: 0, measured: false };
+        this.session = null;
+        this.auto?.reset();
+      }
+    }
     const back = scaling(1 / scale);
     return {
       ...pose,
       H: multiply(back, pose.H),
       controlPoints: pose.controlPoints.map((p) => ({ x: p.x / scale, y: p.y / scale })),
-      samples: this.session.lastSamples,
+      samples: this.session?.lastSamples ?? 0,
     };
   }
 }

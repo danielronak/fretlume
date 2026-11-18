@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { EdgeTracker, isSuccess, trackingError } from '@vision/edgeTracker';
 import { apply, type Mat3 } from '@vision/geometry';
-import { snapLock, tapPointsMm } from '@vision/lock';
+import { shiftFrets, snapLock, tapPointsMm } from '@vision/lock';
 import { ensureClips, ensureFrames, modelFor, readFrame, readLabels, ROOT, synth } from './data';
 import { TrackingSession } from '@vision/tracking';
 import { AutoLocker } from '@vision/autoLock';
@@ -267,6 +267,74 @@ describe('G3.3–G3.5: tracking after a lock', () => {
     };
     save();
     expect(maxSamples).toBeLessThanOrEqual(2_000_000);
+  }, 3_600_000);
+
+  it('angle changes at the app frame rate, and recovery from a one-fret slip (G3.3t)', async () => {
+    // Field test 2026-11-18: turning or tilting the guitar (or the camera) broke tracking, and the
+    // G3.3 clips never changed the angle by more than a few degrees. These clips turn the guitar by
+    // 8–25° and tilt it towards or away from the camera; every 4th frame is tracked (≈ 7.5 Hz, as in
+    // the app). Second pass: tracking starts one fret off, as after a slip in a fast move.
+    const specs = Array.from({ length: 24 }, (_, i) => ({
+      name: `tilt-${i}`,
+      args: [
+        '--kind',
+        'track-tilt',
+        '--frames',
+        '120',
+        '--max-speed',
+        '12',
+        '--seed',
+        String(7700 + i),
+        '--instrument',
+        INSTRUMENT_IDS[i % 3]!,
+        '--board',
+        BOARDS[i % 5]!,
+      ],
+    }));
+    const dirs = await ensureClips(specs);
+    const STRIDE = 4;
+    const run = (startShift: number) => {
+      let frames = 0;
+      let good = 0;
+      let wrongShown = 0;
+      let corrections = 0;
+      let recoveredBy: number[] = [];
+      dirs.forEach((dir, c) => {
+        const labels = readLabels(dir);
+        const model = modelFor(labels[0]!);
+        const session = new TrackingSession(new EdgeTracker(model));
+        const k0 = startShift * (c % 2 ? 1 : -1);
+        const H0 = k0 ? shiftFrets(labels[0]!.H!, model, k0) : labels[0]!.H!;
+        session.lock(H0, labels[0]!.polarity ?? 'bright', 0, readFrame(dir, labels[0]!));
+        let firstGood = -1;
+        for (let k = STRIDE, n = 0; k < labels.length; k += STRIDE, n++) {
+          const label = labels[k]!;
+          const pose = session.update(readFrame(dir, label), (k * 1000) / 30)!;
+          const ok = isSuccess(trackingError(pose.H, label.H!, model));
+          frames++;
+          if (ok) good++;
+          if (ok && firstGood < 0) firstGood = n;
+          if (!ok && pose.state === 'locked' && pose.measured) wrongShown++;
+        }
+        corrections += session.indexCorrections;
+        recoveredBy.push(firstGood);
+      });
+      recoveredBy = recoveredBy.filter((v) => v >= 0);
+      return {
+        goodFrames: Number((good / frames).toFixed(4)),
+        wrongWhileLocked: Number((wrongShown / frames).toFixed(4)),
+        indexCorrections: corrections,
+        medianFramesToRecover: startShift ? median(recoveredBy) : 0,
+      };
+    };
+    results.G33t = {
+      gate: 'none yet (recorded): tracking through angle changes at the app frame rate',
+      clips: dirs.length,
+      trackedHz: 30 / STRIDE,
+      normal: run(0),
+      startOneFretOff: run(1),
+    };
+    save();
   }, 3_600_000);
 
   it('jitter on static clips with sensor noise (G3.4)', async () => {

@@ -136,15 +136,22 @@ describe('warped (plausibility guard)', () => {
     const [a, b, c, d] = pts as [Pt, Pt, Pt, Pt];
     const dist = (p: Pt, q: Pt) => Math.hypot(p.x - q.x, p.y - q.y);
     const length = (dist(a, d) + dist(b, c)) / 2;
-    return { nut: dist(a, b) / length, twelfth: dist(c, d) / length };
+    return { nut: dist(a, b) / length, twelfth: dist(c, d) / length, length };
   })();
   it('accepts a small move and a whole-board scale change', () => {
     expect(warped(lockShape, pts, controlPointsPx(at(8), model))).toBe(false);
-    const scaled = pts.map((p) => ({ x: 800 + 1.1 * (p.x - 800), y: 300 + 1.1 * (p.y - 300) }));
+    const scaled = pts.map((p) => ({ x: 800 + 1.05 * (p.x - 800), y: 300 + 1.05 * (p.y - 300) }));
     expect(warped(lockShape, scaled, scaled)).toBe(false);
   });
   it('refuses a jump of more than a nut width', () => {
     expect(warped(lockShape, pts, controlPointsPx(at(150), model))).toBe(true);
+  });
+  it('refuses a fit that stretches along the neck faster than the guitar can move', () => {
+    const [a, b, c, d] = pts as [Pt, Pt, Pt, Pt];
+    const pull = (p: Pt) => ({ x: p.x + 0.15 * (p.x - c.x), y: p.y + 0.15 * (p.y - c.y) });
+    expect(warped(lockShape, pts, [pull(a), pull(b), c, d], 133)).toBe(true);
+    // The same change spread over half a second is a real move.
+    expect(warped(lockShape, pts, [pull(a), pull(b), c, d], 500)).toBe(false);
   });
   it('refuses a fit that squashes the 12th fret', () => {
     const [a, b, c, d] = pts as [Pt, Pt, Pt, Pt];
