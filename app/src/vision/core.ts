@@ -41,6 +41,10 @@ export class VisionCore {
   private autoInstrument: InstrumentId | null = null;
   // Twice a second: a wrong grid shows for at most about a second before the search takes over.
   private watchdog = new TrackingWatchdog({ everyMs: 500 });
+  /** Last pose in processing px, for the watchdog. */
+  private lastPose: Pose | null = null;
+  /** The watchdog ended tracking; the next track() reports the loss. */
+  private watchLost = false;
 
   get model(): InstrumentModel {
     return INSTRUMENTS[this.instrument];
@@ -87,15 +91,19 @@ export class VisionCore {
     this.session = new TrackingSession(this.tracker());
     this.session.lock(multiply(scaling(scale), Hvideo), polarity, tMs, image);
     this.watchdog.reset(tMs);
+    this.lastPose = null;
+    this.watchLost = false;
   }
 
   stop(): void {
     this.session = null;
+    this.watchLost = false;
+    this.lastPose = null;
     this.auto?.reset();
   }
 
   get tracking(): boolean {
-    return this.session !== null;
+    return this.session !== null || this.watchLost;
   }
 
   /** Give the core a NeckNet; automatic lock is available from then on. */
@@ -133,31 +141,58 @@ export class VisionCore {
     this.auto?.reset();
   }
 
+  /**
+   * Watchdog (see watchdog.ts), called by the worker after it has replied with the frame's pose so the
+   * overlay never waits for NeckNet. With NeckNet loaded (automatic lock on), about twice a second it
+   * checks that the grid is still on the neck; when it is not, tracking ends: the next frame reports
+   * the neck as lost and the automatic lock searches from the frame after.
+   */
+  watch(image: Image, tMs: number): void {
+    const pose = this.lastPose;
+    if (!this.net || !this.session || !pose || pose.state !== 'locked') return;
+    if (!this.watchdog.due(tMs)) return;
+    const verdict = compare(detectNeck(this.net, image), pose.controlPoints);
+    if (this.watchdog.record(verdict, tMs)) {
+      this.session = null;
+      this.watchLost = true;
+      this.auto?.reset();
+    }
+  }
+
   /** Track one frame; returns the pose in video px, or null when not tracking. */
   track(image: Image, tMs: number, scale: number): (Pose & { samples: number }) | null {
-    if (!this.session) return null;
+    if (!this.session) {
+      if (!this.watchLost || !this.lastPose) return null;
+      // Ended by the watchdog: report the loss once, in video px.
+      this.watchLost = false;
+      const back = scaling(1 / this.scale);
+      return {
+        ...this.lastPose,
+        state: 'searching',
+        confidence: 0,
+        measured: false,
+        tCaptureMs: tMs,
+        H: multiply(back, this.lastPose.H),
+        controlPoints: this.lastPose.controlPoints.map((p) => ({
+          x: p.x / this.scale,
+          y: p.y / this.scale,
+        })),
+        samples: 0,
+      };
+    }
     if (scale !== this.scale) {
       this.session.rescale(scale / this.scale);
       this.scale = scale;
     }
-    let pose = this.session.update(image, tMs);
+    const pose = this.session.update(image, tMs);
     if (!pose) return null;
-    // With NeckNet loaded (automatic lock on), check now and then that the grid is still on the neck.
-    if (this.net && pose.state === 'locked' && this.watchdog.due(tMs)) {
-      const verdict = compare(detectNeck(this.net, image), pose.controlPoints);
-      if (this.watchdog.record(verdict, tMs)) {
-        // Lost for good: report it, and let the automatic lock search from the next frame.
-        pose = { ...pose, state: 'searching', confidence: 0, measured: false };
-        this.session = null;
-        this.auto?.reset();
-      }
-    }
+    this.lastPose = pose;
     const back = scaling(1 / scale);
     return {
       ...pose,
       H: multiply(back, pose.H),
       controlPoints: pose.controlPoints.map((p) => ({ x: p.x / scale, y: p.y / scale })),
-      samples: this.session?.lastSamples ?? 0,
+      samples: this.session.lastSamples,
     };
   }
 }

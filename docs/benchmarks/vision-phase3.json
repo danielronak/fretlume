@@ -159,7 +159,7 @@
     "frames": 2340,
     "goodFrames": 0.9919,
     "clipsWithSlip": 0,
-    "msPerFrame": 65.4,
+    "msPerFrame": 64.9,
     "worstClips": [
       {
         "clip": "g33-0",
@@ -214,5 +214,22 @@
     "negatives": 200,
     "falseLock": 0,
     "msPerAttempt": 978
+  },
+  "G33t": {
+    "gate": "none yet (recorded): tracking through angle changes at the app frame rate",
+    "clips": 24,
+    "trackedHz": 7.5,
+    "normal": {
+      "goodFrames": 0.921,
+      "wrongWhileLocked": 0.079,
+      "indexCorrections": 0,
+      "medianFramesToRecover": 0
+    },
+    "startOneFretOff": {
+      "goodFrames": 0.8003,
+      "wrongWhileLocked": 0.1997,
+      "indexCorrections": 24,
+      "medianFramesToRecover": 4
+    }
   }
 }

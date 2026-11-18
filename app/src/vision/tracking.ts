@@ -57,6 +57,9 @@ export interface TrackingOptions {
  * correction was made in 84 synthetic tracking runs without a slip (D-023).
  */
 const INDEX_MARGIN = 0.6;
+/** Consecutive agreeing verdicts needed (one every indexCheckMs): a dim plain board gave single wrong
+ * verdicts up to 0.75 (e2e low-light clip). */
+const INDEX_VERDICTS = 3;
 
 const DEFAULTS = {
   iterations: 3,
@@ -79,10 +82,13 @@ export class TrackingSession {
   /** Board → board map from the tracker's own fit to the confirmed pose (see lock). */
   private correction: Mat3 = IDENTITY;
   private lastGoodMs = 0;
+  /** Whether the last update was measured (see recovering in update). */
+  private lastMeasured = true;
   private state: TrackState = 'searching';
   /** Index check (see update): time of the last check and the shift it asked for. */
   private lastIndexMs = -Infinity;
   private pendingShift = 0;
+  private pendingCount = 0;
   /** The board's shape in the image at the last accepted measurement (see warped). */
   private shape: Shape | null = null;
   /** Fret-index corrections made so far (diagnostics, benches). */
@@ -129,6 +135,7 @@ export class TrackingSession {
     this.velocity = points.map(() => ({ x: 0, y: 0 }));
     this.filters = points.flatMap(() => [0, 1].map(() => new OneEuroFilter(this.options.filter)));
     this.lastGoodMs = tMs;
+    this.lastMeasured = true;
     this.state = 'locked';
     this.published = this.publish(points, 1, tMs, true);
   }
@@ -163,13 +170,16 @@ export class TrackingSession {
   update(image: Image, tMs: number): Pose | null {
     if (!this.last || !this.published) return null;
     const { model } = this.tracker;
-    const recovering = tMs - this.lastGoodMs > this.options.recoverAfterMs;
+    // Recovering means frames have been failing for a while. A long gap after a good frame (a slow
+    // frame, a pause in the worker) is not a loss: the next search starts from the prediction.
+    const recovering = !this.lastMeasured && tMs - this.lastGoodMs > this.options.recoverAfterMs;
     let start: Pt[];
     if (recovering) {
       start = this.last.points;
     } else {
       // Constant-velocity prediction from the last measurement.
-      const dt = tMs - this.last.tMs;
+      // Constant velocity is trusted for a quarter of a second at most.
+      const dt = Math.min(250, tMs - this.last.tMs);
       start = this.last.points.map((p, i) => ({
         x: p.x + this.velocity[i]!.x * dt,
         y: p.y + this.velocity[i]!.y * dt,
@@ -205,21 +215,24 @@ export class TrackingSession {
       tMs - this.lastIndexMs >= this.options.indexCheckMs
     ) {
       // A fast move can make the narrow search land a whole fret or two off (field test 2026-11-18:
-      // lifting the guitar). The inlays and the nut tell; two clear verdicts in a row move it back.
+      // lifting the guitar). The inlays and the nut tell; three clear verdicts in a row move it back.
       this.lastIndexMs = tMs;
       const H = fromControlPoints(measured, model);
       const verdict = verifyIndex(image, H, model);
       const k = verdict.margin >= INDEX_MARGIN ? verdict.shift : 0;
-      if (k !== 0 && k === this.pendingShift) {
+      this.pendingCount = k !== 0 && k === this.pendingShift ? this.pendingCount + 1 : 1;
+      if (k !== 0 && this.pendingCount >= INDEX_VERDICTS) {
         measured = controlPointsPx(shiftFrets(H, model, k), model);
         this.velocity = measured.map(() => ({ x: 0, y: 0 }));
         for (const f of this.filters) f.reset();
         this.last = { points: measured, tMs };
         this.pendingShift = 0;
+        this.pendingCount = 0;
         this.indexCorrections++;
       } else this.pendingShift = k;
     }
 
+    this.lastMeasured = measured !== null;
     if (measured) {
       const dt = Math.max(1, tMs - this.last.tMs);
       // Velocity from consecutive measurements only; after a gap it restarts at zero.

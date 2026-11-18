@@ -95,6 +95,8 @@ self.onmessage = (event: MessageEvent<VisionRequest>) => {
           samples: pose?.samples ?? 0,
           ...(message.debug ? { stamp: readFrameStamp(image, message.scale) } : {}),
         });
+        // After the reply, so the overlay never waits for it.
+        core.watch(image, message.tMs);
         break;
       }
       case 'stop':

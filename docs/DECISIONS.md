@@ -255,3 +255,37 @@ gives 97.3 % precision, so the verified threshold is 0.93 (100 % of 14 % of lock
 then never be corrected from the image); a fixed compromise share of the strings in the perspective (0.3:
 the real grid wobbled again, the maple clips still slid). Owner frames are not committed (privacy); the
 replay scripts were run from the session scratchpad.
+
+## D-023 · 2026-11-18 · Tracking through angle changes: per-frame guard, index correction, watchdog
+**Context.** Owner, on 0.3.2: "a change in angle — if I tilt the camera or the guitar — and the tracking is
+messed up; it did not find the neck by itself at the new angle." The synthetic tracking clips (G3.3) only
+ever turned the guitar by a few degrees and never tilted it, so the benches could not see this. Replaying the
+owner's recording showed the mechanism: when the guitar was lifted (motion blur), the narrow search landed 1–2
+frets towards the headstock and the grid stretched, yet the state stayed "locked" at normal confidence, so the
+Stage never searched again. On new tilt clips, wrong grids score as high as right ones (self-consistent fits),
+so confidence cannot flag them; the D-022 shape guard (35 % from the lock) also refused a real gradual tilt.
+**Decision.** (1) New clip kind `track-tilt` (8–25° turns, perspective and foreshortening changes, drift) and
+bench G3.3t, tracked at the app's ~7.5 Hz, plus a pass that starts one fret off. (2) The shape guard compares
+with the last accepted frame, and the board's nut-to-12th length may change by at most 8 % per 133 ms.
+(3) Every 200 ms the inlay/nut index check runs on the tracked grid (3.8 ms against 76 ms for a tracking
+step); three verdicts in a row with margin ≥ 0.6 shift it back by whole frets (on the owner's guitar the hand
+hides the inlays and the nut cue alone gives ≈ 0.8; on the dim e2e clip single wrong verdicts reached 0.75,
+hence three, not two). (4) With NeckNet loaded (auto-lock on), a watchdog compares NeckNet's corners with
+the grid twice a second; two clear disagreements (nut ¾ of a nut width away, 12th fret 1½, or no neck) end
+tracking, and the automatic lock searches again. It runs in the worker after the frame's pose has been sent,
+so the overlay never waits for NeckNet. (5) Tracking enters RECOVERING only after frames fail, not because
+time passed since the last good frame: a slow frame (NeckNet in the browser, a pause) had sent the tracker
+into a wide re-search that jumped (seen as 10–15 mm spikes in the e2e auto-lock tests). Constant-velocity
+prediction is capped at 250 ms. Damping (D-022) is unchanged: a sweep showed it is not what limits tilts.
+**Measured.** G3.3t: 92.1 % good frames, 0 index corrections without a slip; started one fret off: all 24 clips
+corrected (median 4 tracked frames, ≈ 0.5 s). Remaining failures: maple boards one string off across the neck (the known
+D-016 weakness) and a neck running out of the frame. Owner's frames: started one fret off either way,
+corrected within 3–10 frames; the lift no longer stretches the grid. Single-frame auto-lock at the final angle
+of the tilt clips: 66/72 right, 4 wrong, 2 none. G3.3 99.2 % / 0 slips and G3.4 0.36 px unchanged.
+**Known flaky test.** `autolock.spec.ts` low-light fails about half the runs on this 4-vCPU container
+(worst dot error ≈ 3.3 mm against a 3 mm limit), equally with the 0.3.2 vision code; it passed when Phase 4
+closed. Not part of `verify` (CI). Left as is and recorded rather than loosened; to revisit with the
+low-light tracking accuracy.
+**Alternatives.** The index guard on every frame (refused real fast moves; a synthetic clip then slipped);
+weaker damping (no gain on tilts, losses on the hard clips); a relative confidence drop (wrong fits do not
+drop).
