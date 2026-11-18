@@ -41,9 +41,10 @@ export interface LockResult extends RefineResult {
 /**
  * Locks at or above this confidence are shown as verified; below it the player is asked to check
  * the grid. Calibrated by the G3.2 benchmark (docs/benchmarks/vision-phase3.json, G32.confidence):
- * the lowest threshold at which ≥ 98 % of accepted locks were correct.
+ * the lowest threshold at which ≥ 98 % of accepted locks were correct (0.925 since D-022: 100 % of
+ * 14 % of locks; 0.9 now gives 97.3 %).
  */
-export const VERIFIED_CONFIDENCE = 0.9;
+export const VERIFIED_CONFIDENCE = 0.93;
 
 /** Score of a fit with every fret found in both bands and six strings plus edges at 15 stations. */
 export function fullScore(model: InstrumentModel): number {

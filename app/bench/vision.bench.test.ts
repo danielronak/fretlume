@@ -179,7 +179,7 @@ describe('G3.2: lock succeeds from noisy taps (held-out frames)', () => {
     const calibration = thresholds.map((t) => {
       const accepted = runs.filter((x) => x.confidence >= t);
       return {
-        threshold: Number(t.toFixed(2)),
+        threshold: Number(t.toFixed(3)),
         accepted: Number((accepted.length / runs.length).toFixed(3)),
         precision: Number(
           (accepted.filter((x) => x.ok).length / Math.max(1, accepted.length)).toFixed(3),

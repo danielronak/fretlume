@@ -221,3 +221,37 @@ but this session's automatic permission check refused the first download, so no 
 collected. G4.4 is "not measured"; the owner's field test (diagnostics with frames) is the next real check.
 **Speed.** NeckNet takes 174 ms per frame in this container (budget 120 ms): searching runs at ~3–4 Hz
 instead of 5. Acceptable while it only runs before a lock; to be confirmed on real devices.
+
+## D-022 · 2026-11-18 · Fit as a board-space correction; strings cannot twist the frets; tracking guards
+**Context.** Field test 2 (0.3.1 diagnostics: 100 frames at 640 px of the owner's steel-string acoustic, dark
+board, faint strings, fretting hand on the neck). Replaying them through the app's code showed: NeckNet's
+corners were usable on 13 of 16 sampled frames (nut corners within a few px, fret index right), but the
+fret fit then slanted the grid; with a still guitar the tracked nut corners jumped 10–40 px per frame, a fit at confidence
+0.31–0.42 was accepted as a lock, and tracking was lost by frame 22 (2.2 s). Cause: the fit solved fret wires
+(board x) and strings/edges (board y) together, so they share the homography's perspective terms; where the
+string cue misreads faint strings it tilts every fret wire. Switching the string cue off brought the nut error
+on these frames from 10–35 px to 1–5 px.
+**Decision.** (1) `refine` (improved mode) fits a board-space correction of the current estimate
+(`fitCorrectionFromLines`): the fret wires set the along-neck row and the perspective, the strings and edges
+then set the across-neck row; the perspective is damped towards "no change" — weakly when locking (taps
+need their perspective corrected), strongly while tracking, where the wires' tilt across the board is damped
+too. (2) While tracking, a second fit that lets the strings carry up to the wires' weight in the perspective
+is also tried, and the fit more measurements agree with (fixed tolerances 1 mm along, 0.6 mm across) is
+kept: a light board with dark wires needs the strings (synthetic maple clips slid otherwise), a real board
+with faint strings must not use them. (3) Tracking refuses a fit that moves a control point by more than a
+nut width from where the search started, or changes the board's nut/12th-width proportions by more than
+35 % from the lock. (4) Auto-lock ranks its candidate fits by confidence × (1 − midway-wire ratio), so a
+wrong-scale fit that ties on score loses (it put one replayed frame 2–3 frets off). (5) With auto-lock on, the
+Stage goes back to searching when tracking reports the neck lost, and resumes tracking without the confirm
+step when the new lock's index is certain and the player's earlier confirmation needed no fret shift.
+**Measured.** Owner's frames, auto-lock on frame 0 then tracking: right lock, 1–7 px per frame through 42
+frames of fretting and strumming (before: wrong-scale lock possible, 10–40 px per frame, lost at frame 22);
+when the guitar is lifted quickly the guard holds the last pose. Synthetic (`vision-phase3.json`): G3.2 4 taps
+94.5 % σ5 / 91.5 % σ8 (was 91.5 / 86.5), 6 taps 92.0 / 93.5; G3.3 99.2 % good frames, 0 slips (was 98.2 %,
+1 slip — passes now); G3.4 jitter 0.36 px RMS (was 1.05 — passes now); G3.5 unchanged; G4.3 87.5 % correct,
+2.0 % wrong index, 0 % false locks (was 85 / 3 / 0, still failing). Confidence calibration moved: 0.9 now
+gives 97.3 % precision, so the verified threshold is 0.93 (100 % of 14 % of locks).
+**Alternatives.** Turning the string cue off (stable on the real frames, but the across-neck position could
+then never be corrected from the image); a fixed compromise share of the strings in the perspective (0.3:
+the real grid wobbled again, the maple clips still slid). Owner frames are not committed (privacy); the
+replay scripts were run from the session scratchpad.

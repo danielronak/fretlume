@@ -4,18 +4,20 @@
 
 ## Now
 - **Current phase:** 5 — next to start (Phase 4 done 2026-11-17 with auto-lock as an opt-in beta)
-- **Next task:** Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5, G3.3 slip, G3.4 jitter (D-016–D-018); G4.3 (85 % / 3 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
+- **Next task:** owner field test of 0.3.2 (tracking fixes, D-022), then Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
 - **Last release:** 0.3.0 (Phase 4), 2026-11-17 — live at https://danielronak.github.io/fretlume/ (tags v0.1.0–v0.3.0)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
-- **Last updated:** 2026-11-17
+- **Last updated:** 2026-11-18
 
 ## Waiting on the owner (does not block building)
 - **Golden set downloads (optional).** Wikimedia hosts are allowed on the environment, but this session's
   automatic permission check refused the download. To let a future session collect real guitar photos for
   gate G4.4, allow it when asked (or add a permission rule for fetching from upload.wikimedia.org).
-- **🎸 Field test of 0.3.0:** besides the steps below, switch on Stage → "Lock automatically (beta)" and tell
-  us: did it lock on your guitar, and were the fret numbers right?
+- **🎸 Field test of 0.3.2 (tracking fixes, D-022):** same as last time — Stage with "Lock automatically
+  (beta)" on, play with the fretting hand on the neck, move the guitar a little, then export diagnostics with
+  camera video. Questions: does the grid stay on the frets while playing? Is it still slanted on some locks?
+  After the neck is lost, does it find it again by itself?
 - **🎸 Optional field test of 0.2.0 (10 minutes).** At https://danielronak.github.io/fretlume/ on a phone or laptop with a camera: open Settings → Field test and follow the eight steps (lock in good and dim light, play
   with the overlay, move the guitar, re-lock, tune), then *Export diagnostics* and attach the file to the
   next session. Switching on "Include camera frames" first makes the file much more useful.
@@ -48,8 +50,8 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally and in CI (12 unit, 8 browser tests); first Pages deploy waits for the owner to enable Pages |
 | 1 Theory engine | **done** 2026-11-16 | — | 218 tests; core line coverage 99.2 %; fingering agreement 91.3 %; `docs/benchmarks/catalogue.json` |
 | 2 Shell, Library, Tuner | **done** 2026-11-17 | v0.1 (0.1.0) | G6.1 18/18 within 1 cent; first load 1.41 MB; 283 unit + 29 smoke e2e |
-| 3 Camera + manual lock | **done** 2026-11-17, 3 gates failing (recorded) | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 91.5 % σ5 / 91.5 % σ8 with 6 taps (fail σ5, D-016); G3.3 98.2 % frames, 1 slip in 60 (fail); G3.4 1.05 px (fail); G3.5 pass; e2e 60/60 |
-| 4 Synthetic + auto-lock | **done** 2026-11-17, G4.3 failing, G4.4 not measured | v0.3 (0.3.0) 🎸 | G4.1 3.3 px, G4.2 3.9 px pass; G4.3 85 % / 3 % wrong index / 0 % false (fail); auto-lock opt-in beta (D-021) |
+| 3 Camera + manual lock | **done** 2026-11-17; since D-022 (2026-11-18) only G3.2 σ5 fails | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 94.5 % σ5 / 91.5 % σ8 with 4 taps (fail σ5); G3.3 99.2 % frames, 0 slips (pass); G3.4 0.36 px (pass); G3.5 pass; e2e 60/60 |
+| 4 Synthetic + auto-lock | **done** 2026-11-17, G4.3 failing, G4.4 not measured | v0.3 (0.3.0) 🎸 | G4.1 3.3 px, G4.2 3.9 px pass; G4.3 87.5 % / 2 % wrong index / 0 % false (fail, D-022); auto-lock opt-in beta (D-021) |
 | 5 Runs, playground, tabs (parity) | not started | v0.4 | |
 | 6 Listening | not started | v0.5 🎸 | |
 | 7 Hand vision | not started | v0.6 🎸 | |
@@ -131,6 +133,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | Date | Device | Findings | Follow-up |
 |---|---|---|---|
 | 2026-11-18 | Windows laptop, Chrome 157, 12 cores; steel-string acoustic, rosewood, dots; 0.3.0 | Auto-lock fired 12 times (fit confidence 0.62–0.76). NeckNet found the guitar in 16/16 real frames (presence 1.0, headstock side right); replayed on the 320-px diagnostics frames, 12 of 16 fits were right, 1 wrong (slanted grid), 3 no lock (blur, cut off). One lock held 41 s; later locks dropped after 1–10 s (cause unknown — asked the owner). Worker 56 ms/frame. Re-lock after losing the neck put handles off-screen (fixed); guitar-type guess wavers on real frames (suggestion now needs 8 agreeing detections). | Owner: fret numbers right ~60 % of locks (otherwise slanted lines; once needed +1); dots on the right strings while locked; tracking lost after a few seconds with minimal movement or a hand over the frets, every time. → Diagnostics now record 10 s of 640-px video at 10 fps (0.3.1) so sessions can be replayed through the tracker; next: fix the slant and the tracking loss on real video. Frames not committed (privacy). |
+| 2026-11-18 | same laptop, 0.3.1 | 10 s of 640-px video (100 frames), recorded after tracking was lost. Replayed through the app's code: NeckNet corners usable on 13/16 sampled frames; the fret fit slanted the grid because misread faint strings tilted the frets through the shared perspective; on a still guitar tracked corners jumped 10–40 px per frame and a bad fit (confidence 0.3–0.4) was accepted, lost by 2.2 s. Auto-lock did not resume after a loss (bug). | Fixed in 0.3.2 (D-022): decoupled fit, tracking damping + plausibility guard, candidate ranking, auto-lock resumes after a loss. Replay now: steady 1–7 px per frame for all 42 frames with the guitar in view. Synthetic G3.3/G3.4 now pass. Frames not committed (privacy). |
 
 ## Decisions log pointer
 See `docs/DECISIONS.md` (created in Phase 0). Architecture decisions A1–A10 are in `MASTER_PLAN.md` §2.

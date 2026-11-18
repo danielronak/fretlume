@@ -39,7 +39,8 @@ Median corner error, scaled to a 1280×720 frame; presence AUC over frames with 
 | val-C (photo-composite style) | 2048 | 3.9 | 20.0 | 0.9999 | 99.7 % | 95.4 % |
 
 Step 9375 (450 k training samples, about 4.5 h on 4 CPU cores). Gates G4.1 and G4.2 pass.
-End to end with the EdgeTracker and index check (G4.3, single-frame proxy on 200 held-out 720p frames): 85.0 % correct, 3.0 % wrong fret index, 0.0 % false locks on 200 frames without a guitar — the gate (95 / 1 / 0.5) is not met (DECISIONS D-021).
+End to end with the EdgeTracker and index check (G4.3, single-frame proxy on 200 held-out 720p frames): 87.5 % correct, 2.0 % wrong fret index, 0.0 % false locks on 200 frames without a guitar — the gate (95 / 1 / 0.5) is not met (DECISIONS D-021, D-022).
+On real video (owner's field test 2, 16 sampled frames of a steel-string acoustic with the fretting hand on the neck): all four corners usable on 13 of 16; on the other 3 one corner jumped off the neck (motion blur, hand), which the multi-start absorbs.
 Speed: 174 ms per frame in the build container's JavaScript engine.
 
 ## Limits
