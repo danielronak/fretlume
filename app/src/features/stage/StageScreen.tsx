@@ -27,7 +27,7 @@ import {
 import type { AutoMessage, PoseMessage } from '@vision/messages';
 import type { SearchHint } from '@vision/autoLock';
 import { readFrameStamp } from '@vision/stamp';
-import { diagnostics } from '@/diagnostics/recorder';
+import { diagnostics, FRAME_WIDTH } from '@/diagnostics/recorder';
 import { buildDeck, type DeckEntry } from './deck';
 import { clearColorCache, drawGrid, drawOverlay, toCanvas, toVideo, type View } from './draw';
 import './stage.css';
@@ -276,6 +276,19 @@ export function StageScreen() {
       performance.now(),
       `auto-lock ${a.confidence.toFixed(2)} index ${a.indexSure}`,
     );
+    // The fit as shown, so a session can be redrawn exactly (field tests).
+    diagnostics.lock({
+      tMs: frozenRef.current.tMs,
+      taps: tapPointsMm(model, 4).map((p) => apply(a.H!, p.x, p.y)),
+      video: { width: video.videoWidth, height: video.videoHeight },
+      reply: {
+        H: a.H,
+        polarity: a.polarity,
+        confidence: a.confidence,
+        found: true,
+        verified: a.indexSure && a.confidence >= VERIFIED_CONFIDENCE,
+      },
+    });
     setTaps(tapPointsMm(model, 4).map((p) => apply(a.H!, p.x, p.y)));
     setLock({
       H: a.H,
@@ -486,14 +499,15 @@ export function StageScreen() {
       }
       const now = performance.now();
       const video = videoRef.current;
-      if (phase === 'tracking' && video && diagnostics.wantsFrame(now)) {
+      // While the camera runs (searching or tracking), not while a still is frozen for locking.
+      if (video && !video.paused && diagnostics.wantsFrame(now)) {
         // Only after the player agreed (Settings → Field test); kept in memory for the export.
         const small =
           frameCanvas.current ?? (frameCanvas.current = document.createElement('canvas'));
-        small.width = 320;
-        small.height = Math.round((320 * videoSize.height) / videoSize.width);
+        small.width = FRAME_WIDTH;
+        small.height = Math.round((FRAME_WIDTH * videoSize.height) / videoSize.width);
         small.getContext('2d')?.drawImage(video, 0, 0, small.width, small.height);
-        diagnostics.frame(now, small.toDataURL('image/jpeg', 0.6));
+        diagnostics.frame(now, small.toDataURL('image/jpeg', 0.75));
       }
       if (debugEnabled()) {
         window.__fretlumeStage = {

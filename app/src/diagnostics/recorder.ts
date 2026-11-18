@@ -1,7 +1,7 @@
 /**
  * Diagnostics (docs/specs/06-testing-and-data.md §4): a short in-memory record of what the vision
  * pipeline did, exported only when the player asks. Camera frames are kept only after the player
- * switches "Include camera frames" on, at 2 per second for the last 15 seconds, and only in memory.
+ * switches "Include camera frames" on, at 10 per second for the last 10 seconds, and only in memory.
  */
 import type { LockReply } from '@vision/core';
 import type { Mat3, Pt } from '@vision/geometry';
@@ -46,8 +46,11 @@ export interface DiagnosticsBundle {
 }
 
 export const POSE_CAPACITY = 1800; // ~60 s at 30 frames/s
-export const FRAME_CAPACITY = 30; // 15 s at 2 frames/s
-export const FRAME_INTERVAL_MS = 500;
+// 10 s of video at 10 frames/s, so a session can be replayed frame by frame through the tracker.
+export const FRAME_CAPACITY = 100;
+export const FRAME_INTERVAL_MS = 100;
+/** Width of recorded frames (px); sharp enough to label fret positions by hand. */
+export const FRAME_WIDTH = 640;
 
 export class DiagnosticsRecorder {
   poses: PoseRecord[] = [];

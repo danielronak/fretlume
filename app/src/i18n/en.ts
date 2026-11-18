@@ -488,9 +488,9 @@ export const en = {
   fieldDiagTitle: 'Diagnostics',
   fieldDiagBody:
     'The file holds what the camera tracking did in the last minute (positions, confidence, lock attempts), the app version and the type of device. Nothing leaves this device unless you send the file yourself.',
-  fieldFrames: 'Include camera frames (2 per second, last 15 s)',
+  fieldFrames: 'Include camera video (last 10 s, 10 frames per second)',
   fieldFramesNote:
-    'Off by default. When on, small camera pictures are kept in memory while the Stage runs and go into the next export. Turning it off deletes them.',
+    'Off by default. When on, the last 10 seconds of camera video (640 px wide) are kept in memory while the Stage runs and go into the next export (a few MB). Turning it off deletes them.',
   fieldExportButton: 'Export diagnostics',
   fieldExported: 'Saved {file} ({poses} positions, {frames} frames).',
   fieldClear: 'Clear recorded data',

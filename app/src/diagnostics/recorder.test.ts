@@ -27,7 +27,7 @@ describe('DiagnosticsRecorder', () => {
     expect(d.poses[0]!.tMs).toBe(10);
   });
 
-  it('keeps camera frames only with consent, at most 2 per second, and drops them when consent goes', () => {
+  it('keeps camera frames only with consent, at most 10 per second, and drops them when consent goes', () => {
     const d = new DiagnosticsRecorder();
     expect(d.wantsFrame(0)).toBe(false);
     d.frame(0, 'data:x');
@@ -35,9 +35,9 @@ describe('DiagnosticsRecorder', () => {
     d.setRecordFrames(true);
     expect(d.wantsFrame(0)).toBe(true);
     d.frame(0, 'data:a');
-    expect(d.wantsFrame(300)).toBe(false);
-    expect(d.wantsFrame(500)).toBe(true);
-    for (let i = 1; i <= FRAME_CAPACITY + 5; i++) d.frame(i * 500, 'data:b');
+    expect(d.wantsFrame(60)).toBe(false);
+    expect(d.wantsFrame(100)).toBe(true);
+    for (let i = 1; i <= FRAME_CAPACITY + 5; i++) d.frame(i * 100, 'data:b');
     expect(d.frames).toHaveLength(FRAME_CAPACITY);
     d.setRecordFrames(false);
     expect(d.frames).toHaveLength(0);
