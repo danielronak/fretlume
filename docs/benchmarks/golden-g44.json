@@ -1,0 +1,27 @@
+{
+  "gate": "G4.4: ≥ 85 % correct automatic locks on real photos (frets 0–12; along < 0.25 fret, across < 0.35 string spacing)",
+  "photos": 3,
+  "correct": 0,
+  "wrongIndex": 0.333,
+  "off": 0,
+  "noLock": 0.667,
+  "rows": [
+    {
+      "key": "000",
+      "result": "no lock",
+      "presence": 0
+    },
+    {
+      "key": "048",
+      "result": "wrong index",
+      "along": 3.71,
+      "across": 2.28,
+      "presence": 0.9915876906849742
+    },
+    {
+      "key": "057",
+      "result": "no lock",
+      "presence": 0.8339945095783717
+    }
+  ]
+}

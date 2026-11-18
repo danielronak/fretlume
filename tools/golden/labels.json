@@ -1,0 +1,311 @@
+{
+  "000": {
+    "H": [
+      -0.756048889114077, -0.2168337945113938, 678.3561922851824, -0.06207818728972293,
+      0.2725797107400613, 393.92918670445295, -0.000397769030992075, -0.0007486580570124114, 1
+    ],
+    "instrument": "electric",
+    "note": "accepted: lines on wires, nut right",
+    "status": "accepted",
+    "taps": [
+      [680, 377],
+      [688, 398],
+      [500, 442],
+      [497, 410]
+    ]
+  },
+  "007": {
+    "instrument": "electric",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [747, 231],
+      [747, 251],
+      [344, 440],
+      [344, 422]
+    ]
+  },
+  "016": {
+    "instrument": "electric",
+    "note": "rejected: NeckNet swapped the ends (nut at the body)",
+    "status": "rejected",
+    "taps": [
+      [298, 585],
+      [278, 635],
+      [713, 525],
+      [716, 499]
+    ]
+  },
+  "017": {
+    "instrument": "electric",
+    "note": "rejected: no sensible fit",
+    "status": "rejected",
+    "taps": [
+      [8, 591],
+      [493, 797],
+      [605, 801],
+      [317, 518]
+    ]
+  },
+  "018": {
+    "instrument": "electric",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [466, 782],
+      [494, 874],
+      [877, 842],
+      [436, 788]
+    ]
+  },
+  "022": {
+    "instrument": "electric",
+    "note": "rejected: NeckNet corners on the torso",
+    "status": "rejected",
+    "taps": [
+      [327, 170],
+      [379, 204],
+      [654, 317],
+      [594, 279]
+    ]
+  },
+  "023": {
+    "instrument": "electric",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [1014, 656],
+      [1012, 719],
+      [690, 590],
+      [294, 475]
+    ]
+  },
+  "024": {
+    "instrument": "electric",
+    "note": "rejected: wrong grid",
+    "status": "rejected",
+    "taps": [
+      [229, 437],
+      [235, 487],
+      [308, 482],
+      [350, 377]
+    ]
+  },
+  "027": {
+    "instrument": "electric",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [760, 455],
+      [761, 467],
+      [328, 585],
+      [489, 556]
+    ]
+  },
+  "028": {
+    "instrument": "electric",
+    "note": "rejected: steep neck, wrong fit",
+    "status": "rejected",
+    "taps": [
+      [250, 537],
+      [326, 631],
+      [489, 611],
+      [539, 551]
+    ]
+  },
+  "029": {
+    "instrument": "electric",
+    "note": "rejected: sheared against the wires",
+    "status": "rejected",
+    "taps": [
+      [647, 287],
+      [652, 322],
+      [440, 378],
+      [432, 340]
+    ]
+  },
+  "030": {
+    "instrument": "electric",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [963, 301],
+      [1040, 845],
+      [963, 843],
+      [824, 742]
+    ]
+  },
+  "031": {
+    "instrument": "electric",
+    "note": "rejected: sheared",
+    "status": "rejected",
+    "taps": [
+      [725, 259],
+      [727, 290],
+      [280, 370],
+      [313, 313]
+    ]
+  },
+  "038": {
+    "instrument": "electric",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [762, 346],
+      [759, 376],
+      [504, 456],
+      [327, 408]
+    ]
+  },
+  "039": {
+    "instrument": "electric",
+    "note": "rejected: NeckNet swapped the ends",
+    "status": "rejected",
+    "taps": [
+      [439, 468],
+      [443, 510],
+      [665, 489],
+      [714, 436]
+    ]
+  },
+  "040": {
+    "instrument": "electric",
+    "note": "rejected: slanted against the wires",
+    "status": "rejected",
+    "taps": [
+      [670, 445],
+      [668, 472],
+      [470, 415],
+      [470, 382]
+    ]
+  },
+  "048": {
+    "H": [
+      -0.709591618780732, 0.3535894634372671, 722.8745137191438, 0.6579220184917872,
+      1.0515964282801997, 404.34389227679566, 0.0006243879226966836, 0.0006844805528477533, 1
+    ],
+    "instrument": "electric",
+    "note": "accepted: lines on wires, numbers on dots",
+    "status": "accepted",
+    "taps": [
+      [735, 397],
+      [737, 424],
+      [410, 529],
+      [408, 497]
+    ]
+  },
+  "049": {
+    "instrument": "steel-acoustic",
+    "note": "rejected: wrong fit",
+    "status": "rejected",
+    "taps": [
+      [328, 514],
+      [326, 564],
+      [722, 673],
+      [721, 389]
+    ]
+  },
+  "050": {
+    "instrument": "steel-acoustic",
+    "note": "rejected: wrong fit",
+    "status": "rejected",
+    "taps": [
+      [367, 54],
+      [348, 159],
+      [428, 638],
+      [317, 615]
+    ]
+  },
+  "057": {
+    "H": [
+      -0.7356866225915009, 0.28103244654881476, 787.6336494863739, 0.011809750279948558,
+      1.2492724854047008, 554.8270192165062, 0.00017917794489123962, 0.0007754101048516103, 1
+    ],
+    "instrument": "steel-acoustic",
+    "note": "accepted: lines on wires, 9/12 on dots",
+    "status": "accepted",
+    "taps": [
+      [790, 534],
+      [790, 572],
+      [530, 548],
+      [530, 497]
+    ]
+  },
+  "074": {
+    "instrument": "steel-acoustic",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [447, 545],
+      [462, 568],
+      [446, 632],
+      [518, 511]
+    ]
+  },
+  "093": {
+    "instrument": "classical",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [917, 346],
+      [519, 490],
+      [534, 489],
+      [488, 451]
+    ]
+  },
+  "109": {
+    "instrument": "classical",
+    "note": "rejected: fit diagonal to the frets",
+    "status": "rejected",
+    "taps": [
+      [745, 293],
+      [745, 322],
+      [527, 352],
+      [527, 306]
+    ]
+  },
+  "119": {
+    "instrument": "steel-acoustic",
+    "note": "rejected: wrong fit",
+    "status": "rejected",
+    "taps": [
+      [665, 337],
+      [351, 485],
+      [771, 578],
+      [683, 365]
+    ]
+  },
+  "124": {
+    "instrument": "electric",
+    "note": "rejected: NeckNet followed the strap",
+    "status": "rejected",
+    "taps": [
+      [474, 91],
+      [297, 423],
+      [299, 453],
+      [184, 393]
+    ]
+  },
+  "133": {
+    "instrument": "steel-acoustic",
+    "note": "rejected: did not snap",
+    "status": "rejected",
+    "taps": [
+      [590, 529],
+      [63, 725],
+      [590, 531],
+      [584, 455]
+    ]
+  },
+  "134": {
+    "instrument": "electric",
+    "note": "rejected: wrong fit",
+    "status": "rejected",
+    "taps": [
+      [274, 250],
+      [147, 257],
+      [613, 456],
+      [610, 370]
+    ]
+  }
+}

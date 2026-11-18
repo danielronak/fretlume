@@ -51,6 +51,8 @@ def review() -> None:
     """Draw each snapped label: fret lines 0–12 with numbers, outer strings, and zoomed crops."""
     snapped = json.loads((WORK / 'snapped.json').read_text())
     for key, lab in snapped.items():
+        if lab.get('failed'):
+            continue
         img = cv2.imread(str(WORK / f'{key}.src.jpg'))
         if img is None:
             continue

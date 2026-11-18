@@ -15,7 +15,7 @@ import {
   stringY,
   type InstrumentModel,
 } from '@core/guitar/instrument';
-import { AutoLocker } from '@vision/autoLock';
+import { AutoLocker, bassUp } from '@vision/autoLock';
 import { EdgeTracker, trackingError } from '@vision/edgeTracker';
 import { apply, type Mat3 } from '@vision/geometry';
 import type { Image } from '@vision/image';
@@ -26,6 +26,7 @@ import { ROOT } from './data';
 
 const WORK = resolve(ROOT, 'fixtures/generated/golden');
 const LABELS = resolve(ROOT, 'tools/golden/labels.json');
+const MODEL_FILE = resolve(ROOT, 'app/public/models/necknet-v1');
 
 interface GoldenLabel {
   instrument: 'steel-acoustic' | 'electric' | 'classical';
@@ -65,7 +66,22 @@ const labels = (): Record<string, GoldenLabel> =>
 describe.runIf(process.env.GOLDEN === 'snap')('golden set: snap proposals', () => {
   it('snaps proposed corners and writes review geometry', () => {
     const out: Record<string, unknown> = {};
-    for (const [key, label] of Object.entries(labels())) {
+    const all = labels();
+    // Photos without hand-read corners start from NeckNet's corners (only a starting point: the
+    // label is what passes visual review).
+    const bin = readFileSync(`${MODEL_FILE}.bin`);
+    const net = Network.fromBuffers(
+      JSON.parse(readFileSync(`${MODEL_FILE}.json`, 'utf8')) as Manifest,
+      bin.buffer.slice(bin.byteOffset, bin.byteOffset + bin.byteLength),
+    );
+    for (const [key, label] of Object.entries(all)) {
+      if (label.taps.length === 4 || !existsSync(resolve(WORK, `${key}.rgba`))) continue;
+      const det = detectNeck(net, loadImage(key));
+      const c = bassUp(det.corners);
+      label.taps = c.map((p) => [Math.round(p.x), Math.round(p.y)] as [number, number]);
+    }
+    writeFileSync(LABELS, `${JSON.stringify(all, null, 1)}\n`);
+    for (const [key, label] of Object.entries(all)) {
       if (label.status === 'rejected' || !existsSync(resolve(WORK, `${key}.rgba`))) continue;
       const model = MODELS[label.instrument];
       const image = loadImage(key);
@@ -106,8 +122,6 @@ describe.runIf(process.env.GOLDEN === 'snap')('golden set: snap proposals', () =
     expect(Object.keys(out).length).toBeGreaterThan(0);
   });
 });
-
-const MODEL_FILE = resolve(ROOT, 'app/public/models/necknet-v1');
 
 describe('G4.4: automatic lock on real photos', () => {
   const accepted = Object.entries(labels()).filter(
