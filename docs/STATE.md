@@ -128,7 +128,9 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 - None.
 
 ## Field-test log (🎸)
-*(empty — add date, device, findings, diagnostics file name, follow-up tasks)*
+| Date | Device | Findings | Follow-up |
+|---|---|---|---|
+| 2026-11-18 | Windows laptop, Chrome 157, 12 cores; steel-string acoustic, rosewood, dots; 0.3.0 | Auto-lock fired 12 times (fit confidence 0.62–0.76). NeckNet found the guitar in 16/16 real frames (presence 1.0, headstock side right); replayed on the 320-px diagnostics frames, 12 of 16 fits were right, 1 wrong (slanted grid), 3 no lock (blur, cut off). One lock held 41 s; later locks dropped after 1–10 s (cause unknown — asked the owner). Worker 56 ms/frame. Re-lock after losing the neck put handles off-screen (fixed); guitar-type guess wavers on real frames (suggestion now needs 8 agreeing detections). | Why tracking dropped while playing; tracker robustness on real frames; frames themselves not committed (privacy) |
 
 ## Decisions log pointer
 See `docs/DECISIONS.md` (created in Phase 0). Architecture decisions A1–A10 are in `MASTER_PLAN.md` §2.

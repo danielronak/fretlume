@@ -17,7 +17,13 @@ import { projectShape, type OverlayItem } from '@overlay/projection';
 import { Button, Slider, Toggle } from '@ui/index';
 import type { InstrumentId, LockReply } from '@vision/core';
 import { apply, type Mat3, type Pt } from '@vision/geometry';
-import { homographyFromTaps, shiftFrets, tapPointsMm, VERIFIED_CONFIDENCE } from '@vision/lock';
+import {
+  homographyFromTaps,
+  shiftFrets,
+  tapPointsMm,
+  tapsInFrame,
+  VERIFIED_CONFIDENCE,
+} from '@vision/lock';
 import type { AutoMessage, PoseMessage } from '@vision/messages';
 import type { SearchHint } from '@vision/autoLock';
 import { readFrameStamp } from '@vision/stamp';
@@ -169,7 +175,8 @@ export function StageScreen() {
           const votes = [...profileVotes.current, a.profile].slice(-8);
           profileVotes.current = votes;
           const current = useSettings.getState().guitar;
-          const agree = votes.length >= 6 && votes.every((v) => v === a.profile);
+          // The type head wavers on real photos: suggest only after 8 agreeing detections.
+          const agree = votes.length >= 8 && votes.every((v) => v === a.profile);
           setSuggested(agree && a.profile !== current ? a.profile : null);
         }
         setAutoView((v) =>
@@ -379,7 +386,12 @@ export function StageScreen() {
     diagnostics.event(performance.now(), 'relock');
     const pose = poseRef.current;
     const H = pose?.H;
-    void freeze(H ? tapPointsMm(model, 4).map((p) => apply(H, p.x, p.y)) : undefined);
+    const fromPose = H ? tapPointsMm(model, 4).map((p) => apply(H, p.x, p.y)) : null;
+    // A pose from after tracking lost the neck can put the handles off-screen; then start from the
+    // remembered or default handles instead (field test 2026-11-18).
+    const usable =
+      fromPose && tapsInFrame(fromPose, videoSize.width, videoSize.height) ? fromPose : undefined;
+    void freeze(usable);
   };
 
   // ---------- deck ----------

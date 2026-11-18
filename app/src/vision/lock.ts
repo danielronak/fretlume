@@ -82,3 +82,16 @@ export function shiftFrets(H: Mat3, model: InstrumentModel, k: number): Mat3 {
   const L = model.scaleMm;
   return multiply(H, [r, 0, L * (1 - r), 0, 1, 0, 0, 0, 1]);
 }
+
+/** All taps inside the frame, allowing `margin` (fraction of the size) beyond each edge. */
+export function tapsInFrame(taps: Pt[], width: number, height: number, margin = 0.05): boolean {
+  return taps.every(
+    (p) =>
+      Number.isFinite(p.x) &&
+      Number.isFinite(p.y) &&
+      p.x >= -margin * width &&
+      p.x <= (1 + margin) * width &&
+      p.y >= -margin * height &&
+      p.y <= (1 + margin) * height,
+  );
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { INSTRUMENTS } from '@core/guitar/instrument';
 import { apply, fromControlPoints, type Mat3 } from './geometry';
-import { homographyFromTaps, shiftFrets, tapPointsMm } from './lock';
+import { homographyFromTaps, shiftFrets, tapPointsMm, tapsInFrame } from './lock';
 import { fretX } from '@core/guitar/instrument';
 
 const model = INSTRUMENTS.steelAcoustic;
@@ -57,5 +57,22 @@ describe('shiftFrets', () => {
       const q = apply(H, 100, 3);
       expect(Math.hypot(p.x - q.x, p.y - q.y)).toBeLessThan(1e-6);
     }
+  });
+});
+
+describe('tapsInFrame', () => {
+  it('accepts taps on screen (with a small margin) and refuses lost poses', () => {
+    expect(
+      tapsInFrame(
+        [
+          { x: 10, y: 10 },
+          { x: 1300, y: 700 },
+        ],
+        1280,
+        720,
+      ),
+    ).toBe(true);
+    expect(tapsInFrame([{ x: -2774, y: 1086 }], 1280, 720)).toBe(false);
+    expect(tapsInFrame([{ x: Number.NaN, y: 1 }], 1280, 720)).toBe(false);
   });
 });
