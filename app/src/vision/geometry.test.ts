@@ -4,6 +4,7 @@ import { fretX, INSTRUMENTS } from '@core/guitar/instrument';
 import {
   apply,
   controlPointsPx,
+  fitCorrectionFromLines,
   fitHomography,
   fitInverseFromLines,
   fromControlPoints,
@@ -14,6 +15,7 @@ import {
   multiply,
   projective1D,
   symmetricEigen,
+  type BoardConstraint,
   type LineConstraint,
   type Mat3,
   type Pt,
@@ -155,6 +157,64 @@ describe('geometry', () => {
       }),
       { numRuns: 50 },
     );
+  });
+
+  it('correction fit: recovers the camera from a nearby estimate (frets x only, strings y only)', () => {
+    fc.assert(
+      fc.property(camera, fc.double({ min: -0.03, max: 0.03, noNaN: true }), (H, e) => {
+        // The current estimate is off by a small board-space homography E.
+        const E: Mat3 = [1 + e, 0.2 * e, 3, 0.1 * e, 1 - e, -1.5, 2e-5, -1e-4, 1];
+        const G0 = multiply(E, invert(H));
+        const constraints: BoardConstraint[] = [];
+        const add = (p: Pt, c: { x?: number; y?: number }, weight: number) =>
+          constraints.push({ b: apply(G0, p.x, p.y), ...c, weight });
+        for (let n = 0; n <= 17; n++)
+          for (const y of [-11, 9]) {
+            const x = fretX(electric, n);
+            add(apply(H, x, y + 0.3 * n), { x }, 1);
+          }
+        for (let s = 0; s < 6; s++)
+          for (const x of [40, 150, 260, 330]) {
+            const y = -17 + 6.8 * s;
+            add(apply(H, x + 7 * s, y), { y }, 0.5);
+          }
+        // Iterate as the tracker does (each round starts from the last estimate).
+        let G = G0;
+        for (let round = 0; round < 6; round++) {
+          const C = fitCorrectionFromLines(
+            constraints.map((c, i) => {
+              const p = apply(invert(G0), c.b.x, c.b.y);
+              return { ...c, b: apply(G, p.x, p.y), weight: constraints[i]!.weight };
+            }),
+          );
+          G = multiply(C, G);
+        }
+        const Hf = invert(G);
+        for (const q of [
+          { x: 0, y: -20 },
+          { x: 380, y: 25 },
+        ])
+          close(apply(Hf, q.x, q.y), apply(H, q.x, q.y), 1.5);
+      }),
+      { numRuns: 50 },
+    );
+  });
+
+  it('correction fit: wrong string rows cannot tilt the fret wires', () => {
+    // Frets measured exactly; the strings claim a scale and slant that do not exist.
+    const constraints: BoardConstraint[] = [];
+    for (let n = 0; n <= 15; n++)
+      for (const y of [-11, 11])
+        constraints.push({ b: { x: fretX(electric, n), y }, x: fretX(electric, n), weight: 1 });
+    for (const x of [30, 120, 200, 280])
+      for (let s = 0; s < 6; s++) {
+        const y = -17 + 6.8 * s;
+        constraints.push({ b: { x, y }, y: y * (1.3 + x / 500) + x / 40, weight: 1 });
+      }
+    const C = fitCorrectionFromLines(constraints);
+    for (let n = 0; n <= 15; n++)
+      for (const y of [-20, 0, 20])
+        expect(apply(C, fretX(electric, n), y).x).toBeCloseTo(fretX(electric, n), 6);
   });
 
   it('least squares averages noise', () => {

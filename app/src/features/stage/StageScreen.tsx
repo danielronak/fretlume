@@ -140,6 +140,8 @@ export function StageScreen() {
   const [activeHandle, setActiveHandle] = useState<number | null>(null);
   const [lock, setLock] = useState<LockReply | null>(null);
   const autoRef = useRef<AutoMessage | null>(null);
+  /** The player confirmed a grid with no fret shift in this camera session (see onAutoLocked). */
+  const resumeRef = useRef(false);
   const [autoView, setAutoView] = useState<{ state: string; hint: SearchHint | null }>({
     state: 'off',
     hint: null,
@@ -190,6 +192,7 @@ export function StageScreen() {
 
   useEffect(() => {
     clientRef.current?.setInstrument(INSTRUMENT_ID[settings.guitar] ?? 'steelAcoustic');
+    resumeRef.current = false;
   }, [settings.guitar]);
 
   const startCamera = useCallback(async () => {
@@ -267,6 +270,17 @@ export function StageScreen() {
   onAutoLockedRef.current = async (a: AutoMessage) => {
     const video = videoRef.current;
     if (phase !== 'framing' || !video || !a.H) return;
+    // Found again after tracking lost the neck: the player already confirmed this guitar's grid,
+    // so a lock whose fret index is certain resumes straight away.
+    if (resumeRef.current && a.indexSure) {
+      diagnostics.event(performance.now(), `auto-resume ${a.confidence.toFixed(2)}`);
+      const c = client();
+      c.stop();
+      c.confirm(a.H, a.polarity, performance.now());
+      c.start(video);
+      setPhase('tracking');
+      return;
+    }
     video.pause();
     clientRef.current?.stop();
     frozenRef.current?.bitmap.close();
@@ -301,6 +315,16 @@ export function StageScreen() {
     setPhase('confirm');
   };
   const onAutoLocked = (a: AutoMessage) => onAutoLockedRef.current(a);
+
+  // Tracking lost the neck for good: with automatic lock on, go back to looking for it.
+  useEffect(() => {
+    if (phase !== 'tracking' || status?.state !== 'searching' || !settings.autoLock) return;
+    diagnostics.event(performance.now(), 'lost: searching again');
+    clientRef.current?.stop();
+    autoRef.current = null;
+    setStatus(null);
+    setPhase('framing');
+  }, [phase, status?.state, settings.autoLock]);
 
   // While framing with the camera on: stream frames to the worker, which looks for the neck.
   useEffect(() => {
@@ -384,6 +408,8 @@ export function StageScreen() {
     });
     c.confirm(confirmedH, lock.polarity, frozen.tMs, frame);
     diagnostics.confirm(shift);
+    // Re-locks after a loss may skip the confirm step only if this one needed no fret shift.
+    resumeRef.current = shift === 0;
     await video.play().catch(() => undefined);
     c.start(video);
     setPhase('tracking');
@@ -810,6 +836,7 @@ export function StageScreen() {
                 onClick={() => {
                   clientRef.current?.stop();
                   camera.stop();
+                  resumeRef.current = false;
                   setPhase('framing');
                 }}
               >

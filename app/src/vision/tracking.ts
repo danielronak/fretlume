@@ -68,6 +68,8 @@ export class TrackingSession {
   private correction: Mat3 = IDENTITY;
   private lastGoodMs = 0;
   private state: TrackState = 'searching';
+  /** The board's shape in the image at the lock (see warped). */
+  private shape: Shape | null = null;
   /** Image pixel samples taken by the last update (cost proxy, gate G3.5). */
   lastSamples = 0;
 
@@ -105,6 +107,7 @@ export class TrackingSession {
       }
     }
     const points = controlPointsPx(H, model);
+    this.shape = shapeOf(points);
     this.last = { points: controlPointsPx(trackerH, model), tMs };
     this.velocity = points.map(() => ({ x: 0, y: 0 }));
     this.filters = points.flatMap(() => [0, 1].map(() => new OneEuroFilter(this.options.filter)));
@@ -168,11 +171,13 @@ export class TrackingSession {
       confidence = out.inliers > 0 ? Math.min(1, out.score / fullScore(model)) : 0;
       // While recovering (a wide search from a stale pose) a fit one fret off looks as good as the
       // right one; refuse fits that move the nut or 12th fret by about half a fret or more.
+      const points = controlPointsPx(out.H, model);
       if (
         confidence >= this.options.lowConfidence &&
-        !(recovering && slipped(startH, out.H, model))
+        !(recovering && slipped(startH, out.H, model)) &&
+        !(this.shape && warped(this.shape, start, points))
       )
-        measured = controlPointsPx(out.H, model);
+        measured = points;
     } catch {
       measured = null;
     }
@@ -250,4 +255,33 @@ export function slipped(startH: Mat3, measuredH: Mat3, model: InstrumentModel): 
     }
   }
   return false;
+}
+
+/** Scale-free description of the board quad: nut width and 12th-fret width over neck length. */
+interface Shape {
+  nut: number;
+  twelfth: number;
+}
+
+function shapeOf(points: Pt[]): Shape {
+  const [a, b, c, d] = points as [Pt, Pt, Pt, Pt];
+  const dist = (p: Pt, q: Pt) => Math.hypot(p.x - q.x, p.y - q.y);
+  const length = (dist(a, d) + dist(b, c)) / 2;
+  return { nut: dist(a, b) / length, twelfth: dist(c, d) / length };
+}
+
+/**
+ * Plausibility guard (field test 2026-11-18): a measurement is refused when it moves a control point
+ * by more than a nut width from where this frame's search started (the narrow search cannot find
+ * a real move that large), or when it changes the board's proportions by more than 35 % from the lock
+ * (a turned guitar changes them slowly; a fit dragged onto a hand or the body changes them at once).
+ */
+export function warped(lockShape: Shape, start: Pt[], measured: Pt[]): boolean {
+  const [a, b] = start as [Pt, Pt];
+  const nutPx = Math.hypot(b.x - a.x, b.y - a.y);
+  if (measured.some((p, i) => !(Math.hypot(p.x - start[i]!.x, p.y - start[i]!.y) <= nutPx)))
+    return true;
+  const s = shapeOf(measured);
+  const off = (v: number, ref: number) => !(Math.abs(Math.log(v / ref)) <= Math.log(1.35));
+  return off(s.nut, lockShape.nut) || off(s.twelfth, lockShape.twelfth);
 }

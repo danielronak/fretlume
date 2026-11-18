@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { INSTRUMENTS } from '@core/guitar/instrument';
 import type { EdgeTracker, RefineOptions, RefineResult } from './edgeTracker';
-import { controlPointsPx, fromControlPoints, type Mat3 } from './geometry';
+import { controlPointsPx, fromControlPoints, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
 import { fullScore } from './lock';
-import { slipped, TrackingSession } from './tracking';
+import { slipped, TrackingSession, warped } from './tracking';
 import { shiftFrets } from './lock';
 
 const model = INSTRUMENTS.electric;
@@ -127,5 +127,29 @@ describe('slipped', () => {
     // One fret toward the body: the measured nut sits where fret 1 was.
     expect(slipped(H, shiftFrets(H, model, 1), model)).toBe(true);
     expect(slipped(H, shiftFrets(H, model, -1), model)).toBe(true);
+  });
+});
+
+describe('warped (plausibility guard)', () => {
+  const pts = controlPointsPx(at(0), model);
+  const lockShape = (() => {
+    const [a, b, c, d] = pts as [Pt, Pt, Pt, Pt];
+    const dist = (p: Pt, q: Pt) => Math.hypot(p.x - q.x, p.y - q.y);
+    const length = (dist(a, d) + dist(b, c)) / 2;
+    return { nut: dist(a, b) / length, twelfth: dist(c, d) / length };
+  })();
+  it('accepts a small move and a whole-board scale change', () => {
+    expect(warped(lockShape, pts, controlPointsPx(at(8), model))).toBe(false);
+    const scaled = pts.map((p) => ({ x: 800 + 1.1 * (p.x - 800), y: 300 + 1.1 * (p.y - 300) }));
+    expect(warped(lockShape, scaled, scaled)).toBe(false);
+  });
+  it('refuses a jump of more than a nut width', () => {
+    expect(warped(lockShape, pts, controlPointsPx(at(150), model))).toBe(true);
+  });
+  it('refuses a fit that squashes the 12th fret', () => {
+    const [a, b, c, d] = pts as [Pt, Pt, Pt, Pt];
+    const mid = { x: (c.x + d.x) / 2, y: (c.y + d.y) / 2 };
+    const squash = (p: Pt) => ({ x: mid.x + 0.5 * (p.x - mid.x), y: mid.y + 0.5 * (p.y - mid.y) });
+    expect(warped(lockShape, pts, [a, b, squash(c), squash(d)])).toBe(true);
   });
 });

@@ -170,7 +170,13 @@ describe('G3.2: lock succeeds from noisy taps (held-out frames)', () => {
     );
     // Confidence calibration: for each threshold, how many locks it accepts and how many of those
     // are right. The verified threshold is the lowest with precision ≥ 0.98.
-    const calibration = Array.from({ length: 13 }, (_, i) => 0.3 + 0.05 * i).map((t) => {
+    const thresholds = [
+      ...Array.from({ length: 13 }, (_, i) => 0.3 + 0.05 * i),
+      0.925,
+      0.95,
+      0.975,
+    ];
+    const calibration = thresholds.map((t) => {
       const accepted = runs.filter((x) => x.confidence >= t);
       return {
         threshold: Number(t.toFixed(2)),
@@ -180,7 +186,8 @@ describe('G3.2: lock succeeds from noisy taps (held-out frames)', () => {
         ),
       };
     });
-    const verified = calibration.find((c) => c.precision >= 0.98)?.threshold ?? null;
+    const verified =
+      calibration.find((c) => c.precision >= 0.98 && c.accepted > 0)?.threshold ?? null;
     results.G32 = {
       gate: 'success ≥ 0.97 at σ = 5 px and ≥ 0.90 at σ = 8 px (worst along < 0.25 fret, across < 0.35 string spacing, frets 0–17)',
       frames: labels.length,

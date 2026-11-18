@@ -11,7 +11,7 @@ import {
   apply,
   controlPointsPx,
   fitHomography,
-  fitInverseFromLines,
+  fitCorrectionFromLines,
   IDENTITY,
   invert,
   multiply,
@@ -46,9 +46,22 @@ export interface RefineOptions {
   strings?: boolean;
   /** Use where fret wires end as an across-neck cue. Default: on in parity mode, off in improved mode. */
   fretEnds?: boolean;
+  /**
+   * How strongly the fit holds the perspective of the starting estimate (relative to the fret wire
+   * evidence). Default: weak for a wide search (a lock from taps must correct their perspective
+   * error), strong for frame-to-frame tracking (perspective changes little between frames, and
+   * letting a partly hidden board re-estimate it each frame makes the grid slide; D-022).
+   */
+  perspectiveDamping?: { along: number; across: number; shear?: number };
   /** Return the last strip and the measurements made on it (for debugging). */
   debug?: boolean;
 }
+
+const LOCK_DAMPING = { along: 0.01, across: 0.05 };
+const TRACK_DAMPING = { along: 1, across: 5, shear: 3 };
+/** Residual within which a measurement counts as agreeing with a fit (board mm). */
+const AGREE_X_MM = 1;
+const AGREE_Y_MM = 0.6;
 
 export interface RefineResult {
   H: Mat3;
@@ -736,32 +749,72 @@ export class EdgeTracker {
       if (mode === 'improved' && yCount >= 8) {
         // A fret wire says where along the neck a pixel is, and nothing about across; a string says
         // where across and nothing about along. Using their measured points as full 2-D
-        // correspondences would pin the other coordinate to the current estimate.
-        let G = invert(H);
-        for (let round = 0; round < 4; round++) {
-          G = fitInverseFromLines(
-            dstImage.map((p, i) =>
-              axes[i] === 'x'
-                ? { p, x: src[i]!.x, weight: w[i]! }
-                : { p, y: src[i]!.y, weight: w[i]! },
-            ),
-          );
-          const residuals = dstImage.map((p, i) => {
+        // correspondences would pin the other coordinate to the current estimate. The fit is a
+        // board-space correction of the current estimate, solved so that misread strings cannot tilt
+        // the fret wires through the shared perspective (field test 2026-11-18, DECISIONS D-022).
+        const G0 = invert(H);
+        const board = dstImage.map((p) => apply(G0, p.x, p.y));
+        const damping = options.perspectiveDamping ?? (wide ? LOCK_DAMPING : TRACK_DAMPING);
+        const residualsOf = (G: Mat3) =>
+          dstImage.map((p, i) => {
             const b = apply(G, p.x, p.y);
             return axes[i] === 'x' ? Math.abs(b.x - src[i]!.x) : Math.abs(b.y - src[i]!.y);
           });
-          // Along and across residuals have different sizes; each gets its own robust scale.
-          const scaleOf = (axis: 'x' | 'y') =>
-            1.4826 * median(residuals.filter((_, i) => axes[i] === axis)) + 0.25;
-          const scales = { x: scaleOf('x'), y: scaleOf('y') };
-          w = weights.map((w0, i) => {
-            const r = residuals[i]!;
-            const scale = scales[axes[i]!];
-            return r < 3 * scale ? w0 * (1 - (r / (3 * scale)) ** 2) ** 2 : 0;
+        const robustFit = (share: number): { G: Mat3; w: number[] } | null => {
+          let G = G0;
+          let wr = weights.slice();
+          for (let round = 0; round < 4; round++) {
+            try {
+              G = multiply(
+                fitCorrectionFromLines(
+                  board.map((b, i) =>
+                    axes[i] === 'x'
+                      ? { b, x: src[i]!.x, weight: wr[i]! }
+                      : { b, y: src[i]!.y, weight: wr[i]! },
+                  ),
+                  damping,
+                  share,
+                ),
+                G0,
+              );
+            } catch {
+              return null;
+            }
+            const residuals = residualsOf(G);
+            // Along and across residuals have different sizes; each gets its own robust scale.
+            const scaleOf = (axis: 'x' | 'y') =>
+              1.4826 * median(residuals.filter((_, i) => axes[i] === axis)) + 0.25;
+            const scales = { x: scaleOf('x'), y: scaleOf('y') };
+            wr = weights.map((w0, i) => {
+              const r = residuals[i]!;
+              const scale = scales[axes[i]!];
+              return r < 3 * scale ? w0 * (1 - (r / (3 * scale)) ** 2) ** 2 : 0;
+            });
+            const kept = (axis: 'x' | 'y') => wr.filter((v, i) => v > 0 && axes[i] === axis).length;
+            if (kept('x') < 8 || kept('y') < 6) return null;
+          }
+          return { G, w: wr };
+        };
+        // While tracking, the strings may also correct the perspective (share 1), which a light
+        // board with dark wires needs to stay on; on a real guitar with faint strings that coupling
+        // twists the grid (share 0). Both are tried and the fit more measurements agree with, at a
+        // fixed tolerance, is kept (field test 2026-11-18, DECISIONS D-022).
+        const shares = wide ? [0] : [0, 1];
+        let best: { G: Mat3; w: number[]; agree: number } | null = null;
+        for (const share of shares) {
+          const fit = robustFit(share);
+          if (!fit) continue;
+          const residuals = residualsOf(fit.G);
+          let agree = 0;
+          residuals.forEach((r, i) => {
+            const tol = axes[i] === 'x' ? AGREE_X_MM : AGREE_Y_MM;
+            if (r < tol) agree += weights[i]! * (1 - (r / tol) ** 2) ** 2;
           });
-          const kept = (axis: 'x' | 'y') => w.filter((v, i) => v > 0 && axes[i] === axis).length;
-          if (kept('x') < 8 || kept('y') < 6) return stop();
+          if (!best || agree > best.agree) best = { ...fit, agree };
         }
+        if (!best) return stop();
+        const G = best.G;
+        w = best.w;
         try {
           Hn = normalize(invert(G));
         } catch {

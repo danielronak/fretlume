@@ -115,7 +115,8 @@ export class AutoLocker {
     // Multi-start: the network's 12th fret may really be the 11th or 13th (they look alike), and a
     // hand can hide one 12th-fret corner; the snap cannot fix either alone. Try each and keep the
     // best fit. The wire polarity found on the first candidate is reused for the others.
-    let best: { H: Mat3; polarity: 'bright' | 'dark'; confidence: number } | null = null;
+    let best: { H: Mat3; polarity: 'bright' | 'dark'; confidence: number; rank: number } | null =
+      null;
     const base4 = bassUp(endsByOrientation(det));
     const candidates = [...twelfthCandidates(base4, model), ...threeCornerCandidates(base4, model)];
     for (const [i, taps] of candidates.entries()) {
@@ -128,9 +129,13 @@ export class AutoLocker {
         );
         let confidence = out.inliers > 0 ? out.score / fullScore(model) : 0;
         // A fit on every second wire (or similar alias) also shows wires midway between its frets.
-        if (confidence > 0 && midwayRidgeRatio(image, out.H, model) > ALIAS_RATIO) confidence = 0;
-        if (!best || confidence > best.confidence)
-          best = { H: out.H, polarity: out.polarity, confidence };
+        const alias = confidence > 0 ? midwayRidgeRatio(image, out.H, model) : 0;
+        if (alias > ALIAS_RATIO) confidence = 0;
+        // Candidates often tie on the fit score (field test 2026-11-18: a wrong-scale fit scored
+        // the same as the right one); the alias evidence breaks the tie.
+        const rank = confidence * (1 - alias);
+        if (!best || rank > best.rank)
+          best = { H: out.H, polarity: out.polarity, confidence, rank };
       } catch {
         // degenerate candidate
       }
