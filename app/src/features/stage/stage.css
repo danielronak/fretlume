@@ -1,4 +1,5 @@
-.stage {
+.stage,
+.stage__wrap {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -131,8 +132,71 @@
 }
 .stage__deck-title {
   display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.stage__deck-heading {
+  flex: 1;
+  display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--space-3);
+  min-width: 0;
+}
+.stage__deck-toggle,
+.stage__deck-move,
+.stage__deck-exitfs {
+  min-height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--hairline-strong);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+/* Moving and leaving full screen only make sense while the deck floats (full screen). */
+.stage__deck-move,
+.stage__deck-exitfs {
+  display: none;
+}
+.stage__deck-move {
+  cursor: grab;
+  touch-action: none;
+  font-size: 1.1em;
+}
+
+/* Full screen: the video fills the screen and the deck floats over it (parity P-F3). */
+.stage__wrap:fullscreen {
+  display: block;
+  background: #000;
+  overflow: hidden;
+}
+.stage__wrap:fullscreen .stage__box {
+  width: min(100vw, calc(100vh * var(--aspect, 1.7778)));
+  margin: 0 auto;
+  border-radius: 0;
+}
+.stage__wrap:fullscreen .stage__panel {
+  display: none;
+}
+.stage__wrap:fullscreen .stage__deck {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  width: min(560px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow: auto;
+  translate: var(--deck-x, 0) var(--deck-y, 0);
+  opacity: 0.95;
+  z-index: 5;
+  box-shadow: var(--shadow);
+}
+.stage__wrap:fullscreen .stage__deck-move,
+.stage__wrap:fullscreen .stage__deck-exitfs {
+  display: inline-block;
 }
 .stage__select {
   display: flex;

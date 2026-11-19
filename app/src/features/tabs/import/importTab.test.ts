@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as alphaTab from '@coderline/alphatab/core';
 import { describe, expect, it } from 'vitest';
-import { toAscii, TabParseError } from '@core/tab/ascii';
+import { fromAscii, toAscii, TabParseError } from '@core/tab/ascii';
 import { TPQ, type Beat } from '@core/tab/model';
 import { importTabFile, importTabText } from './importTab';
 
@@ -96,5 +96,19 @@ describe('tab import', () => {
     await expect(
       importTabFile('notes.txt', new TextEncoder().encode('hello'), 'x'),
     ).rejects.toThrow(/No tab found/);
+  });
+
+  it('every fixture round-trips through ASCII and JSON (exit gate 3)', async () => {
+    const files: [string, Uint8Array][] = [
+      ['riff.txt', fixture('riff.txt')],
+      ['chords.cho', fixture('chords.cho')],
+      ['melody.musicxml', fixture('melody.musicxml')],
+      ['riff.gp', gp7(RIFF_TEX)],
+    ];
+    for (const [name, bytes] of files) {
+      const tab = (await importTabFile(name, bytes, 'r')).tracks[0]!.tab;
+      expect(fromAscii(toAscii(tab), 'r'), name).toEqual(tab);
+      expect(importTabText(JSON.stringify(tab), 'r').tracks[0]!.tab, name).toEqual(tab);
+    }
   });
 });

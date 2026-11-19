@@ -13,6 +13,7 @@ import type { ColorMode, LabelMode } from '@overlay/display';
 import { getTab } from '@storage/tabs';
 import { useLive } from '@storage/useLive';
 import { Button, Slider, Toggle } from '@ui/index';
+import { DeckFrame } from '@features/stage/DeckFrame';
 import { useTabPlayback } from './useTabPlayback';
 import './tabs.css';
 
@@ -197,11 +198,14 @@ export function TabDeck({
   const shape = frame ? playAlongShape(tab, frame) : null;
   const pulse = new Set(frame?.current.map((n) => `${n.string}-${n.fret + tab.capo}`) ?? []);
   return (
-    <div className="stage__deck" data-testid="stage-deck">
-      <div className="stage__deck-title">
-        <strong data-testid="stage-entry">{tab.title}</strong>
-        <span data-testid="tab-chord">{frame?.chord ?? ''}</span>
-      </div>
+    <DeckFrame
+      title={
+        <>
+          <strong data-testid="stage-entry">{tab.title}</strong>
+          <span data-testid="tab-chord">{frame?.chord ?? ''}</span>
+        </>
+      }
+    >
       <TabStrip tab={tab} beats={stage.beats} tick={stage.tick} />
       {showDiagram && shape ? (
         <FlatFretboard
@@ -259,6 +263,6 @@ export function TabDeck({
           </>
         ) : null}
       </div>
-    </div>
+    </DeckFrame>
   );
 }

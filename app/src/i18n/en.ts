@@ -798,6 +798,10 @@ export const en = {
     'From a tab, tap “Play along on my guitar”. The tab scrolls under a line; the note to play now is a solid dot, the next ones are rings that slide in from the bridge side and shrink as they get close.',
   guidePlayAlongP2:
     'Slow the speed down, loop a few bars, and turn the count-in on to get ready. The next chord appears faintly one beat before it is due.',
+  stageDeckMove: 'Move the deck (drag, or use the arrow keys)',
+  stageDeckCollapse: 'Hide',
+  stageDeckExpand: 'Show',
+  stageExitFullscreen: 'Exit full screen',
 } as const;
 
 export type MessageKey = keyof typeof en;

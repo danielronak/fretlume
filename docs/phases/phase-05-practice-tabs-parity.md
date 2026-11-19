@@ -30,9 +30,9 @@ does everything the reference app does — free and offline.
       approaching rings (spec 05 §4), chord ghost one beat early, scrolling tab strip in the deck.
 - [x] **5.8 Lessons shell + how-to guides:** lesson list and player UI running `explain`/`demo` sections
       (content arrives in Phase 8); 6 short how-to guides with our own illustrations.
-- [ ] **5.9 Parity audit.** Walk the checklist P-F1…P-F15 in `research/01` §1.2; for each, an e2e test id
+- [x] **5.9 Parity audit.** Walk the checklist P-F1…P-F15 in `research/01` §1.2; for each, an e2e test id
       and a screenshot in `docs/screens/phase-5/parity/`. Write `docs/PARITY.md` (feature → status → evidence).
-- [ ] **5.10** Tag `v0.4`, deploy, update `STATE.md`.
+- [x] **5.10** Tag `v0.4`, deploy, update `STATE.md`.
 
 ## Acceptance (exit gate)
 1. `docs/PARITY.md` shows all 15 parity features implemented with a passing e2e test each.

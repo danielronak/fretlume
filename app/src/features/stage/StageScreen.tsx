@@ -41,6 +41,7 @@ import type { SearchHint } from '@vision/autoLock';
 import { readFrameStamp } from '@vision/stamp';
 import { diagnostics, FRAME_WIDTH } from '@/diagnostics/recorder';
 import { buildDeck, type DeckEntry } from './deck';
+import { DeckFrame } from './DeckFrame';
 import { playAlongShape } from '@core/tab/playalong';
 import { TabDeck, useTabStage } from '@features/tabs/TabDeck';
 import { clearColorCache, drawGrid, drawOverlay, toCanvas, toVideo, type View } from './draw';
@@ -187,6 +188,8 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  /** Video, controls and deck: what goes full screen (the deck then floats over the video). */
+  const wrapRef = useRef<HTMLDivElement>(null);
   const loupeRef = useRef<HTMLCanvasElement>(null);
   const clientRef = useRef<VisionClient | null>(null);
   const poseRef = useRef<PoseMessage | null>(null);
@@ -818,296 +821,313 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
       ) : null}
 
       <div
-        className={`stage__box${running && !withoutCamera ? '' : ' stage__box--hidden'}`}
-        ref={boxRef}
-        style={{ aspectRatio: `${videoSize.width} / ${videoSize.height}` }}
+        className="stage__wrap"
+        ref={wrapRef}
+        style={{ ['--aspect' as string]: `${videoSize.width / videoSize.height}` }}
       >
-        <video
-          ref={videoRef}
-          className={settings.mirrorView ? 'stage__video stage__video--mirror' : 'stage__video'}
-          muted
-          playsInline
-        />
-        <canvas ref={canvasRef} className="stage__canvas" data-testid="stage-canvas" />
-        {phase === 'marking'
-          ? taps.map((p, i) => {
-              const c = toCanvas(view, p);
-              return (
-                <button
-                  key={i}
-                  type="button"
-                  className={`stage__handle${activeHandle === i ? ' stage__handle--active' : ''}`}
-                  style={{ left: c.x, top: c.y }}
-                  aria-label={t(HANDLE_LABELS[i]!)}
-                  data-testid={`lock-handle-${i + 1}`}
-                  onPointerDown={(e) => {
-                    dragRef.current = i;
-                    setActiveHandle(i);
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                  }}
-                  onPointerMove={(e) => {
-                    if (dragRef.current === i) moveHandle(i, e.clientX, e.clientY);
-                  }}
-                  onPointerUp={() => {
-                    dragRef.current = null;
-                    setActiveHandle(null);
-                  }}
-                  onFocus={() => setActiveHandle(i)}
-                  onBlur={() => setActiveHandle(null)}
-                  onKeyDown={(e) => {
-                    const d = e.shiftKey ? 10 : 1;
-                    const moves: Record<string, [number, number]> = {
-                      ArrowLeft: [-d, 0],
-                      ArrowRight: [d, 0],
-                      ArrowUp: [0, -d],
-                      ArrowDown: [0, d],
-                    };
-                    const m = moves[e.key];
-                    if (m) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      nudge(i, m[0], m[1]);
-                    }
-                  }}
-                >
-                  {i + 1}
-                </button>
-              );
-            })
-          : null}
-        {phase === 'marking' && activeHandle !== null ? (
-          <canvas ref={loupeRef} className="stage__loupe" width={140} height={140} aria-hidden />
-        ) : null}
-      </div>
-
-      {running && !withoutCamera ? (
-        <div className="stage__panel">
-          {phase === 'framing' ? (
-            <>
-              <p data-testid="stage-hint">
-                {settings.autoLock && autoAvailable !== false
-                  ? hintText(autoView, settings.mirrorView)
-                  : t('stageFrame')}
-              </p>
-              {suggested ? (
-                <div className="stage__actions" data-testid="profile-suggestion">
-                  <span>
-                    {t('stageProfileSuggest', {
-                      type: t(PROFILE_LABEL[suggested] ?? 'stageProfileSteel'),
-                    })}
-                  </span>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      update({ guitar: suggested as GuitarProfileId });
-                      setSuggested(null);
-                      profileVotes.current = [];
+        <div
+          className={`stage__box${running && !withoutCamera ? '' : ' stage__box--hidden'}`}
+          ref={boxRef}
+          style={{ aspectRatio: `${videoSize.width} / ${videoSize.height}` }}
+        >
+          <video
+            ref={videoRef}
+            className={settings.mirrorView ? 'stage__video stage__video--mirror' : 'stage__video'}
+            muted
+            playsInline
+          />
+          <canvas ref={canvasRef} className="stage__canvas" data-testid="stage-canvas" />
+          {phase === 'marking'
+            ? taps.map((p, i) => {
+                const c = toCanvas(view, p);
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    className={`stage__handle${activeHandle === i ? ' stage__handle--active' : ''}`}
+                    style={{ left: c.x, top: c.y }}
+                    aria-label={t(HANDLE_LABELS[i]!)}
+                    data-testid={`lock-handle-${i + 1}`}
+                    onPointerDown={(e) => {
+                      dragRef.current = i;
+                      setActiveHandle(i);
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                    }}
+                    onPointerMove={(e) => {
+                      if (dragRef.current === i) moveHandle(i, e.clientX, e.clientY);
+                    }}
+                    onPointerUp={() => {
+                      dragRef.current = null;
+                      setActiveHandle(null);
+                    }}
+                    onFocus={() => setActiveHandle(i)}
+                    onBlur={() => setActiveHandle(null)}
+                    onKeyDown={(e) => {
+                      const d = e.shiftKey ? 10 : 1;
+                      const moves: Record<string, [number, number]> = {
+                        ArrowLeft: [-d, 0],
+                        ArrowRight: [d, 0],
+                        ArrowUp: [0, -d],
+                        ArrowDown: [0, d],
+                      };
+                      const m = moves[e.key];
+                      if (m) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        nudge(i, m[0], m[1]);
+                      }
                     }}
                   >
-                    {t('stageProfileSwitch')}
+                    {i + 1}
+                  </button>
+                );
+              })
+            : null}
+          {phase === 'marking' && activeHandle !== null ? (
+            <canvas ref={loupeRef} className="stage__loupe" width={140} height={140} aria-hidden />
+          ) : null}
+        </div>
+
+        {running && !withoutCamera ? (
+          <div className="stage__panel">
+            {phase === 'framing' ? (
+              <>
+                <p data-testid="stage-hint">
+                  {settings.autoLock && autoAvailable !== false
+                    ? hintText(autoView, settings.mirrorView)
+                    : t('stageFrame')}
+                </p>
+                {suggested ? (
+                  <div className="stage__actions" data-testid="profile-suggestion">
+                    <span>
+                      {t('stageProfileSuggest', {
+                        type: t(PROFILE_LABEL[suggested] ?? 'stageProfileSteel'),
+                      })}
+                    </span>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        update({ guitar: suggested as GuitarProfileId });
+                        setSuggested(null);
+                        profileVotes.current = [];
+                      }}
+                    >
+                      {t('stageProfileSwitch')}
+                    </Button>
+                  </div>
+                ) : null}
+                {autoAvailable === false && settings.autoLock ? (
+                  <p className="stage__note">{t('stageAutoUnavailable')}</p>
+                ) : null}
+                <Toggle
+                  label={t('stageAutoLock')}
+                  checked={settings.autoLock}
+                  onChange={(v) => update({ autoLock: v })}
+                />
+                <div className="stage__actions">
+                  <Button variant="primary" onClick={() => void freeze()} data-testid="stage-lock">
+                    {t('stageLock')}
                   </Button>
                 </div>
-              ) : null}
-              {autoAvailable === false && settings.autoLock ? (
-                <p className="stage__note">{t('stageAutoUnavailable')}</p>
-              ) : null}
-              <Toggle
-                label={t('stageAutoLock')}
-                checked={settings.autoLock}
-                onChange={(v) => update({ autoLock: v })}
-              />
+              </>
+            ) : null}
+            {phase === 'marking' ? (
+              <>
+                <h2>{t('stageLockTitle')}</h2>
+                <p>{t('stageLockHint')}</p>
+                <Toggle label={t('stageLockSix')} checked={six} onChange={toggleSix} />
+                <div className="stage__actions">
+                  <Button variant="primary" onClick={() => void snap()} data-testid="stage-snap">
+                    {t('stageLockSnap')}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      void videoRef.current?.play();
+                      setPhase('framing');
+                    }}
+                  >
+                    {t('stageLockCancel')}
+                  </Button>
+                </div>
+              </>
+            ) : null}
+            {phase === 'snapping' ? <p role="status">{t('stageLockSnapping')}</p> : null}
+            {phase === 'confirm' && lock ? (
+              <>
+                <h2>{t('stageConfirmTitle')}</h2>
+                <p data-testid="stage-confirm-message">
+                  {!lock.found
+                    ? t('stageConfirmNotFound')
+                    : lock.verified
+                      ? t('stageConfirmVerified')
+                      : t('stageConfirmCheck')}
+                </p>
+                <div className="stage__actions">
+                  <Button
+                    variant="secondary"
+                    aria-label={t('stageShiftDown')}
+                    onClick={() => setShift((k) => k - 1)}
+                  >
+                    ◄
+                  </Button>
+                  <span className="stage__shift">{shift > 0 ? `+${shift}` : shift}</span>
+                  <Button
+                    variant="secondary"
+                    aria-label={t('stageShiftUp')}
+                    onClick={() => setShift((k) => k + 1)}
+                  >
+                    ►
+                  </Button>
+                </div>
+                <div className="stage__actions">
+                  <Button
+                    variant="primary"
+                    onClick={() => void start()}
+                    data-testid="stage-confirm"
+                  >
+                    {t('stageConfirmYes')}
+                  </Button>
+                  <Button variant="ghost" onClick={adjust}>
+                    {t('stageConfirmAdjust')}
+                  </Button>
+                </div>
+              </>
+            ) : null}
+            {phase === 'tracking' ? (
               <div className="stage__actions">
-                <Button variant="primary" onClick={() => void freeze()} data-testid="stage-lock">
-                  {t('stageLock')}
+                <Button onClick={relock} data-testid="stage-relock">
+                  {t('stageRelock')}
                 </Button>
-              </div>
-            </>
-          ) : null}
-          {phase === 'marking' ? (
-            <>
-              <h2>{t('stageLockTitle')}</h2>
-              <p>{t('stageLockHint')}</p>
-              <Toggle label={t('stageLockSix')} checked={six} onChange={toggleSix} />
-              <div className="stage__actions">
-                <Button variant="primary" onClick={() => void snap()} data-testid="stage-snap">
-                  {t('stageLockSnap')}
+                <Button
+                  variant="ghost"
+                  onClick={() => void wrapRef.current?.requestFullscreen?.().catch(() => undefined)}
+                >
+                  {t('stageFullscreen')}
                 </Button>
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    void videoRef.current?.play();
+                    clientRef.current?.stop();
+                    camera.stop();
+                    resumeRef.current = false;
                     setPhase('framing');
                   }}
                 >
-                  {t('stageLockCancel')}
+                  {t('stageEnd')}
                 </Button>
               </div>
-            </>
-          ) : null}
-          {phase === 'snapping' ? <p role="status">{t('stageLockSnapping')}</p> : null}
-          {phase === 'confirm' && lock ? (
-            <>
-              <h2>{t('stageConfirmTitle')}</h2>
-              <p data-testid="stage-confirm-message">
-                {!lock.found
-                  ? t('stageConfirmNotFound')
-                  : lock.verified
-                    ? t('stageConfirmVerified')
-                    : t('stageConfirmCheck')}
-              </p>
-              <div className="stage__actions">
-                <Button
-                  variant="secondary"
-                  aria-label={t('stageShiftDown')}
-                  onClick={() => setShift((k) => k - 1)}
-                >
-                  ◄
-                </Button>
-                <span className="stage__shift">{shift > 0 ? `+${shift}` : shift}</span>
-                <Button
-                  variant="secondary"
-                  aria-label={t('stageShiftUp')}
-                  onClick={() => setShift((k) => k + 1)}
-                >
-                  ►
-                </Button>
-              </div>
-              <div className="stage__actions">
-                <Button variant="primary" onClick={() => void start()} data-testid="stage-confirm">
-                  {t('stageConfirmYes')}
-                </Button>
-                <Button variant="ghost" onClick={adjust}>
-                  {t('stageConfirmAdjust')}
-                </Button>
-              </div>
-            </>
-          ) : null}
-          {phase === 'tracking' ? (
-            <div className="stage__actions">
-              <Button onClick={relock} data-testid="stage-relock">
-                {t('stageRelock')}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => void boxRef.current?.requestFullscreen?.().catch(() => undefined)}
-              >
-                {t('stageFullscreen')}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  clientRef.current?.stop();
-                  camera.stop();
-                  resumeRef.current = false;
-                  setPhase('framing');
-                }}
-              >
-                {t('stageEnd')}
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {tabStage.tab ? (
-        <TabDeck
-          stage={tabStage}
-          showDiagram={withoutCamera || !running}
-          frets={model.frets}
-          labelMode={labelMode}
-          colorMode={colorMode}
-          leftHanded={settings.handedness === 'left'}
-        />
-      ) : null}
-      {deck && entry ? (
-        <div className="stage__deck" data-testid="stage-deck">
-          <div className="stage__deck-title">
-            <strong data-testid="stage-entry">{entry.label}</strong>
-            <span data-testid="stage-entry-count">
-              {run
-                ? `${t('stageRunCard', { n: entryIndex + 1, total: count })}${
-                    (run.cards[entryIndex]?.repeats ?? 1) > 1
-                      ? ` · ${t('stageRunRepeat', { n: session.repeat + 1, total: run.cards[entryIndex]!.repeats })}`
-                      : ''
-                  }`
-                : `${entryIndex + 1} / ${count}`}
-            </span>
-          </div>
-          {withoutCamera || !running ? (
-            <FlatFretboard
-              shape={entry.shape}
-              frets={model.frets}
-              labelMode={labelMode}
-              colorMode={colorMode}
-              leftHanded={settings.handedness === 'left'}
-              activeGroups={entry.activeGroups}
-              pulse={pulse}
-            />
-          ) : null}
-          <div className="stage__actions">
-            <Button onClick={() => step(-1)} aria-label={t('stageDeckBack')}>
-              ◄ {t('stageDeckBack')}
-            </Button>
-            <Button onClick={() => step(1)} aria-label={t('stageDeckNext')} data-testid="deck-next">
-              {t('stageDeckNext')} ►
-            </Button>
-            {settings.stageAutoSeconds || run ? (
-              <Button
-                variant="ghost"
-                onClick={() => send({ type: session.playing ? 'pause' : 'start' })}
-                data-testid="deck-play"
-              >
-                {session.playing ? t('stageDeckPause') : t('stageDeckStart')}
-              </Button>
             ) : null}
-            <Button variant="ghost" onClick={() => send({ type: 'restart' })}>
-              {t('stageDeckRestart')}
-            </Button>
-            <Toggle label={t('stageDeckLoop')} checked={loop} onChange={setLoop} />
-            <Toggle
-              label={showAll ? t('stageDeckAllShapes') : t('stageDeckOneShape')}
-              checked={showAll}
-              onChange={setShowAll}
-            />
           </div>
-          <div className="stage__settings">
-            {run ? null : (
-              <label className="stage__select">
-                {t('stageDeckAuto')}
-                <select
-                  value={settings.stageAutoSeconds}
-                  onChange={(e) => update({ stageAutoSeconds: Number(e.target.value) })}
+        ) : null}
+
+        {tabStage.tab ? (
+          <TabDeck
+            stage={tabStage}
+            showDiagram={withoutCamera || !running}
+            frets={model.frets}
+            labelMode={labelMode}
+            colorMode={colorMode}
+            leftHanded={settings.handedness === 'left'}
+          />
+        ) : null}
+        {deck && entry ? (
+          <DeckFrame
+            title={
+              <>
+                <strong data-testid="stage-entry">{entry.label}</strong>
+                <span data-testid="stage-entry-count">
+                  {run
+                    ? `${t('stageRunCard', { n: entryIndex + 1, total: count })}${
+                        (run.cards[entryIndex]?.repeats ?? 1) > 1
+                          ? ` · ${t('stageRunRepeat', { n: session.repeat + 1, total: run.cards[entryIndex]!.repeats })}`
+                          : ''
+                      }`
+                    : `${entryIndex + 1} / ${count}`}
+                </span>
+              </>
+            }
+          >
+            {withoutCamera || !running ? (
+              <FlatFretboard
+                shape={entry.shape}
+                frets={model.frets}
+                labelMode={labelMode}
+                colorMode={colorMode}
+                leftHanded={settings.handedness === 'left'}
+                activeGroups={entry.activeGroups}
+                pulse={pulse}
+              />
+            ) : null}
+            <div className="stage__actions">
+              <Button onClick={() => step(-1)} aria-label={t('stageDeckBack')}>
+                ◄ {t('stageDeckBack')}
+              </Button>
+              <Button
+                onClick={() => step(1)}
+                aria-label={t('stageDeckNext')}
+                data-testid="deck-next"
+              >
+                {t('stageDeckNext')} ►
+              </Button>
+              {settings.stageAutoSeconds || run ? (
+                <Button
+                  variant="ghost"
+                  onClick={() => send({ type: session.playing ? 'pause' : 'start' })}
+                  data-testid="deck-play"
                 >
-                  {[0, 4, 8, 15, 30].map((s) => (
-                    <option key={s} value={s}>
-                      {s === 0 ? t('stageDeckAutoOff') : t('stageDeckAutoSeconds', { s })}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <Slider
-              label={t('stageDotSize')}
-              value={settings.dotScale}
-              min={DOT_SCALE_MIN}
-              max={DOT_SCALE_MAX}
-              step={0.1}
-              onChange={(v) => update({ dotScale: v })}
-              format={(v) => `${Math.round(v * 100)} %`}
-            />
-            <Toggle
-              label={t('stageMirror')}
-              checked={settings.mirrorView}
-              onChange={(v) => update({ mirrorView: v })}
-            />
-            <Toggle
-              label={t('stageFlip')}
-              checked={settings.flipStrings}
-              onChange={(v) => update({ flipStrings: v })}
-            />
-          </div>
-        </div>
-      ) : null}
+                  {session.playing ? t('stageDeckPause') : t('stageDeckStart')}
+                </Button>
+              ) : null}
+              <Button variant="ghost" onClick={() => send({ type: 'restart' })}>
+                {t('stageDeckRestart')}
+              </Button>
+              <Toggle label={t('stageDeckLoop')} checked={loop} onChange={setLoop} />
+              <Toggle
+                label={showAll ? t('stageDeckAllShapes') : t('stageDeckOneShape')}
+                checked={showAll}
+                onChange={setShowAll}
+              />
+            </div>
+            <div className="stage__settings">
+              {run ? null : (
+                <label className="stage__select">
+                  {t('stageDeckAuto')}
+                  <select
+                    value={settings.stageAutoSeconds}
+                    onChange={(e) => update({ stageAutoSeconds: Number(e.target.value) })}
+                  >
+                    {[0, 4, 8, 15, 30].map((s) => (
+                      <option key={s} value={s}>
+                        {s === 0 ? t('stageDeckAutoOff') : t('stageDeckAutoSeconds', { s })}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <Slider
+                label={t('stageDotSize')}
+                value={settings.dotScale}
+                min={DOT_SCALE_MIN}
+                max={DOT_SCALE_MAX}
+                step={0.1}
+                onChange={(v) => update({ dotScale: v })}
+                format={(v) => `${Math.round(v * 100)} %`}
+              />
+              <Toggle
+                label={t('stageMirror')}
+                checked={settings.mirrorView}
+                onChange={(v) => update({ mirrorView: v })}
+              />
+              <Toggle
+                label={t('stageFlip')}
+                checked={settings.flipStrings}
+                onChange={(v) => update({ flipStrings: v })}
+              />
+            </div>
+          </DeckFrame>
+        ) : null}
+      </div>
     </section>
   );
 }

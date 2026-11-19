@@ -3,17 +3,20 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 5 — in progress (5.1 session engine, 5.2 practice runs, 5.3 playground, 5.4–5.7 tabs, 5.8 lessons shell + 6 guides done)
-- **Next task:** Phase 5 tasks 5.9 (parity audit, docs/PARITY.md), 5.10 (release v0.4) (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
-- **Last release:** 0.3.0 (Phase 4), 2026-11-17 — live at https://danielronak.github.io/fretlume/ (tags v0.1.0–v0.3.0)
+- **Current phase:** 5 — complete (exit gate passed; v0.4.0 released 2026-11-19). Next: Phase 6.
+- **Next task:** Phase 6, first task (`docs/phases/phase-06-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
+- **Last release:** 0.4.0 (Phase 5), 2026-11-19 — live at https://danielronak.github.io/fretlume/ (tagged by the Release workflow)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
-- **Last updated:** 2026-11-18
+- **Last updated:** 2026-11-19
 
 ## Waiting on the owner (does not block building)
 - **Golden set downloads (optional).** Wikimedia hosts are allowed on the environment, but this session's
   automatic permission check refused the download. To let a future session collect real guitar photos for
   gate G4.4, allow it when asked (or add a permission rule for fetching from upload.wikimedia.org).
+- **🎸 Optional field test of 0.4.0 (tabs and lessons):** Tabs → New tab, type a few notes with the keyboard
+  (or the fret pad on a phone), press Play; then "Play along on my guitar" with the camera on. Is it clear
+  which note comes next from the sliding rings? Try importing a Guitar Pro file you own. Also open Learn.
 - **🎸 Field test of 0.3.8 (D-028: lag; D-027: covered frets):** Stage with "Lock automatically (beta)" on; play, then
   turn the guitar, tilt it, and move the camera. Questions: does the grid follow a slow tilt? After a fast
   move, does it put itself right or search again within a second or two? Export diagnostics with camera video
@@ -52,7 +55,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 2 Shell, Library, Tuner | **done** 2026-11-17 | v0.1 (0.1.0) | G6.1 18/18 within 1 cent; first load 1.41 MB; 283 unit + 29 smoke e2e |
 | 3 Camera + manual lock | **done** 2026-11-17; since D-022 (2026-11-18) only G3.2 σ5 fails | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 94.5 % σ5 / 91.5 % σ8 with 4 taps (fail σ5); G3.3 99.5 % frames, 0 slips (pass); G3.3t tilts 92.5 % (recorded); G3.4 0.34 px (pass); OverlayLag 2.1 px at 15 Hz (D-028); G3.5 pass; e2e 60/60 |
 | 4 Synthetic + auto-lock | **done** 2026-11-17, G4.3 failing, G4.4 not measured | v0.3 (0.3.0) 🎸 | G4.1 3.3 px, G4.2 3.9 px pass; G4.3 88.0 % / 1.0 % wrong index / 0 % false (fail on correct %, D-028); auto-lock opt-in beta (D-021) |
-| 5 Runs, playground, tabs (parity) | in progress (5.1–5.8 done) | v0.4 | practice runs gate passes; tabs gate (keyboard hammer-on/slide/bend → play → export ASCII → re-import identical) passes; GP7, MusicXML, ChordPro, ASCII, JSON import tested; play-along on camera and diagram (D-029, D-030) |
+| 5 Runs, playground, tabs (parity) | ✅ done 2026-11-19 | v0.4.0 | practice runs gate passes; tabs gate (keyboard hammer-on/slide/bend → play → export ASCII → re-import identical) passes; GP7, MusicXML, ChordPro, ASCII, JSON import tested; play-along on camera and diagram (D-029, D-030) |
 | 6 Listening | not started | v0.5 🎸 | |
 | 7 Hand vision | not started | v0.6 🎸 | |
 | 8 Curriculum & songs | not started | v0.7 | |
@@ -60,6 +63,19 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 10 Jam tools | not started | v0.9 | |
 | 11 Perf / a11y / mobile | not started | v0.10 🎸 | |
 | 12 Release | not started | v1.0 | |
+
+## Done in Phase 5 (2026-11-19)
+- 5.1 session engine (`learn/session.ts`) driving the Stage deck; 5.2 practice runs (builder, storage, Stage
+  auto-advance with sound); 5.3 playground (layers, progressions).
+- 5.4–5.7 tabs: model with tick timing and a voice plan (hammer/pull, slides, bends, mutes, palm mute),
+  audio-clock player (speed, loop A–B, count-in); keyboard-first editor with touch fret pad, undo/redo,
+  autosave; import Guitar Pro 3–7 and MusicXML (alphaTab, lazy), ASCII, ChordPro, JSON; export ASCII/JSON;
+  play-along on the camera neck and the diagram with approaching rings and a scrolling strip (D-029, D-030).
+- 5.8 lessons shell (list + explain/demo player, three starter lessons) and six new illustrated guides.
+- 5.9 parity audit: `docs/PARITY.md`, 15/15 with `e2e/parity.spec.ts`; deck now collapses and floats over
+  the video in full screen. 5.10 release 0.4.0. First-load transfer 3.92 MB.
+- Exit gate: 1 ✅ PARITY.md 15/15 · 2 ✅ runs gate + tabs gate · 3 ✅ fixtures round-trip, friendly errors ·
+  4 ✅ bundle 3.92 MB (≤ 40 MB).
 
 ## Done in Phase 4 (2026-11-17)
 - `ml/synth/dataset.py` (generator v2, splits, shards; `data/` not committed — regenerate with
