@@ -289,3 +289,22 @@ low-light tracking accuracy.
 **Alternatives.** The index guard on every frame (refused real fast moves; a synthetic clip then slipped);
 weaker damping (no gain on tilts, losses on the hard clips); a relative confidence drop (wrong fits do not
 drop).
+
+## D-024 · 2026-11-19 · Watchdog needs three of four corners and three checks
+**Context.** Owner on 0.3.3: "it almost doesn't work at all now". The diagnostics (no video) showed tracking
+ended by the watchdog while the fit was good (confidence 0.77 one frame before). Replaying the 0.3.1
+recording through `VisionCore` at the owner's tier (640×360): NeckNet put one or two corners on something
+else in the room (e.g. the nut corner at (601, 259), score ≈ 0.5) on 11 of 43 frames, several in a row; the
+D-023 watchdog compared nut and 12th-fret midpoints, so one stray corner counted as a wrong grid.
+**Decision.** The watchdog calls the grid wrong only when at least 3 of NeckNet's 4 corners (each with score
+≥ 0.4) are more than a nut width from the grid, on 3 checks in a row (≈ 1.5 s). A really lost grid
+disagrees at every corner.
+**Measured.** Owner's recording: 43/43 agree (was 32 agree, 11 disagree). Synthetic lefty and lock-hard
+clips: 35/35 agree. A grid moved off the neck still disagrees (unit test).
+**Browser tests.** `autolock.spec.ts` lefty and low-light fail some runs on this container (worst dot error
+3.6–4.5 mm against 3 mm, steady, with or without the index correction; low-light tracking at 640×360 is weak:
+29/74 good frames offline). In one lefty run the automatic lock was a fret off and the D-023 index correction
+fixed it (logged, margin 0.91). Not in `verify`; recorded, not loosened.
+**Lesson.** D-023 was validated on synthetic clips, where NeckNet's corners are clean, and on the real
+recording only with `TrackingSession`, not with the watchdog. Real-frame replays now go through
+`VisionCore` (worker logic) at the owner's processing size.

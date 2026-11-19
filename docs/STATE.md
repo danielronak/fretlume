@@ -4,7 +4,7 @@
 
 ## Now
 - **Current phase:** 5 — next to start (Phase 4 done 2026-11-17 with auto-lock as an opt-in beta)
-- **Next task:** owner field test of 0.3.3 (angle changes, D-023), then Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
+- **Next task:** owner field test of 0.3.4 (watchdog fix, D-024), then Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
 - **Last release:** 0.3.0 (Phase 4), 2026-11-17 — live at https://danielronak.github.io/fretlume/ (tags v0.1.0–v0.3.0)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
@@ -14,7 +14,7 @@
 - **Golden set downloads (optional).** Wikimedia hosts are allowed on the environment, but this session's
   automatic permission check refused the download. To let a future session collect real guitar photos for
   gate G4.4, allow it when asked (or add a permission rule for fetching from upload.wikimedia.org).
-- **🎸 Field test of 0.3.3 (angle changes, D-023):** Stage with "Lock automatically (beta)" on; play, then
+- **🎸 Field test of 0.3.4 (watchdog fix D-024; angle changes D-023):** Stage with "Lock automatically (beta)" on; play, then
   turn the guitar, tilt it, and move the camera. Questions: does the grid follow a slow tilt? After a fast
   move, does it put itself right or search again within a second or two? Export diagnostics with camera video
   straight after anything that looks wrong.
@@ -135,6 +135,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 2026-11-18 | Windows laptop, Chrome 157, 12 cores; steel-string acoustic, rosewood, dots; 0.3.0 | Auto-lock fired 12 times (fit confidence 0.62–0.76). NeckNet found the guitar in 16/16 real frames (presence 1.0, headstock side right); replayed on the 320-px diagnostics frames, 12 of 16 fits were right, 1 wrong (slanted grid), 3 no lock (blur, cut off). One lock held 41 s; later locks dropped after 1–10 s (cause unknown — asked the owner). Worker 56 ms/frame. Re-lock after losing the neck put handles off-screen (fixed); guitar-type guess wavers on real frames (suggestion now needs 8 agreeing detections). | Owner: fret numbers right ~60 % of locks (otherwise slanted lines; once needed +1); dots on the right strings while locked; tracking lost after a few seconds with minimal movement or a hand over the frets, every time. → Diagnostics now record 10 s of 640-px video at 10 fps (0.3.1) so sessions can be replayed through the tracker; next: fix the slant and the tracking loss on real video. Frames not committed (privacy). |
 | 2026-11-18 | same laptop, 0.3.1 | 10 s of 640-px video (100 frames), recorded after tracking was lost. Replayed through the app's code: NeckNet corners usable on 13/16 sampled frames; the fret fit slanted the grid because misread faint strings tilted the frets through the shared perspective; on a still guitar tracked corners jumped 10–40 px per frame and a bad fit (confidence 0.3–0.4) was accepted, lost by 2.2 s. Auto-lock did not resume after a loss (bug). | Fixed in 0.3.2 (D-022): decoupled fit, tracking damping + plausibility guard, candidate ranking, auto-lock resumes after a loss. Replay now: steady 1–7 px per frame for all 42 frames with the guitar in view. Synthetic G3.3/G3.4 now pass. Frames not committed (privacy). |
 | 2026-11-18 | same laptop, 0.3.2 | "Definitely better than last time", but turning or tilting the guitar or the camera messed up tracking, and it did not find the neck again by itself at the new angle. No diagnostics file. Replay of the earlier recording: during a fast lift the grid slid 1–2 frets onto the headstock while staying "locked". | 0.3.3 (D-023): tilt clips + bench G3.3t, per-frame shape guard, fret-index correction while tracking, NeckNet watchdog that hands back to auto-lock. |
+| 2026-11-19 | same laptop, 0.3.3 | "It almost doesn't work at all now." Diagnostics without video: tracking ended by the new watchdog right after good frames (confidence 0.77); several auto-resumes and manual re-locks. Replay of the 0.3.1 frames through `VisionCore` at 640×360: NeckNet put one or two corners on something else on 11/43 frames, which the watchdog took for a wrong grid. | 0.3.4 (D-024): watchdog needs 3 of 4 corners off on 3 checks in a row; replay 43/43 agree. Asked for the next file with camera video. |
 
 ## Decisions log pointer
 See `docs/DECISIONS.md` (created in Phase 0). Architecture decisions A1–A10 are in `MASTER_PLAN.md` §2.

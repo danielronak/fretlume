@@ -19,8 +19,17 @@ describe('watchdog compare', () => {
   it('agrees when NeckNet sees the neck where the grid is', () => {
     expect(compare(det(10), tracked)).toBe('agree');
   });
-  it('disagrees when the nut is more than ¾ of a nut width away', () => {
-    expect(compare(det(60), tracked)).toBe('disagree');
+  it('disagrees when the whole neck is elsewhere', () => {
+    const d = det(0);
+    expect(
+      compare({ ...d, corners: d.corners.map((p) => ({ x: p.x - 300, y: p.y + 150 })) }, tracked),
+    ).toBe('disagree');
+  });
+  it('agrees when one or two corners sit on something else (field test 2026-11-19)', () => {
+    const d = det(0);
+    const stray = [{ x: 600, y: 259 }, { x: 590, y: 273 }, d.corners[2]!, d.corners[3]!];
+    expect(compare({ ...d, corners: stray }, tracked)).toBe('agree');
+    expect(compare(det(60), tracked)).toBe('agree');
   });
   it('disagrees when no neck is in view', () => {
     expect(compare(det(0, 0.05), tracked)).toBe('disagree');
@@ -41,15 +50,17 @@ describe('watchdog compare', () => {
 });
 
 describe('TrackingWatchdog', () => {
-  it('checks once a second and needs two disagreements in a row', () => {
+  it('needs three disagreements in a row', () => {
     const w = new TrackingWatchdog();
     w.reset(0);
     expect(w.due(500)).toBe(false);
     expect(w.due(1000)).toBe(true);
     expect(w.record('disagree', 1000)).toBe(false);
-    expect(w.record('agree', 2000)).toBe(false);
-    expect(w.record('disagree', 3000)).toBe(false);
-    expect(w.record('unsure', 4000)).toBe(false);
-    expect(w.record('disagree', 5000)).toBe(true);
+    expect(w.record('disagree', 2000)).toBe(false);
+    expect(w.record('agree', 3000)).toBe(false);
+    expect(w.record('disagree', 4000)).toBe(false);
+    expect(w.record('unsure', 5000)).toBe(false);
+    expect(w.record('disagree', 6000)).toBe(false);
+    expect(w.record('disagree', 7000)).toBe(true);
   });
 });
