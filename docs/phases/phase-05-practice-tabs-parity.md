@@ -6,10 +6,10 @@ does everything the reference app does — free and offline.
 **Sessions:** 3–4. Independent of Phase 4 (works with manual lock).
 
 ## Tasks
-- [ ] **5.1 Session engine** (`learn/session.ts`): step list, deck transport (start, pause, restart,
+- [x] **5.1 Session engine** (`learn/session.ts`): step list, deck transport (start, pause, restart,
       loop, back, next, auto-advance timer/bars), events; pure reducer with unit tests. `judge: 'none'`
       only in this phase.
-- [ ] **5.2 Practice-run builder:** three-step flow (choose cards from library/favourites/folders →
+- [x] **5.2 Practice-run builder:** three-step flow (choose cards from library/favourites/folders →
       order, repeats, seconds or bars per card, tempo, label/colour options → review); save by name;
       list, duplicate, edit, delete; run on Stage or on the flat diagram; "notes light up as they play"
       (app plays the shape with the string synth in time, the matching dots pulse).
