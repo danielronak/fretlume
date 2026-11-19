@@ -441,6 +441,8 @@ export const en = {
   stageStatusLow: 'Low confidence',
   stageDeckBack: 'Previous',
   stageDeckNext: 'Next',
+  stageDeckStart: 'Start',
+  stageDeckPause: 'Pause',
   stageDeckRestart: 'Restart',
   stageDeckLoop: 'Loop',
   stageDeckAuto: 'Auto-advance',

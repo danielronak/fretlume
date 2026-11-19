@@ -17,6 +17,8 @@ import { projectShape, type OverlayItem } from '@overlay/projection';
 import { Button, Slider, Toggle } from '@ui/index';
 import type { InstrumentId, LockReply } from '@vision/core';
 import { apply, fromControlPoints, type Mat3, type Pt } from '@vision/geometry';
+import { useSession } from '@learn/useSession';
+import type { Step } from '@learn/session';
 import { PosePredictor, STAGE_PREDICTOR } from '@overlay/predict';
 import {
   alignToPrevious,
@@ -123,9 +125,22 @@ export function StageScreen() {
     if (!kind || root === null || !params.type || !isValidType(kind, params.type)) return null;
     return buildDeck(kind, root, params.type, tuning, model.frets);
   }, [kind, root, params.type, tuning, model.frets]);
-  const [entryIndex, setEntryIndex] = useState(0);
-  const [loop, setLoop] = useState(false);
   const [showAll, setShowAll] = useState(true);
+  // Deck transport: the session engine (learn/session.ts) steps through the deck's entries.
+  const deckSteps: Step<DeckEntry>[] = useMemo(
+    () =>
+      (deck?.entries ?? []).map((e, i) => ({
+        id: String(i),
+        show: e,
+        advance: settings.stageAutoSeconds
+          ? { auto: 'timer' as const, seconds: settings.stageAutoSeconds }
+          : ('manual' as const),
+      })),
+    [deck, settings.stageAutoSeconds],
+  );
+  const [session, send] = useSession(deckSteps);
+  const entryIndex = session.index;
+  const loop = session.loop;
   const entry: DeckEntry | null =
     deck?.entries[Math.min(entryIndex, deck.entries.length - 1)] ?? null;
 
@@ -486,20 +501,23 @@ export function StageScreen() {
   // ---------- deck ----------
   const count = deck?.entries.length ?? 0;
   const step = useCallback(
-    (delta: number) =>
-      setEntryIndex((i) => {
-        const next = i + delta;
-        if (next < 0) return loop ? count - 1 : 0;
-        if (next >= count) return loop ? 0 : count - 1;
-        return next;
-      }),
-    [count, loop],
+    (delta: number) => {
+      // At the ends without loop, Back and Next stay put (Next does not finish the deck).
+      if (delta > 0 && !loop && entryIndex >= count - 1) return;
+      send({ type: delta > 0 ? 'next' : 'back' });
+    },
+    [send, loop, entryIndex, count],
   );
+  const setLoop = useCallback(
+    (v: boolean | ((old: boolean) => boolean)) =>
+      send({ type: 'setLoop', loop: typeof v === 'function' ? v(loop) : v }),
+    [send, loop],
+  );
+  // Choosing an auto-advance time starts the deck; "off" pauses it.
   useEffect(() => {
-    if (!settings.stageAutoSeconds || count < 2) return;
-    const id = window.setInterval(() => step(1), settings.stageAutoSeconds * 1000);
-    return () => clearInterval(id);
-  }, [settings.stageAutoSeconds, count, step]);
+    if (settings.stageAutoSeconds && count > 1) send({ type: 'start' });
+    else send({ type: 'pause' });
+  }, [settings.stageAutoSeconds, count, send]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest('input, select, textarea')) return;
@@ -931,7 +949,16 @@ export function StageScreen() {
             <Button onClick={() => step(1)} aria-label={t('stageDeckNext')} data-testid="deck-next">
               {t('stageDeckNext')} ►
             </Button>
-            <Button variant="ghost" onClick={() => setEntryIndex(0)}>
+            {settings.stageAutoSeconds ? (
+              <Button
+                variant="ghost"
+                onClick={() => send({ type: session.playing ? 'pause' : 'start' })}
+                data-testid="deck-play"
+              >
+                {session.playing ? t('stageDeckPause') : t('stageDeckStart')}
+              </Button>
+            ) : null}
+            <Button variant="ghost" onClick={() => send({ type: 'restart' })}>
               {t('stageDeckRestart')}
             </Button>
             <Toggle label={t('stageDeckLoop')} checked={loop} onChange={setLoop} />
