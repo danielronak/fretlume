@@ -3,8 +3,8 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 6 — in progress (6.1 fixtures, 6.2 analysis core done; G6.2/4/5/6 pass, G6.3 strum mode fails → fallback, D-031). Phase 5 complete, v0.4.0 released 2026-11-19.
-- **Next task:** Phase 6 task 6.3 real-time plumbing (worklet → worker listener) (`docs/phases/phase-06-*.md`). Audio corpus: `npm run fixtures:audio` (needs uv; FluidSynth + fluid-soundfont-gm via apt for the GM guitars). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
+- **Current phase:** 6 — in progress (6.1 fixtures, 6.2 analysis core, 6.3 real-time listener done; G6.2/4/5/6 pass, G6.3 strum mode fails → fallback, D-031). Phase 5 complete, v0.4.0 released 2026-11-19.
+- **Next task:** Phase 6 task 6.4 judging in the session engine (wait-mode, leniency, escape, attempt log) (`docs/phases/phase-06-*.md`). Audio corpus: `npm run fixtures:audio` (needs uv; FluidSynth + fluid-soundfont-gm via apt for the GM guitars). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
 - **Last release:** 0.4.0 (Phase 5), 2026-11-19 — live at https://danielronak.github.io/fretlume/ (tagged by the Release workflow)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).

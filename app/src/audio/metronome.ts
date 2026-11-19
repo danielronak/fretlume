@@ -2,6 +2,7 @@
  * Look-ahead metronome (docs/specs/02-audio.md §5): a 25 ms timer schedules every click due in the
  * next 100 ms on the audio clock, so timing does not depend on the main thread.
  */
+import { announceAppSound } from './appSounds';
 import { clicksUntil, type BeatEvent, type MeterSpec } from './beats';
 import { renderClick } from './dsp/karplus';
 import { audioEngine } from './engine';
@@ -89,6 +90,7 @@ export class Metronome {
       source.buffer = this.buffers.get(event.kind) ?? null;
       source.connect(context.destination);
       source.start(Math.max(event.time, context.currentTime));
+      announceAppSound(Math.max(event.time, context.currentTime));
       this.nextIndex = event.index + 1;
     }
     this.scheduled = [...this.scheduled, ...due].slice(-32);

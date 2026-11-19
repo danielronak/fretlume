@@ -3,6 +3,7 @@
  * what sounds when; this schedules it half a second ahead, in chunks, so Stop takes effect within
  * ~50 ms, a loop A–B repeats seamlessly, and the play-along cursor reads the position from the clock.
  */
+import { announceAppSound } from './appSounds';
 import { barStarts, planVoices, secondsPerTick, type Tab, type Voice } from '@core/tab/model';
 import { renderClick } from './dsp/karplus';
 import { audioEngine } from './engine';
@@ -128,6 +129,7 @@ export class TabPlayer {
     src.buffer = buffer;
     src.connect(master(context));
     src.start(when);
+    announceAppSound(when);
     this.sources.push(src);
   }
 
@@ -181,6 +183,7 @@ export class TabPlayer {
     gain.gain.linearRampToValueAtTime(0, end);
     src.connect(gain).connect(master(context));
     src.start(when, v.kind === 'legato' ? LEGATO_SKIP_S : 0);
+    announceAppSound(when);
     src.stop(end + 0.02);
     this.sources.push(src);
     src.onended = () => {

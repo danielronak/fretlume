@@ -2,6 +2,7 @@
  * Plays reference tones and shapes through the shared AudioContext.
  * Tones are rendered once per pitch and cached; playback is scheduled on the audio clock.
  */
+import { announceAppSound } from './appSounds';
 import { midiToHz } from '@core/theory/pitch';
 import type { Shape } from '@core/theory/types';
 import { renderPluck } from './dsp/karplus';
@@ -56,6 +57,7 @@ export async function playNotes(notes: NoteEvent[], a4Hz = 440): Promise<number>
     source.connect(gain).connect(master(context));
     const when = start + note.offset;
     source.start(when);
+    announceAppSound(when);
     end = Math.max(end, when + source.buffer.duration);
   }
   return end;

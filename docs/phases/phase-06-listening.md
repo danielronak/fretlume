@@ -13,7 +13,7 @@ it does not do this.
       for the agent → validate fixtures spectrally (fundamental where expected, decay plausible).
 - [x] **6.2 Analysis core** (pure TS, Node-testable): STFT, whitening, harmonic-comb salience,
       explaining-away, neighbour tests, verdict object; onset detector; timing judge; chroma + templates.
-- [ ] **6.3 Real-time plumbing:** worklet → analysis Worker; expectation API
+- [x] **6.3 Real-time plumbing:** worklet → analysis Worker; expectation API
       `listener.expect({ notes, muted, window })` → verdict events; self-masking of app-generated sound;
       level/noise/latency calibration flow.
 - [ ] **6.4 Judging in the session engine:** `judge: 'audio'`; `advance: on-correct` (wait-mode);
