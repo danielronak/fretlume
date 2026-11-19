@@ -421,3 +421,36 @@ neck they are drawn capo + fret. The strip is one line of tab under a fixed play
 moved by a transform each frame (no React work per frame). Wait-mode is deferred to Phase 6 (mic).
 **Alternatives.** Rings converging on the spot in place (no motion along the string: harder to read which
 string is next); a full-width scrolling highway (more screen than the deck has on phones).
+
+## D-031 · 2026-11-19 · Listening engine: unique-harmonic evidence; G6.3 fails, fallback ladder applied
+**Context.** Task 6.2 and gates G6.2–G6.6 on the generated corpus (`npm run fixtures:audio`: our
+Karplus–Strong twin and FluidSynth's General MIDI steel/nylon/electric guitars, clean and augmented).
+**Decision.** (1) **Chords:** a note counts by its *unique* harmonics — the partials no other expected
+note also produces (8192-point spectrum, 1/3-octave-median whitening, first 10 harmonics); a note whose
+harmonics are all shared (an E4 over an E3) is `unsure` and passes. Missing notes are compared with
+neighbours ±1–2 semitones ("a fret off"), silent strings with their open pitch. The plain comb sum with
+explaining-away (spec §4.2–4.3) was tried first: clean strums passed, but 93–97 % of faults went
+unnoticed, because a missing note's comb windows fill with other notes' partials. (2) **Strum timing**
+(`strum.ts`) refines unsure notes when the strum is slow enough (≥ 22 ms per string): a doubled note's
+partials must rise at a moment apart from its partners' plucks. (3) **Single notes** (`verifyNote`): the
+note's odd harmonics must be present (the octave above cannot pass), the octave below's odd harmonics
+absent, no neighbour clearly stronger; thresholds relative to the strongest candidate (leakage beside a
+loud partial reached 5–15 against partials of 1 000+). After a pluck, only new energy counts. (4)
+**Onsets:** log spectral flux picks the frame; the time is refined to where the energy of the
+first-differenced signal rises (a pluck's click), and a pluck's own ripple is suppressed for 120 ms.
+FluidSynth's samples start 10–12 ms after note-on, so the timing truth uses the measured start
+(`sourceLatencyS` in the manifest). (5) **Self-masking:** onsets within 60 ms of a sound the app started
+are ignored, and verdicts use new energy only. (6) **Chroma** ("What am I playing?") is greedy pitch
+picking, shown as the top three guesses; not graded.
+**Measured** (`docs/benchmarks/audio-phase6.json`): G6.2 ✅ F1 0.994, octave errors 0.37 % · G6.4 ✅ median
+1.0 ms · G6.5 ✅ 0 false passes in 49, played notes 100 % · G6.6 ✅ 1.5 % of one core · G6.3 string-by-string
+✅ muted recall 1.00, played strings 1.00 · **G6.3 strum mode ❌** (standard): clean pass 0.951 (false-fail
+4.9 % ✅), faults caught 0.760, muted-string recall 0.694 (gate 0.75), overall accuracy 0.879 (gate 0.92).
+Chroma top-1 0.32–0.43, top-3 0.66–0.83.
+**Fallback ladder** (phase 6): (a) relaxed leniency is the default for beginners (false-fail 3.7 %); (b) when
+a chord verdict has unsure notes or low confidence, the app offers the string-by-string check, which
+finds a muted string every time on the corpus; (c) lessons run string-by-string the first times a chord is
+learned (spec §4.7). Muted octave doublings are undecidable from one strum's spectrum; they remain the
+open item for G6.3 (more strum-timing work or hand vision in Phase 7).
+**Alternatives.** NNLS with fixed harmonic templates (envelopes differ too much between guitars);
+trained transcription (needs a model and real data, ADR A4 avoids it).

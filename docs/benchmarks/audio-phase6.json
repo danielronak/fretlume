@@ -1,0 +1,533 @@
+{
+  "G6_3": {
+    "summary": {
+      "relaxed": {
+        "cleanPass": 0.9627,
+        "falseFail": 0.0373,
+        "faultsCaught": 0.4536,
+        "mutedRecallStrum": 0.6901,
+        "overallAccuracy": 0.7721
+      },
+      "standard": {
+        "cleanPass": 0.9508,
+        "falseFail": 0.0492,
+        "faultsCaught": 0.7597,
+        "mutedRecallStrum": 0.694,
+        "overallAccuracy": 0.8793
+      },
+      "strict": {
+        "cleanPass": 0.9334,
+        "falseFail": 0.0666,
+        "faultsCaught": 0.7756,
+        "mutedRecallStrum": 0.7005,
+        "overallAccuracy": 0.8744
+      }
+    },
+    "gate": "accuracy ≥ 0.92 overall; false-fail ≤ 5 % (standard); muted recall ≥ 0.75 strum, ≥ 0.97 string-by-string",
+    "detail": {
+      "relaxed/chords-ks": {
+        "n": 576,
+        "accuracy": 0.9479,
+        "errors": {
+          "missing+unsure": 3,
+          "missing": 25,
+          "missing+unsure+unsure": 2
+        }
+      },
+      "relaxed/chords-ks-aug": {
+        "n": 576,
+        "accuracy": 0.9601,
+        "errors": {
+          "missing+unsure": 2,
+          "missing": 20,
+          "missing+unsure+unsure": 1
+        }
+      },
+      "relaxed/chords-steel": {
+        "n": 576,
+        "accuracy": 0.9618,
+        "errors": {
+          "missing+unsure": 1,
+          "missing": 21
+        }
+      },
+      "relaxed/chords-steel-aug": {
+        "n": 576,
+        "accuracy": 0.9722,
+        "errors": {
+          "missing": 14,
+          "missing+unsure+unsure": 1,
+          "missing+unsure+unsure+unsure": 1
+        }
+      },
+      "relaxed/chords-nylon": {
+        "n": 576,
+        "accuracy": 0.9705,
+        "errors": {
+          "missing": 16,
+          "missing+unsure+unsure": 1
+        }
+      },
+      "relaxed/chords-nylon-aug": {
+        "n": 576,
+        "accuracy": 0.9635,
+        "errors": {
+          "missing": 21
+        }
+      },
+      "relaxed/faults-ks": {
+        "n": 517,
+        "accuracy": 0.499,
+        "mutedRecall": 0.7083,
+        "errors": {
+          "wrong-fret": 76,
+          "extra-open": 127,
+          "muted": 56
+        }
+      },
+      "relaxed/faults-ks-aug": {
+        "n": 517,
+        "accuracy": 0.4468,
+        "mutedRecall": 0.7083,
+        "errors": {
+          "muted": 72,
+          "wrong-fret": 82,
+          "extra-open": 132
+        }
+      },
+      "relaxed/faults-steel": {
+        "n": 517,
+        "accuracy": 0.4487,
+        "mutedRecall": 0.6615,
+        "errors": {
+          "muted": 68,
+          "wrong-fret": 85,
+          "extra-open": 132
+        }
+      },
+      "relaxed/faults-steel-aug": {
+        "n": 517,
+        "accuracy": 0.4197,
+        "mutedRecall": 0.6823,
+        "errors": {
+          "muted": 81,
+          "wrong-fret": 87,
+          "extra-open": 132
+        }
+      },
+      "standard/chords-ks": {
+        "n": 576,
+        "accuracy": 0.9271,
+        "errors": {
+          "missing+unsure": 3,
+          "missing": 25,
+          "unsure+unsure": 1,
+          "extra1": 1,
+          "missing+unsure+unsure": 2,
+          "unsure": 10
+        }
+      },
+      "standard/chords-ks-aug": {
+        "n": 576,
+        "accuracy": 0.9444,
+        "errors": {
+          "missing+unsure": 2,
+          "missing": 20,
+          "missing+unsure+unsure+unsure": 1,
+          "missing+unsure+unsure": 3,
+          "unsure+missing+unsure": 1,
+          "unsure": 5
+        }
+      },
+      "standard/chords-steel": {
+        "n": 576,
+        "accuracy": 0.9514,
+        "errors": {
+          "missing+unsure": 1,
+          "missing": 21,
+          "extra1": 2,
+          "unsure": 4
+        }
+      },
+      "standard/chords-steel-aug": {
+        "n": 576,
+        "accuracy": 0.9653,
+        "errors": {
+          "missing": 14,
+          "extra1": 1,
+          "missing+unsure+unsure+unsure": 2,
+          "missing+unsure+unsure": 1,
+          "unsure": 2
+        }
+      },
+      "standard/chords-nylon": {
+        "n": 576,
+        "accuracy": 0.9601,
+        "errors": {
+          "missing": 16,
+          "missing+unsure+unsure": 1,
+          "unsure": 6
+        }
+      },
+      "standard/chords-nylon-aug": {
+        "n": 576,
+        "accuracy": 0.9566,
+        "errors": {
+          "missing": 21,
+          "extra1": 2,
+          "unsure": 2
+        }
+      },
+      "standard/faults-ks": {
+        "n": 517,
+        "accuracy": 0.7737,
+        "mutedRecall": 0.7135,
+        "errors": {
+          "muted": 55,
+          "wrong-fret": 56,
+          "extra-open": 6
+        }
+      },
+      "standard/faults-ks-aug": {
+        "n": 517,
+        "accuracy": 0.7563,
+        "mutedRecall": 0.7083,
+        "errors": {
+          "muted": 59,
+          "wrong-fret": 60,
+          "extra-open": 7
+        }
+      },
+      "standard/faults-steel": {
+        "n": 517,
+        "accuracy": 0.7524,
+        "mutedRecall": 0.6667,
+        "errors": {
+          "muted": 63,
+          "wrong-fret": 59,
+          "extra-open": 6
+        }
+      },
+      "standard/faults-steel-aug": {
+        "n": 517,
+        "accuracy": 0.7563,
+        "mutedRecall": 0.6875,
+        "errors": {
+          "muted": 60,
+          "wrong-fret": 58,
+          "extra-open": 8
+        }
+      },
+      "strict/chords-ks": {
+        "n": 576,
+        "accuracy": 0.9271,
+        "errors": {
+          "missing+unsure": 3,
+          "missing": 25,
+          "unsure+unsure": 1,
+          "extra1": 1,
+          "missing+unsure+unsure": 2,
+          "unsure": 10
+        }
+      },
+      "strict/chords-ks-aug": {
+        "n": 576,
+        "accuracy": 0.9184,
+        "errors": {
+          "missing+unsure": 3,
+          "weak+unsure+unsure": 2,
+          "weak+unsure": 1,
+          "weak": 3,
+          "weak+unsure+unsure+unsure": 2,
+          "missing": 22,
+          "missing+unsure+unsure+unsure": 2,
+          "unsure+unsure+weak": 2,
+          "missing+unsure+unsure": 4,
+          "unsure+missing+unsure": 1,
+          "unsure": 5
+        }
+      },
+      "strict/chords-steel": {
+        "n": 576,
+        "accuracy": 0.9271,
+        "errors": {
+          "weak+unsure+unsure": 7,
+          "missing+unsure": 1,
+          "missing": 21,
+          "weak+unsure+unsure+unsure": 2,
+          "missing+unsure+unsure+unsure": 2,
+          "missing+unsure+unsure": 3,
+          "extra1": 2,
+          "unsure": 4
+        }
+      },
+      "strict/chords-steel-aug": {
+        "n": 576,
+        "accuracy": 0.934,
+        "errors": {
+          "missing+unsure+unsure": 3,
+          "missing": 14,
+          "weak+unsure+unsure+unsure": 6,
+          "missing+unsure+unsure+unsure": 7,
+          "weak+unsure+unsure": 3,
+          "extra1": 1,
+          "weak": 1,
+          "unsure": 2,
+          "weak+unsure": 1
+        }
+      },
+      "strict/chords-nylon": {
+        "n": 576,
+        "accuracy": 0.9601,
+        "errors": {
+          "missing": 16,
+          "missing+unsure+unsure": 1,
+          "unsure": 6
+        }
+      },
+      "strict/chords-nylon-aug": {
+        "n": 576,
+        "accuracy": 0.934,
+        "errors": {
+          "missing": 21,
+          "weak+unsure+unsure+unsure": 5,
+          "weak+unsure+unsure": 3,
+          "extra1": 2,
+          "missing+unsure+unsure+unsure": 1,
+          "missing+unsure+unsure": 2,
+          "wrong+unsure+unsure+unsure": 1,
+          "unsure": 2,
+          "weak+unsure": 1
+        }
+      },
+      "strict/faults-ks": {
+        "n": 517,
+        "accuracy": 0.7795,
+        "mutedRecall": 0.7188,
+        "errors": {
+          "muted": 54,
+          "wrong-fret": 54,
+          "extra-open": 6
+        }
+      },
+      "strict/faults-ks-aug": {
+        "n": 517,
+        "accuracy": 0.7756,
+        "mutedRecall": 0.7083,
+        "errors": {
+          "muted": 55,
+          "wrong-fret": 55,
+          "extra-open": 6
+        }
+      },
+      "strict/faults-steel": {
+        "n": 517,
+        "accuracy": 0.7795,
+        "mutedRecall": 0.6823,
+        "errors": {
+          "muted": 58,
+          "wrong-fret": 50,
+          "extra-open": 6
+        }
+      },
+      "strict/faults-steel-aug": {
+        "n": 517,
+        "accuracy": 0.7679,
+        "mutedRecall": 0.6927,
+        "errors": {
+          "muted": 57,
+          "wrong-fret": 55,
+          "extra-open": 8
+        }
+      }
+    }
+  },
+  "G6_2": {
+    "notes-ks.wav": {
+      "n": 49,
+      "recall": 1,
+      "falsePasses": 0,
+      "f1": 1
+    },
+    "notes-ks-aug.wav": {
+      "n": 49,
+      "recall": 1,
+      "falsePasses": 0,
+      "f1": 1
+    },
+    "notes-steel.wav": {
+      "n": 49,
+      "recall": 1,
+      "falsePasses": 0,
+      "f1": 1
+    },
+    "notes-steel-aug.wav": {
+      "n": 49,
+      "recall": 1,
+      "falsePasses": 0,
+      "f1": 1
+    },
+    "notes-nylon.wav": {
+      "n": 49,
+      "recall": 1,
+      "falsePasses": 0,
+      "f1": 1
+    },
+    "notes-nylon-aug.wav": {
+      "n": 49,
+      "recall": 1,
+      "falsePasses": 1,
+      "f1": 0.9899
+    },
+    "notes-electric.wav": {
+      "n": 49,
+      "recall": 1,
+      "falsePasses": 0,
+      "f1": 1
+    },
+    "notes-electric-aug.wav": {
+      "n": 49,
+      "recall": 1,
+      "falsePasses": 0,
+      "f1": 1
+    },
+    "phrases-ks.wav": {
+      "n": 92,
+      "recall": 1,
+      "falsePasses": 1,
+      "f1": 0.9946
+    },
+    "phrases-ks-aug.wav": {
+      "n": 92,
+      "recall": 1,
+      "falsePasses": 1,
+      "f1": 0.9946
+    },
+    "phrases-steel.wav": {
+      "n": 92,
+      "recall": 0.9891,
+      "falsePasses": 1,
+      "f1": 0.9891
+    },
+    "phrases-steel-aug.wav": {
+      "n": 92,
+      "recall": 0.9891,
+      "falsePasses": 1,
+      "f1": 0.9891
+    },
+    "phrases-electric.wav": {
+      "n": 92,
+      "recall": 1,
+      "falsePasses": 0,
+      "f1": 1
+    },
+    "phrases-electric-aug.wav": {
+      "n": 92,
+      "recall": 0.9891,
+      "falsePasses": 3,
+      "f1": 0.9785
+    },
+    "overall": {
+      "f1": 0.9942,
+      "falsePassesByInterval": {
+        "12": 7,
+        "-1": 1
+      },
+      "octaveErrorRate": 0.0037
+    },
+    "gate": "F1 ≥ 0.97, octave errors ≤ 0.5 %"
+  },
+  "G6_4": {
+    "phrases-ks.wav": {
+      "notes": 92,
+      "missed": 2,
+      "extra": 2,
+      "medianMs": 0.69,
+      "p90Ms": 1.06
+    },
+    "phrases-ks-aug.wav": {
+      "notes": 92,
+      "missed": 3,
+      "extra": 11,
+      "medianMs": 0.68,
+      "p90Ms": 1.35
+    },
+    "phrases-steel.wav": {
+      "notes": 92,
+      "missed": 0,
+      "extra": 0,
+      "medianMs": 1.16,
+      "p90Ms": 2.35
+    },
+    "phrases-steel-aug.wav": {
+      "notes": 92,
+      "missed": 3,
+      "extra": 6,
+      "medianMs": 1.33,
+      "p90Ms": 3.74
+    },
+    "phrases-electric.wav": {
+      "notes": 92,
+      "missed": 0,
+      "extra": 0,
+      "medianMs": 2.32,
+      "p90Ms": 10.61
+    },
+    "phrases-electric-aug.wav": {
+      "notes": 92,
+      "missed": 7,
+      "extra": 8,
+      "medianMs": 5.19,
+      "p90Ms": 16.35
+    },
+    "overall": {
+      "medianMs": 1.04
+    },
+    "gate": "median |Δ| ≤ 12 ms"
+  },
+  "G6_3_stringByString": {
+    "sbs-ks.wav": {
+      "strings": 304,
+      "playedPassed": 1,
+      "mutedRecall": 1,
+      "mutedCalledWrongNote": 0
+    },
+    "sbs-steel.wav": {
+      "strings": 304,
+      "playedPassed": 1,
+      "mutedRecall": 1,
+      "mutedCalledWrongNote": 0
+    },
+    "gate": "muted-string recall ≥ 0.97"
+  },
+  "G6_5": {
+    "silentTrials": 49,
+    "falsePassRate": 0,
+    "playedPassRate": 1,
+    "gate": "false passes ≤ 2 % with the reference tone at −12 dB"
+  },
+  "G6_6": {
+    "audioSeconds": 132,
+    "cpuSeconds": 2.03,
+    "shareOfOneCore": 0.0154,
+    "gate": "≤ 25 % of one core",
+    "note": "One strum per 2.2 s with onset detection running throughout; container CPU, Node."
+  },
+  "chroma": {
+    "chords-ks.wav": {
+      "n": 576,
+      "top1": 0.319,
+      "top3": 0.656
+    },
+    "chords-steel.wav": {
+      "n": 576,
+      "top1": 0.378,
+      "top3": 0.677
+    },
+    "chords-nylon.wav": {
+      "n": 576,
+      "top1": 0.434,
+      "top3": 0.826
+    }
+  }
+}

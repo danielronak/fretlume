@@ -98,6 +98,9 @@ def render_fluid(items: list[dict], starts: list[float], sr: int, total: int, pr
             m.bend_cents(max(0.0, start - 0.05), ch, item["detuneCents"])
         for note in item["notes"]:
             m.note(start + note["t"], note["dur"], note["string"] - 1, note["midi"], note["velocity"])
+        # Damp everything at the end of the item, so nothing rings into the next one.
+        for ch in range(6):
+            m.silence(start + item["dur"] + GAP * 0.5, ch)
     with tempfile.TemporaryDirectory() as tmp:
         mid, wav = Path(tmp) / "g.mid", Path(tmp) / "g.wav"
         mid.write_bytes(m.to_bytes())
@@ -112,6 +115,22 @@ def render_fluid(items: list[dict], starts: list[float], sr: int, total: int, pr
     out = np.zeros(total)
     out[: min(total, len(x))] = x[:total]
     return out
+
+
+def measure_latency(source: str, sr: int) -> float:
+    """Seconds from note-on until the sound starts (FluidSynth's samples begin a few ms late)."""
+    if source == "ks":
+        return 0.0
+    items = [{"dur": 1.0, "detuneCents": 0, "notes": [
+        {"t": 0.1, "string": 6 - (i % 6), "midi": 45 + 5 * i, "velocity": 90, "dur": 0.8}]} for i in range(8)]
+    starts = layout(items)
+    x = render_fluid(items, starts, sr, round((starts[-1] + 2) * sr), PROGRAMS[source])
+    delays = []
+    for item, start in zip(items, starts):
+        s = round((start + 0.1) * sr)
+        seg = np.abs(x[s - 200 : s + 2000])
+        delays.append((int(np.argmax(seg > 0.02 * seg.max())) - 200) / sr)
+    return float(np.median(delays))
 
 
 def normalise(x: np.ndarray, peak: float = 0.8) -> np.ndarray:
@@ -130,6 +149,10 @@ def main() -> None:
     manifest_path = OUT / "manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() and not args.force else {"groups": []}
     manifest["sampleRate"] = sr
+    if shutil.which("fluidsynth") and SOUNDFONT.exists():
+        # When each source's sound starts after its note-on (timing truth = note time + this).
+        manifest["sourceLatencyS"] = {s: round(measure_latency(s, sr), 4) for s in ["ks", *PROGRAMS]}
+        print("source latency", manifest["sourceLatencyS"])
     have = {g["file"] for g in manifest["groups"]}
     if not shutil.which("fluidsynth") or not SOUNDFONT.exists():
         print("FluidSynth or the GM soundfont is missing: rendering the ks source only")
@@ -173,6 +196,7 @@ def main() -> None:
                 })
                 manifest_path.write_text(json.dumps(manifest))
                 print(f"wrote  {name} ({len(x) / sr / 60:.1f} min)")
+    manifest_path.write_text(json.dumps(manifest))
 
 
 if __name__ == "__main__":

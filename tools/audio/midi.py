@@ -35,6 +35,10 @@ class Midi:
         value = max(0, min(16383, round(8192 + cents / 200 * 8192)))
         self.add(seconds, bytes([0xE0 | channel, value & 0x7F, value >> 7]), order=0)
 
+    def silence(self, seconds: float, channel: int) -> None:
+        """All Sound Off (CC 120): the player damps the strings."""
+        self.add(seconds, bytes([0xB0 | channel, 120, 0]), order=0)
+
     def note(self, start: float, dur: float, channel: int, midi: int, velocity: int) -> None:
         self.add(start, bytes([0x90 | channel, midi, velocity]), order=2)
         self.add(start + dur, bytes([0x80 | channel, midi, 0]), order=1)

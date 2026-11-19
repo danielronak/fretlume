@@ -11,7 +11,7 @@ it does not do this.
       strums, faults, tab phrases; augmentations; FluidSynth path if `apt-get install fluidsynth
       fluid-soundfont-gm` works (optional). Manifest JSON with ground truth. Listen-check is impossible
       for the agent → validate fixtures spectrally (fundamental where expected, decay plausible).
-- [ ] **6.2 Analysis core** (pure TS, Node-testable): STFT, whitening, harmonic-comb salience,
+- [x] **6.2 Analysis core** (pure TS, Node-testable): STFT, whitening, harmonic-comb salience,
       explaining-away, neighbour tests, verdict object; onset detector; timing judge; chroma + templates.
 - [ ] **6.3 Real-time plumbing:** worklet → analysis Worker; expectation API
       `listener.expect({ notes, muted, window })` → verdict events; self-masking of app-generated sound;
