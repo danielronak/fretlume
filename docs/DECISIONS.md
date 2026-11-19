@@ -351,3 +351,17 @@ of the strip was tried and dropped (no gain).
 **Measured.** Dim clip auto-lock 5/15 → 11/14 right. G4.3: correct 87.5 → 89.0 %, wrong index 2.0 → 0.5 %
 (the ≤ 1 % part of the gate is now met; ≥ 95 % correct still is not), false locks 0. Remaining dim-light
 bias: about ¼ string spacing across the neck (within the tolerance).
+
+## D-027 · 2026-11-19 · Continuity after a short loss: keep the previous fret index
+**Context.** Owner on 0.3.6: smoother, "quite good", but covering the frets makes the overlay go away for a
+while. Diagnostics: four losses in the session; three of the automatic re-locks that followed were not sure
+of the fret index ("index false", the hand over the inlays), so the Stage froze the picture and asked the
+player to confirm the grid, and the overlay was gone until they did. The NeckNet re-acquire while
+recovering (D-025) likewise needed a certain index and so did not fire.
+**Decision.** `alignToPrevious` (lock.ts): a new fit with an uncertain index is moved by whole frets so its
+nut lands on the nut of the grid shown just before; if no shift brings it within ¾ of a nut width, the
+guitar has really moved and the usual rules apply (confirm step). Used by the re-acquire while recovering
+(VisionCore) and by the Stage's automatic resume (loss less than 10 s ago, earlier confirmation needed no
+fret shift).
+**Measured.** Unit tests (one or two frets off either way → aligned; a moved neck → refused). Fast-move
+clips unchanged (270/348 good, 0 lost). Not yet measured on a real occlusion: next field test.

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { INSTRUMENTS } from '@core/guitar/instrument';
-import { apply, fromControlPoints, type Mat3 } from './geometry';
-import { homographyFromTaps, shiftFrets, tapPointsMm, tapsInFrame } from './lock';
+import { apply, controlPointsPx, fromControlPoints, type Mat3 } from './geometry';
+import { alignToPrevious, homographyFromTaps, shiftFrets, tapPointsMm, tapsInFrame } from './lock';
 import { fretX } from '@core/guitar/instrument';
 
 const model = INSTRUMENTS.steelAcoustic;
@@ -74,5 +74,33 @@ describe('tapsInFrame', () => {
     ).toBe(true);
     expect(tapsInFrame([{ x: -2774, y: 1086 }], 1280, 720)).toBe(false);
     expect(tapsInFrame([{ x: Number.NaN, y: 1 }], 1280, 720)).toBe(false);
+  });
+});
+
+describe('alignToPrevious', () => {
+  const model = INSTRUMENTS.steelAcoustic;
+  const H = fromControlPoints(
+    [
+      { x: 1100, y: 240 },
+      { x: 1110, y: 330 },
+      { x: 560, y: 450 },
+      { x: 550, y: 350 },
+    ],
+    model,
+  );
+  const previous = controlPointsPx(H, model);
+  it('moves a fit that is a fret or two off back onto the previous nut', () => {
+    for (const k of [-2, -1, 1, 2]) {
+      const aligned = alignToPrevious(shiftFrets(H, model, k), previous, model)!;
+      const p = controlPointsPx(aligned, model);
+      expect(Math.hypot(p[0]!.x - previous[0]!.x, p[0]!.y - previous[0]!.y)).toBeLessThan(0.5);
+    }
+  });
+  it('refuses when the neck has really moved', () => {
+    const moved = fromControlPoints(
+      previous.map((p) => ({ x: p.x - 400, y: p.y + 200 })),
+      model,
+    );
+    expect(alignToPrevious(moved, previous, model)).toBeNull();
   });
 });

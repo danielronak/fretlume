@@ -5,7 +5,7 @@
 import { fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
 import type { EdgeTracker } from './edgeTracker';
 import { type RefineResult } from './edgeTracker';
-import { fitHomography, fromControlPoints, multiply, type Mat3, type Pt } from './geometry';
+import { apply, fitHomography, fromControlPoints, multiply, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
 
 /** Fret positions of the tap pairs, in tap order: nut, 12th, then the optional 5th. */
@@ -95,4 +95,29 @@ export function tapsInFrame(taps: Pt[], width: number, height: number, margin = 
       p.y >= -margin * height &&
       p.y <= (1 + margin) * height,
   );
+}
+
+/**
+ * Continuity after a short loss (a hand over the frets, field test 2026-11-19): a new fit whose fret
+ * index is uncertain is moved by whole frets so that its nut lands where the grid's nut was just
+ * before. Returns null when no shift brings it within `limit` nut widths (the guitar has really moved;
+ * then the player confirms as usual). `previous` are the last control points (same pixels as H).
+ */
+export function alignToPrevious(
+  H: Mat3,
+  previous: Pt[],
+  model: InstrumentModel,
+  limit = 0.75,
+): Mat3 | null {
+  const mid = (p: Pt[]) => ({ x: (p[0]!.x + p[1]!.x) / 2, y: (p[0]!.y + p[1]!.y) / 2 });
+  const target = mid(previous);
+  const nutWidth = Math.hypot(previous[1]!.x - previous[0]!.x, previous[1]!.y - previous[0]!.y);
+  let best: { H: Mat3; d: number } | null = null;
+  for (let k = -3; k <= 3; k++) {
+    const Hk = k ? shiftFrets(H, model, k) : H;
+    const nut = mid([apply(Hk, 0, -halfWidth(model, 0)), apply(Hk, 0, halfWidth(model, 0))]);
+    const d = Math.hypot(nut.x - target.x, nut.y - target.y);
+    if (!best || d < best.d) best = { H: Hk, d };
+  }
+  return best && best.d <= limit * nutWidth ? best.H : null;
 }

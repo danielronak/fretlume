@@ -19,6 +19,7 @@ import type { InstrumentId, LockReply } from '@vision/core';
 import { apply, fromControlPoints, type Mat3, type Pt } from '@vision/geometry';
 import { PosePredictor, STAGE_PREDICTOR } from '@overlay/predict';
 import {
+  alignToPrevious,
   homographyFromTaps,
   shiftFrets,
   tapPointsMm,
@@ -287,11 +288,22 @@ export function StageScreen() {
     if (phase !== 'framing' || !video || !a.H) return;
     // Found again after tracking lost the neck: the player already confirmed this guitar's grid,
     // so a lock whose fret index is certain resumes straight away.
-    if (resumeRef.current && a.indexSure) {
-      diagnostics.event(performance.now(), `auto-resume ${a.confidence.toFixed(2)}`);
+    // Fret index uncertain (a hand over the inlays) but the neck is where it was a moment ago: keep
+    // the index the confirmed grid had (field test 2026-11-19: the confirm step kept interrupting).
+    const previous = poseRef.current?.controlPoints;
+    const lostAgoMs = performance.now() - (poseRef.current?.tCaptureMs ?? -Infinity);
+    const aligned =
+      !a.indexSure && previous?.length === 4 && lostAgoMs < 10_000
+        ? alignToPrevious(a.H, previous, model)
+        : null;
+    if (resumeRef.current && (a.indexSure || aligned)) {
+      diagnostics.event(
+        performance.now(),
+        `auto-resume ${a.confidence.toFixed(2)}${aligned ? ' aligned' : ''}`,
+      );
       // Started by the effect below, after the framing effect's clean-up has stopped the frame pump
       // (starting it here was undone by that clean-up: field test 2026-11-19, tracking never resumed).
-      pendingResumeRef.current = { H: a.H, polarity: a.polarity };
+      pendingResumeRef.current = { H: aligned ?? a.H, polarity: a.polarity };
       setPhase('tracking');
       return;
     }

@@ -8,7 +8,7 @@ import { EdgeTracker } from './edgeTracker';
 import { multiply, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
 import { AutoLocker, type AutoLockStatus } from './autoLock';
-import { snapLock, VERIFIED_CONFIDENCE } from './lock';
+import { alignToPrevious, snapLock, VERIFIED_CONFIDENCE } from './lock';
 import { detectNeck } from './neckNet';
 import type { Network } from './nn';
 import { TrackingSession, type Pose } from './tracking';
@@ -186,8 +186,17 @@ export class VisionCore {
     this.lastReacquireMs = tMs;
     this.finder ??= new AutoLocker(this.tracker(), (img) => detectNeck(net, img));
     const found = this.finder.find(image);
-    if (found.state !== 'verifying' || !found.H || !found.indexSure) return null;
-    this.session.lock(found.H, found.polarity, tMs, image);
+    if (found.state !== 'verifying' || !found.H) return null;
+    // With the fret index uncertain (a hand over the inlays), keep the index the grid had a moment
+    // ago: the guitar has barely moved during a short loss.
+    const previous = this.lastPose?.controlPoints;
+    const H = found.indexSure
+      ? found.H
+      : previous
+        ? alignToPrevious(found.H, previous, this.model)
+        : null;
+    if (!H) return null;
+    this.session.lock(H, found.polarity, tMs, image);
     this.watchdog.reset(tMs);
     this.reacquired++;
     return this.session.pose;
