@@ -13,7 +13,7 @@ does everything the reference app does — free and offline.
       order, repeats, seconds or bars per card, tempo, label/colour options → review); save by name;
       list, duplicate, edit, delete; run on Stage or on the flat diagram; "notes light up as they play"
       (app plays the shape with the string synth in time, the matching dots pulse).
-- [ ] **5.3 Playground:** free canvas — pick any item, stack up to 3 layers (e.g. chord + pentatonic +
+- [x] **5.3 Playground:** free canvas — pick any item, stack up to 3 layers (e.g. chord + pentatonic +
       triads) with per-layer colour/opacity, quick root/position steppers, a progression strip (enter
       `C G Am F`, step through chords with their CAGED options), send to Stage.
 - [ ] **5.4 Tab model + playback engine:** `Tab` model, tick clock on the audio scheduler, string synth
