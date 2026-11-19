@@ -16,7 +16,8 @@ import { FlatFretboard } from '@overlay/FlatFretboard';
 import { projectShape, type OverlayItem } from '@overlay/projection';
 import { Button, Slider, Toggle } from '@ui/index';
 import type { InstrumentId, LockReply } from '@vision/core';
-import { apply, type Mat3, type Pt } from '@vision/geometry';
+import { apply, fromControlPoints, type Mat3, type Pt } from '@vision/geometry';
+import { PosePredictor, STAGE_PREDICTOR } from '@overlay/predict';
 import {
   homographyFromTaps,
   shiftFrets,
@@ -81,6 +82,12 @@ interface StageDebug {
   video: { width: number; height: number };
   /** Frame number stamped in the frozen frame of synthetic test clips. */
   frozenStamp: number | null;
+  /** Capture time of the video frame on screen (the overlay is predicted to it). */
+  shownMs: number | null;
+  /** Board → video px of the grid actually drawn (the prediction of the tracked pose). */
+  shownH: Mat3 | null;
+  /** The capture time that drawn grid describes (see PosePredictor.describes). */
+  describesMs: number | null;
   taps: Pt[];
 }
 
@@ -129,6 +136,9 @@ export function StageScreen() {
   const loupeRef = useRef<HTMLCanvasElement>(null);
   const clientRef = useRef<VisionClient | null>(null);
   const poseRef = useRef<PoseMessage | null>(null);
+  /** Moves the drawn grid to the time of the video frame on screen (see overlay/predict.ts). */
+  const predictorRef = useRef(new PosePredictor(STAGE_PREDICTOR));
+  const shownHRef = useRef<Mat3 | null>(null);
   const [status, setStatus] = useState<{ state: string; confidence: number } | null>(null);
   const [phase, setPhase] = useState<Phase>('framing');
   const [boxWidth, setBoxWidth] = useState(0);
@@ -164,6 +174,11 @@ export function StageScreen() {
       clientRef.current = new VisionClient();
       clientRef.current.onPose((pose) => {
         poseRef.current = pose;
+        predictorRef.current.push(
+          pose.controlPoints,
+          pose.tCaptureMs,
+          pose.state === 'locked' && pose.measured,
+        );
         diagnostics.pose(pose);
         setStatus((s) =>
           s && s.state === pose.state && Math.abs(s.confidence - pose.confidence) < 0.1
@@ -323,6 +338,7 @@ export function StageScreen() {
     if (phase !== 'tracking' || !pending || !video) return;
     pendingResumeRef.current = null;
     const c = client();
+    predictorRef.current.reset();
     c.confirm(pending.H, pending.polarity, performance.now(), undefined, true);
     c.start(video);
   }, [phase, client]);
@@ -427,6 +443,7 @@ export function StageScreen() {
       resizeWidth: Math.round(frozen.bitmap.width * scale),
       resizeHeight: Math.round(frozen.bitmap.height * scale),
     });
+    predictorRef.current.reset();
     c.confirm(confirmedH, lock.polarity, frozen.tMs, frame, shift === 0);
     diagnostics.confirm(shift);
     // Re-locks after a loss may skip the confirm step only if this one needed no fret shift.
@@ -529,8 +546,12 @@ export function StageScreen() {
         drawGrid(ctx, view, confirmedH, model, { numbers: true, color: '#ffd166' });
       } else if (phase === 'tracking') {
         const pose = poseRef.current;
-        if (pose?.H && shownShape) {
-          items = projectShape(shownShape, pose.H, model, {
+        const shownMs = clientRef.current?.shownCaptureMs ?? performance.now() - 30;
+        const predicted = pose?.H ? predictorRef.current.at(shownMs) : null;
+        const H = predicted ? fromControlPoints(predicted, model) : pose?.H;
+        shownHRef.current = H ?? null;
+        if (pose && H && shownShape) {
+          items = projectShape(shownShape, H, model, {
             labelMode: settings.labelMode,
             colorMode:
               entry && entry.activeGroups.length === 0 && settings.colorMode === 'group'
@@ -560,6 +581,11 @@ export function StageScreen() {
         window.__fretlumeStage = {
           phase,
           pose: poseRef.current,
+          shownMs: clientRef.current?.shownCaptureMs ?? null,
+          shownH: shownHRef.current,
+          describesMs: predictorRef.current.describes(
+            clientRef.current?.shownCaptureMs ?? performance.now() - 30,
+          ),
           items,
           lock: lock ? { ...lock, shift } : null,
           video: videoSize,

@@ -231,5 +231,19 @@
       "indexCorrections": 24,
       "medianFramesToRecover": 4
     }
+  },
+  "OverlayLag": {
+    "gate": "none (recorded): drawn grid against the frame on screen while moving",
+    "clips": 20,
+    "trackedHz": 10,
+    "latencyMs": 100,
+    "withoutPrediction": {
+      "meanErrorPx": 6.72,
+      "framesFullyRight": 0.542
+    },
+    "withPrediction": {
+      "meanErrorPx": 3.82,
+      "framesFullyRight": 0.648
+    }
   }
 }

@@ -13,7 +13,8 @@ import { TrackingSession } from '@vision/tracking';
 import { AutoLocker } from '@vision/autoLock';
 import { detectNeck } from '@vision/neckNet';
 import { Network, type Manifest } from '@vision/nn';
-import { controlPointsPx } from '@vision/geometry';
+import { controlPointsPx, fromControlPoints, type Pt } from '@vision/geometry';
+import { PosePredictor, STAGE_PREDICTOR } from '@overlay/predict';
 
 const OUT = resolve(ROOT, 'docs/benchmarks/vision-phase3.json');
 const results: Record<string, unknown> = existsSync(OUT)
@@ -333,6 +334,100 @@ describe('G3.3–G3.5: tracking after a lock', () => {
       trackedHz: 30 / STRIDE,
       normal: run(0),
       startOneFretOff: run(1),
+    };
+    save();
+  }, 3_600_000);
+
+  it('overlay lag on moving clips, with and without prediction (smoothness)', async () => {
+    // Field test 2026-11-19 ("make it seamless and smooth"): poses arrive ~10 times a second and are
+    // ~100 ms old when drawn. Simulated: tracking every 3rd frame of 30 fps clips, results 100 ms after
+    // capture, the screen showing each frame 30 ms after capture; the drawn grid is compared with the
+    // truth of the frame on screen. Prediction settings as on the Stage (overlay/predict.ts).
+    const specs = [
+      ...Array.from({ length: 10 }, (_, i) => ({
+        name: `g33-${2 * i + 1}`,
+        args: [
+          '--kind',
+          'track-motion',
+          '--frames',
+          '40',
+          '--seed',
+          String(3300 + 2 * i + 1),
+          '--instrument',
+          INSTRUMENT_IDS[(2 * i + 1) % 3]!,
+          '--board',
+          BOARDS[(2 * i + 1) % 5]!,
+        ],
+      })),
+      ...Array.from({ length: 10 }, (_, i) => ({
+        name: `tilt-${i}`,
+        args: [
+          '--kind',
+          'track-tilt',
+          '--frames',
+          '120',
+          '--max-speed',
+          '12',
+          '--seed',
+          String(7700 + i),
+          '--instrument',
+          INSTRUMENT_IDS[i % 3]!,
+          '--board',
+          BOARDS[i % 5]!,
+        ],
+      })),
+    ];
+    const dirs = await ensureClips(specs);
+    const FRAME = 1000 / 30;
+    const run = (predict: boolean) => {
+      let n = 0;
+      let sumPx = 0;
+      let good = 0;
+      for (const dir of dirs) {
+        const labels = readLabels(dir);
+        const model = modelFor(labels[0]!);
+        const s = new TrackingSession(new EdgeTracker(model));
+        s.lock(labels[0]!.H!, labels[0]!.polarity ?? 'bright', 0, readFrame(dir, labels[0]!));
+        const results: { ready: number; t: number; pts: Pt[]; moving: boolean }[] = [];
+        for (let k = 3; k < labels.length; k += 3) {
+          const pose = s.update(readFrame(dir, labels[k]!), k * FRAME)!;
+          results.push({
+            ready: k * FRAME + 100,
+            t: k * FRAME,
+            pts: pose.controlPoints,
+            moving: pose.state === 'locked' && pose.measured,
+          });
+        }
+        const pred = new PosePredictor(STAGE_PREDICTOR);
+        let ri = 0;
+        for (let j = 3; j < labels.length; j++) {
+          const tShown = j * FRAME;
+          while (ri < results.length && results[ri]!.ready <= tShown + 30) {
+            const r = results[ri]!;
+            pred.push(r.pts, r.t, r.moving);
+            ri++;
+          }
+          const pts = pred.at(predict ? tShown : -Infinity);
+          if (!pts) continue;
+          const truth = controlPointsPx(labels[j]!.H!, model);
+          sumPx +=
+            pts.reduce((a, p, i) => a + Math.hypot(p.x - truth[i]!.x, p.y - truth[i]!.y), 0) / 4;
+          if (isSuccess(trackingError(fromControlPoints(pts, model), labels[j]!.H!, model))) good++;
+          n++;
+        }
+      }
+      return {
+        meanErrorPx: Number((sumPx / n).toFixed(2)),
+        framesFullyRight: Number((good / n).toFixed(3)),
+      };
+    };
+    results.OverlayLag = {
+      gate: 'none (recorded): drawn grid against the frame on screen while moving',
+      clips: dirs.length,
+      trackedHz: 10,
+      latencyMs: 100,
+      withoutPrediction: run(false),
+      withPrediction: run(true),
     };
     save();
   }, 3_600_000);

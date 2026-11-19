@@ -57,8 +57,11 @@ const invert = (m: M): M => {
 };
 
 interface StageDebug {
-  pose: { H: M | null; stamp?: number } | null;
+  pose: { H: M | null; stamp?: number; tCaptureMs: number } | null;
   items: { kind: string; cx: number; cy: number }[];
+  shownMs: number | null;
+  shownH: M | null;
+  describesMs: number | null;
 }
 
 async function worstErrors(page: Page, labels: Label[], samples: number) {
@@ -68,12 +71,20 @@ async function worstErrors(page: Page, labels: Label[], samples: number) {
     const d = await page.evaluate(
       () => (window as unknown as { __fretlumeStage?: StageDebug }).__fretlumeStage ?? null,
     );
-    const label = labels.find((l) => l.index === d?.pose?.stamp);
-    if (!d?.pose?.H || !label?.H || d.items.length === 0) {
+    // The dots may be drawn ahead of the tracked frame (overlay prediction): compare with the clip
+    // frame the drawing describes. The clips play at 30 fps.
+    const stamp = d?.pose?.stamp;
+    const ahead =
+      d?.describesMs != null && d.pose
+        ? Math.round((d.describesMs - d.pose.tCaptureMs) / (1000 / 30))
+        : 0;
+    const shown = stamp === undefined ? undefined : (stamp + Math.max(0, ahead)) % labels.length;
+    const label = labels.find((l) => l.index === shown);
+    if (!d?.shownH || !label?.H || d.items.length === 0) {
       worst.push(Infinity);
       continue;
     }
-    const toBoard = invert(d.pose.H);
+    const toBoard = invert(d.shownH);
     const truthInv = invert(label.H.flat());
     let w = 0;
     for (const item of d.items) {

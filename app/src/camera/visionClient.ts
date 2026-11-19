@@ -29,6 +29,8 @@ export function debugEnabled(): boolean {
 export class VisionClient {
   private worker: Worker;
   private busy = false;
+  /** Capture time (performance.now() clock) of the video frame on screen, while frames are pumped. */
+  shownCaptureMs: number | null = null;
   private pumping: { video: VideoWithFrames; handle: number | null; timer: number | null } | null =
     null;
   private nextLockId = 1;
@@ -146,6 +148,7 @@ export class VisionClient {
       if (!this.pumping) return;
       if (v.requestVideoFrameCallback) {
         this.pumping.handle = v.requestVideoFrameCallback((now, meta) => {
+          this.shownCaptureMs = meta.captureTime ?? now;
           void this.send(v, meta.captureTime ?? now);
           schedule();
         });
