@@ -14,6 +14,12 @@ test.describe('help @smoke', () => {
       'Tuning up',
       'Practising with a metronome',
       'Install it and use it offline',
+      'Show shapes on your guitar',
+      'Make a practice run',
+      'Combine shapes in the playground',
+      'Write a tab',
+      'Bring in a tab',
+      'Play along with a tab',
     ];
     for (const title of titles) {
       await page.goto('/#/help');

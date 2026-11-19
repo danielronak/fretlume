@@ -5,10 +5,16 @@ import { cagedChordShape, chordVoicings, voicingToShape } from '@core/theory/cho
 import { t, type MessageKey } from '@i18n/index';
 import { FlatFretboard } from '@overlay/FlatFretboard';
 import {
+  ApproachIllustration,
+  ImportIllustration,
   InstallIllustration,
+  LayersIllustration,
   LegendGlyph,
+  LockIllustration,
   MetronomeIllustration,
   MicSetupIllustration,
+  RunIllustration,
+  TabIllustration,
 } from './illustrations';
 import './help.css';
 
@@ -78,6 +84,119 @@ const GUIDES: Guide[] = [
         <P k="guideLibraryP4" />
         <p>
           <Link to="/library">{t('navLibrary')} →</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'stage',
+    title: 'guideStageTitle',
+    summary: 'guideStageSummary',
+    body: () => (
+      <>
+        <figure className="guide__figure">
+          <LockIllustration />
+        </figure>
+        <ol className="guide__steps">
+          <li>{t('guideStageStep1')}</li>
+          <li>{t('guideStageStep2')}</li>
+          <li>{t('guideStageStep3')}</li>
+        </ol>
+        <P k="guideStageP1" />
+        <p>
+          <Link to="/stage/chord/C/maj">{t('navStage')} →</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'runs',
+    title: 'guideRunsTitle',
+    summary: 'guideRunsSummary',
+    body: () => (
+      <>
+        <figure className="guide__figure">
+          <RunIllustration />
+        </figure>
+        <P k="guideRunsP1" />
+        <ol className="guide__steps">
+          <li>{t('guideRunsStep1')}</li>
+          <li>{t('guideRunsStep2')}</li>
+          <li>{t('guideRunsStep3')}</li>
+        </ol>
+        <P k="guideRunsP2" />
+        <p>
+          <Link to="/library/runs">{t('runsTitle')} →</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'playground',
+    title: 'guidePlaygroundTitle',
+    summary: 'guidePlaygroundSummary',
+    body: () => (
+      <>
+        <figure className="guide__figure">
+          <LayersIllustration />
+        </figure>
+        <P k="guidePlaygroundP1" />
+        <P k="guidePlaygroundP2" />
+        <p>
+          <Link to="/playground">{t('playgroundTitle')} →</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'tab-editor',
+    title: 'guideTabWriteTitle',
+    summary: 'guideTabWriteSummary',
+    body: () => (
+      <>
+        <figure className="guide__figure">
+          <TabIllustration />
+        </figure>
+        <P k="guideTabWriteP1" />
+        <P k="guideTabWriteP2" />
+        <P k="guideTabWriteP3" />
+        <p>
+          <Link to="/tabs">{t('tabsTitle')} →</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'tab-import',
+    title: 'guideTabImportTitle',
+    summary: 'guideTabImportSummary',
+    body: () => (
+      <>
+        <figure className="guide__figure">
+          <ImportIllustration />
+        </figure>
+        <P k="guideTabImportP1" />
+        <P k="guideTabImportP2" />
+        <P k="guideTabImportP3" />
+        <p>
+          <Link to="/tabs">{t('tabsTitle')} →</Link>
+        </p>
+      </>
+    ),
+  },
+  {
+    id: 'play-along',
+    title: 'guidePlayAlongTitle',
+    summary: 'guidePlayAlongSummary',
+    body: () => (
+      <>
+        <figure className="guide__figure">
+          <ApproachIllustration />
+        </figure>
+        <P k="guidePlayAlongP1" />
+        <P k="guidePlayAlongP2" />
+        <p>
+          <Link to="/tabs">{t('tabsTitle')} →</Link>
         </p>
       </>
     ),

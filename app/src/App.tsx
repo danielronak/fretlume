@@ -12,6 +12,7 @@ import { RunBuilder } from '@features/runs/RunBuilder';
 import { Playground } from '@features/playground/Playground';
 import { TabsList } from '@features/tabs/TabsList';
 import { TabEditor } from '@features/tabs/TabEditor';
+import { LearnScreen, LessonPlayer } from '@features/learn/Learn';
 import { HelpGuide, HelpIndex } from '@features/help/Help';
 import { Tools } from '@features/tools/Tools';
 import { Tuner } from '@features/tools/Tuner';
@@ -49,11 +50,14 @@ const router = createHashRouter([
       { path: 'stage/playground', element: <StageScreen source="playground" /> },
       { path: 'stage/tab/:tabId', element: <StageScreen /> },
       { path: 'playground', element: <Playground /> },
+      { path: 'learn', element: <LearnScreen /> },
+      { path: 'learn/:lessonId', element: <LessonPlayer /> },
       { path: 'tabs', element: <TabsList /> },
       { path: 'tabs/:tabId', element: <TabEditor /> },
       ...destinations
         .filter(
-          (destination) => !['/library', '/tools', '/stage', '/tabs'].includes(destination.path),
+          (destination) =>
+            !['/library', '/tools', '/stage', '/tabs', '/learn'].includes(destination.path),
         )
         .map((destination) => ({
           path: destination.path.slice(1),

@@ -28,7 +28,7 @@ does everything the reference app does — free and offline.
       available, else cover with MusicXML + ASCII and mark GP import "best effort" with a parser smoke test.
 - [x] **5.7 Tab play-along on the neck and on the diagram:** current notes solid, upcoming notes as
       approaching rings (spec 05 §4), chord ghost one beat early, scrolling tab strip in the deck.
-- [ ] **5.8 Lessons shell + how-to guides:** lesson list and player UI running `explain`/`demo` sections
+- [x] **5.8 Lessons shell + how-to guides:** lesson list and player UI running `explain`/`demo` sections
       (content arrives in Phase 8); 6 short how-to guides with our own illustrations.
 - [ ] **5.9 Parity audit.** Walk the checklist P-F1…P-F15 in `research/01` §1.2; for each, an e2e test id
       and a screenshot in `docs/screens/phase-5/parity/`. Write `docs/PARITY.md` (feature → status → evidence).

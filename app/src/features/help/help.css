@@ -162,3 +162,15 @@
   fill: var(--text-muted);
   font: 500 12px var(--font-mono);
 }
+
+.ill-info-fill {
+  fill: var(--info);
+}
+.ill-on-accent {
+  fill: var(--text-on-accent);
+  font-weight: 700;
+}
+.ill-mono {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-weight: 700;
+}

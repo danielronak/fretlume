@@ -697,6 +697,107 @@ export const en = {
   durDotted: 'Dotted {name}',
   durDot: 'Dotted',
   durTicks: '{ticks} ticks',
+  // Learn: lesson list and player (phase 5 task 5.8; the curriculum arrives in Phase 8)
+  learnLede: 'Short lessons that show each step on the neck and play how it sounds.',
+  learnMoreSoon:
+    'These are the first lessons. The full course, with listening and progress, comes later.',
+  learnMinutes: '{n} min',
+  learnStart: 'Start',
+  learnTrackFirstSteps: 'First steps',
+  learnTrackChords: 'Chords',
+  learnTrackRhythm: 'Rhythm',
+  learnTrackFretboard: 'Fretboard',
+  learnTrackLead: 'Lead',
+  lessonBack: 'All lessons',
+  lessonSection: 'Part {n} of {total}',
+  lessonPrevious: 'Back',
+  lessonNext: 'Next',
+  lessonFinish: 'Finish',
+  lessonDone: 'Lesson finished. Well played.',
+  lessonDemoPlay: 'Play the demo',
+  lessonDemoPause: 'Pause',
+  lessonDemoStep: 'Step {n} of {total}',
+  lessonHear: 'Hear it',
+  lessonOnGuitar: 'Show on my guitar',
+  lessonNotFound: 'That lesson does not exist.',
+
+  lessonReadingTitle: 'Reading the neck',
+  lessonReadingSummary: 'How Fretlume shows where your fingers go.',
+  lessonReadingExplain1:
+    'The diagrams show the neck as you look down at it while playing: the thinnest string at the top, the nut on the left. Each dot is a place to press, just behind a fret wire.',
+  lessonReadingExplain2:
+    'A ring on the left means play that string open, without pressing. A cross means leave it out. The coloured dot is the root, the note the chord is named after.',
+  lessonReadingDemo1:
+    'E minor: two fingers on the second fret, on the 5th and 4th strings. Strum all six strings.',
+  lessonReadingDemo2: 'A minor: start on the 5th string; the 6th string is left out.',
+  lessonReadingDemo3: 'C major: three fingers stepping down across the strings.',
+
+  lessonFirstChordsTitle: 'G and D, back and forth',
+  lessonFirstChordsSummary: 'Two common chords and a smooth change between them.',
+  lessonFirstChordsExplain1:
+    'G major uses three fingers across the neck. Press close to the frets and keep your fingertips upright so the open strings ring.',
+  lessonFirstChordsDemo1: 'G major: strum from the 6th string down.',
+  lessonFirstChordsDemo2: 'D major: strum only the top four strings.',
+  lessonFirstChordsDemo3: 'Back to G. Move all fingers together, then strum.',
+  lessonFirstChordsExplain2:
+    'Change slowly at first. A clean change at a slow speed is worth more than a fast messy one; speed comes by itself.',
+
+  lessonPentatonicTitle: 'The minor pentatonic box',
+  lessonPentatonicSummary: 'The five-note scale most solos start from.',
+  lessonPentatonicExplain1:
+    'The A minor pentatonic box sits at the 5th fret: two notes on each string, under four fingers. Coloured dots are the root, A.',
+  lessonPentatonicDemo1: 'Play it up from the lowest note, one note per click, then back down.',
+  lessonPentatonicDemo2:
+    'The same scale continues all along the neck: five boxes that link together.',
+
+  // How-to guides added in phase 5 (task 5.8)
+  guideStageTitle: 'Show shapes on your guitar',
+  guideStageSummary: 'Point the camera at the neck and lock on to it.',
+  guideStageStep1: 'Open any chord or scale and tap “Show on my guitar”, then Start camera.',
+  guideStageStep2:
+    'Hold the guitar so the whole neck is in view, nut included. Fretlume looks for it by itself and asks “Looks right?”.',
+  guideStageStep3:
+    'Check that the numbers sit on your frets, then tap “Yes, start”. If it does not find the neck, tap “Lock to my guitar” and drag the four handles onto the corners.',
+  guideStageP1:
+    'The dots follow the guitar as it moves. If they drift, tap Re-lock. In a dim room, more light helps more than anything else.',
+  guideRunsTitle: 'Make a practice run',
+  guideRunsSummary: 'A playlist of shapes that moves on by itself.',
+  guideRunsP1:
+    'A practice run is a list of cards — chords, scales, triads or keys — each shown for some seconds or bars, as often as you like.',
+  guideRunsStep1: 'Library → Practice runs → New run.',
+  guideRunsStep2: 'Add cards from the library, your favourites or your folders.',
+  guideRunsStep3:
+    'Set how long each card stays, the tempo, and whether it should play the notes. Save, then Play.',
+  guideRunsP2:
+    'On the Stage the run moves to the next card by itself; Back, Next and Loop still work.',
+  guidePlaygroundTitle: 'Combine shapes in the playground',
+  guidePlaygroundSummary: 'Layer a chord over a scale to see how they fit.',
+  guidePlaygroundP1:
+    'Each layer is a chord, scale, triad or arpeggio in its own colour. Notes they share are drawn split in two colours.',
+  guidePlaygroundP2:
+    'Step the root or the shape of any layer, transpose everything at once, or type a progression such as “Am F C G” to walk through it.',
+  guideTabWriteTitle: 'Write a tab',
+  guideTabWriteSummary: 'The keyboard-first tab editor.',
+  guideTabWriteP1:
+    'Tabs → New tab. Move with the arrow keys and type fret numbers; two quick digits make frets 10–24.',
+  guideTabWriteP2:
+    'Letters add techniques to the note under the cursor: h hammer-on, p pull-off, / and \\ slides, b bend, r release, x muted, ~ vibrato, m palm mute. + and − make a note longer or shorter; Enter adds a beat.',
+  guideTabWriteP3:
+    'On a phone, tap a cell and use the fret pad below. Everything saves on this device as you type.',
+  guideTabImportTitle: 'Bring in a tab',
+  guideTabImportSummary: 'Guitar Pro, MusicXML, ASCII tab or a chord sheet.',
+  guideTabImportP1:
+    'Tabs → Import a file reads Guitar Pro (3 to 7), MusicXML, plain-text tab and ChordPro chord sheets. Paste a tab works with text copied from anywhere.',
+  guideTabImportP2:
+    'A file with several instruments asks which track to use. Chord sheets become one bar per chord, strummed; their words are not kept.',
+  guideTabImportP3:
+    'Export ASCII gives plain text that other apps and people can read; Export file keeps everything for importing back.',
+  guidePlayAlongTitle: 'Play along with a tab',
+  guidePlayAlongSummary: 'Notes slide toward their place on your neck.',
+  guidePlayAlongP1:
+    'From a tab, tap “Play along on my guitar”. The tab scrolls under a line; the note to play now is a solid dot, the next ones are rings that slide in from the bridge side and shrink as they get close.',
+  guidePlayAlongP2:
+    'Slow the speed down, loop a few bars, and turn the count-in on to get ready. The next chord appears faintly one beat before it is due.',
 } as const;
 
 export type MessageKey = keyof typeof en;
