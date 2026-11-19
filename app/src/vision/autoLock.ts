@@ -14,6 +14,8 @@ import { midwayRidgeRatio, verifyIndex } from './indexCheck';
 
 /** Above this midway/fret ridge ratio a fit is taken for an alias (calibrated on held-out frames). */
 const ALIAS_RATIO = 0.6;
+/** Index verdicts with a smaller margin are treated as undecided. */
+const INDEX_MIN_MARGIN = 0.15;
 import { fullScore, homographyFromTaps, shiftFrets, snapLock } from './lock';
 import { fretAtX, fretX, halfWidth, type InstrumentModel } from '@core/guitar/instrument';
 import type { NeckDetection } from './neckNet';
@@ -156,7 +158,10 @@ export class AutoLocker {
     const verdict = verifyIndex(image, anchored, model);
     // A nut NeckNet saw clearly outweighs a weak inlay/nut verdict.
     const nutSeen = Math.min(det.cornerScores[0] ?? 0, det.cornerScores[1] ?? 0) >= 0.8;
-    const shift = nutSeen && verdict.margin < 0.5 ? 0 : verdict.shift;
+    // A near-tie verdict is no evidence (dim rooms: inlays invisible, the nut cue weak; it shifted
+    // a right fit by a fret, field test 2026-11-19): the anchored fit stands.
+    const weak = verdict.margin < INDEX_MIN_MARGIN || (nutSeen && verdict.margin < 0.5);
+    const shift = weak ? 0 : verdict.shift;
     const H = shift ? shiftFrets(anchored, model, shift) : anchored;
     this.verified = 0;
     return {
@@ -165,7 +170,7 @@ export class AutoLocker {
       H,
       polarity: best.polarity,
       confidence: best.confidence,
-      indexSure: nutSeen ? shift === 0 || verdict.margin >= 0.5 : verdict.margin > 0.15,
+      indexSure: nutSeen ? shift === 0 || verdict.margin >= 0.5 : verdict.margin > INDEX_MIN_MARGIN,
       detection: det,
     };
   }

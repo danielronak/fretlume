@@ -65,8 +65,17 @@ function noise(seed: number) {
 interface StageDebug {
   phase: string;
   frozenStamp: number | null;
-  pose: { H: M | null; state: string; stamp?: number; confidence: number } | null;
+  pose: {
+    H: M | null;
+    state: string;
+    stamp?: number;
+    confidence: number;
+    tCaptureMs: number;
+  } | null;
   items: { kind: string; cx: number; cy: number }[];
+  /** The grid actually drawn, and the capture time it describes (overlay prediction). */
+  shownH: M | null;
+  describesMs: number | null;
   lock: { found: boolean; verified: boolean; confidence: number } | null;
 }
 const debug = (page: Page) =>
@@ -124,18 +133,25 @@ async function markAndSnap(
 }
 
 /**
- * Sample the overlay `samples` times; for each, map every dot back to the board through the app's
- * pose and forward through the label of the same frame. Returns the worst error per sample in mm.
+ * Sample the overlay `samples` times; for each, map every dot back to the board through the grid the
+ * app drew and forward through the label of the clip frame that grid describes (the drawing may be
+ * predicted ahead of the tracked frame; the clips play at 30 fps). Returns the worst error per sample
+ * in mm.
  */
 async function sampleOverlay(page: Page, labels: Label[], samples: number) {
   const worst: number[] = [];
   for (let k = 0; k < samples; k++) {
     await page.waitForTimeout(250);
     const d = await debug(page);
-    const H = d?.pose?.H;
+    const H = d?.shownH ?? d?.pose?.H;
     const stamp = d?.pose?.stamp;
-    const label = labels.find((l) => l.index === stamp);
-    if (!H || !label?.H || d.items.length === 0) {
+    const ahead =
+      d?.describesMs != null && d.pose
+        ? Math.round((d.describesMs - d.pose.tCaptureMs) / (1000 / 30))
+        : 0;
+    const frame = stamp === undefined ? undefined : (stamp + Math.max(0, ahead)) % labels.length;
+    const label = labels.find((l) => l.index === frame);
+    if (!d || !H || !label?.H || d.items.length === 0) {
       worst.push(Infinity);
       continue;
     }

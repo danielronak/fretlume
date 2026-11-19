@@ -327,3 +327,27 @@ under 6 px radius.
 **Measured.** Fast moves (tilt clips, every 12th frame ≈ 0.4 s of motion per tracked frame, 12 clips):
 lost 3 → 0, good frames 228/321 → 270/348; the owner's recording: no spurious re-acquire, tracking
 unchanged. Remaining: on such fast moves the grid can sit wrong for a while before a check catches it.
+
+## D-026 · 2026-11-19 · Smooth overlay by prediction; dim rooms: weak index verdicts do not shift a fit
+**Context.** Owner on 0.3.5: works quite well; wants it seamless and smooth (the grid trails a moving neck)
+and better in a dim room. Video (10 s, 10 Hz tracking, 65 ms per frame): while moving, the grid trails by
+about a fret for a few frames and steps ten times a second.
+**Decision (smoothness).** The Stage draws the grid for the capture time of the video frame on screen
+(`requestVideoFrameCallback` metadata), predicted from the velocity of the last tracked poses
+(`overlay/predict.ts`: gain 0.9, at most 150 ms ahead, soft dead band below 0.03 px/ms so the tracker's own
+wobble on a still guitar is not extrapolated). Blending between poses was tried and dropped: it brought the
+lag back (error 4.2 → 5.6–6.4 px). The One-Euro filter is unchanged (lighter settings gained < 0.2 px).
+**Measured.** Bench OverlayLag (20 moving clips, 10 Hz, 100 ms latency, frame on screen 30 ms after
+capture): mean error 6.72 → 3.82 px, frames fully right 54.2 → 64.8 %. Owner's still recording: drawn-grid
+movement per screen frame 0.28 px without prediction, 0.32 with. The e2e overlay checks compare the drawing
+with the clip frame it describes (`describesMs` in the debug object); on this container tracking runs at
+2–3 Hz, too slow for the predictor to engage, so the browser tests mostly check the unpredicted path.
+**Decision (dim rooms).** In the dim e2e clip the fret wires are darker than the board; with that polarity
+tracking is 99/99 at 640×360 (my first measurement had forced the bright polarity). Auto-lock was one fret
+off on 10 of 15 frames: with the inlays invisible, index verdicts with margins of 0.03–0.05 shifted a fit
+that the NeckNet nut anchor had placed right. Verdicts with a margin under 0.15 are now treated as
+undecided (the anchored fit stands); the same threshold already decided "index sure". A contrast stretch
+of the strip was tried and dropped (no gain).
+**Measured.** Dim clip auto-lock 5/15 → 11/14 right. G4.3: correct 87.5 → 89.0 %, wrong index 2.0 → 0.5 %
+(the ≤ 1 % part of the gate is now met; ≥ 95 % correct still is not), false locks 0. Remaining dim-light
+bias: about ¼ string spacing across the neck (within the tolerance).
