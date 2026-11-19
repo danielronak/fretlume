@@ -145,7 +145,18 @@ export function toAscii(tab: Tab, barsPerLine = 4): string {
   return lines.join('\n');
 }
 
-export class TabParseError extends Error {}
+export type TabParseCode = 'noTab' | 'noChords' | 'unreadable' | 'noTracks' | 'tooBig';
+
+/** A file or text that is not a tab; `code` picks the friendly message the UI shows. */
+export class TabParseError extends Error {
+  constructor(
+    readonly code: TabParseCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'TabParseError';
+  }
+}
 
 interface Token {
   col: number;
@@ -207,7 +218,8 @@ export function fromAscii(text: string, id: string): Tab {
     bars.push(...parseSystem(block, chordLine, pmLine, rLine));
     i = rLine ? rLineIndex : pmLine ? j : j - 1;
   }
-  if (bars.length === 0) throw new TabParseError('No tab found: expected lines like “e|-0-3-|”.');
+  if (bars.length === 0)
+    throw new TabParseError('noTab', 'No tab found: expected lines like “e|-0-3-|”.');
 
   let tuning = [...STANDARD_TAB_TUNING];
   if (tuningText) {

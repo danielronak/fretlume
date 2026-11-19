@@ -1,6 +1,6 @@
 // `npm run fixtures` — (re)generates the media fixtures used by the e2e tests into fixtures/generated/.
 // Everything here is deterministic, so the files are not committed.
-import { copyFileSync, existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
@@ -22,6 +22,23 @@ const fixtures = [
     make: (out) => floatsToWav(sineTone(110, 2, 48000), 48000, out),
   },
 ];
+
+// Tab import (phase 5 task 5.6): a Guitar Pro 7 file of our own riff, written by alphaTab's exporter.
+fixtures.push({
+  file: 'riff.gp',
+  describe: 'Guitar Pro 7 riff with hammer-on, slide, bend and a chord name (tab import)',
+  make: async (out) => {
+    const alphaTab = await import('@coderline/alphatab/core');
+    const settings = new alphaTab.Settings();
+    const importer = new alphaTab.importer.AlphaTexImporter();
+    importer.initFromString(
+      '\\title "GP Riff" \\tempo 112 \\ts (4 4) ' +
+        '5.3.4 {ch "Am"} 5.4{h}.8 7.4.8 7.4{sl}.4 9.4.4 | 8.2{b (0 4)}.4 x.6.8 5.5{pm}.8 5.1{v}.2',
+      settings,
+    );
+    writeFileSync(out, new alphaTab.exporter.Gp7Exporter().export(importer.readScore(), settings));
+  },
+});
 
 // Tuner gate G6.1: each open string of standard tuning at -20, 0 and +20 cents, as a 2 s pluck
 // that the fake microphone loops (so it is re-plucked every 2 s).
@@ -89,6 +106,6 @@ for (const fixture of fixtures) {
     console.log(`kept   ${fixture.file}`);
     continue;
   }
-  fixture.make(out);
+  await fixture.make(out);
   console.log(`wrote  ${fixture.file} — ${fixture.describe} (${statSync(out).size} bytes)`);
 }

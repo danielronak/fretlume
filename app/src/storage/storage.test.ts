@@ -178,3 +178,21 @@ describe('practice runs', () => {
     await expect(saveRun({ ...a, name: '  ' })).rejects.toThrow();
   });
 });
+
+describe('tabs', () => {
+  it('save, list newest first, copy, delete; broken records are skipped', async () => {
+    const { saveTab, listTabs, copyTab, deleteTab, getTab } = await import('./tabs');
+    const { newTab } = await import('@core/tab/model');
+    const { db } = await import('./db');
+    const a = await saveTab(newTab('tab-a', 'Riff'));
+    await new Promise((r) => setTimeout(r, 2));
+    await saveTab(newTab('tab-b', 'Song'));
+    await db().tabs.put({ id: 'tab-bad', title: 'Bad', updatedAt: Date.now() + 1, tuning: [1] });
+    expect((await listTabs()).map((t) => t.title)).toEqual(['Song', 'Riff']);
+    const copy = await copyTab(a, 'Riff (copy)');
+    expect((await getTab(copy.id))!.tracks[0]!.bars).toHaveLength(4);
+    await deleteTab('tab-a');
+    expect(await getTab('tab-a')).toBeNull();
+    expect(await getTab('tab-bad')).toBeNull();
+  });
+});
