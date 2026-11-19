@@ -1,0 +1,391 @@
+/* Tabs list and editor (phase 5 tasks 5.5–5.6). */
+.tabs__actions,
+.tabedit__export {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin: var(--space-3) 0;
+}
+.tabs__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.tabs__item {
+  border: 1px solid var(--hairline-strong);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+.tabs__name {
+  display: grid;
+}
+.tabs__meta {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+}
+.tabs__buttons,
+.tabs__tracks {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tabs__paste {
+  display: grid;
+  gap: 6px;
+}
+.tabs__paste textarea {
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 13px;
+  width: min(70ch, 80vw);
+  max-width: 100%;
+  background: var(--surface-0);
+  color: var(--text);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 8px;
+  padding: 8px;
+}
+.tabs__error {
+  color: var(--danger);
+}
+
+/* Editor */
+.tabedit__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.tabedit__back {
+  color: var(--text-muted);
+}
+.tabedit__saved {
+  color: var(--text-muted);
+  font-size: 0.9em;
+}
+.tabedit__title {
+  font: inherit;
+  font-size: 1.6rem;
+  font-weight: 700;
+  width: 100%;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 4px 6px;
+  margin: 6px 0 10px -6px;
+}
+.tabedit__title:hover,
+.tabedit__title:focus {
+  border-color: var(--hairline-strong);
+}
+.tabedit__props,
+.tabedit__transport {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  align-items: end;
+  margin-bottom: var(--space-3);
+}
+.tabedit__field {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+.tabedit__field input,
+.tabedit__field select {
+  min-height: 40px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 8px;
+  padding: 0 8px;
+}
+.tabedit__field input[type='number'] {
+  width: 6em;
+}
+.tabedit__field--small input[type='number'] {
+  width: 4.5em;
+}
+.tabedit__speed {
+  min-width: 200px;
+}
+
+.tabedit__grid {
+  border: 1px solid var(--hairline-strong);
+  border-radius: 12px;
+  padding: 10px 8px 6px;
+  background: var(--surface-1);
+  max-height: 60vh;
+  overflow: auto;
+  outline: none;
+}
+.tabedit__grid:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.tabedit__status {
+  color: var(--text-muted);
+  font-size: 0.9em;
+  font-variant-numeric: tabular-nums;
+  margin: 6px 2px 10px;
+}
+
+.tabgrid__bars {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 14px;
+}
+.tabbar {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  border-right: 2px solid var(--board-fret);
+}
+.tabbar__chord {
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent);
+  background: transparent;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  width: 6em;
+  margin-left: 1.4em;
+  padding: 0 4px;
+  min-height: 28px;
+}
+.tabbar__chord:hover,
+.tabbar__chord:focus {
+  border-color: var(--hairline-strong);
+}
+.tabbar__chord::placeholder {
+  color: var(--hairline-strong);
+}
+.tabbar__body {
+  display: flex;
+}
+.tabbar__names {
+  display: grid;
+  grid-auto-rows: 26px;
+  width: 1.4em;
+  color: var(--text-muted);
+  font-size: 0.75em;
+  line-height: 26px;
+  text-align: center;
+  border-right: 2px solid var(--board-fret);
+}
+.tabbar__names span {
+  height: 26px;
+  font-size: 1em;
+}
+.tabbar__num {
+  color: var(--hairline-strong);
+}
+.tabcol {
+  display: grid;
+  grid-auto-rows: 26px;
+  flex: none;
+}
+.tabcol.is-col {
+  background: var(--accent-soft);
+}
+.tabcol.is-playing {
+  background: var(--info-soft);
+  box-shadow: inset 2px 0 0 var(--info);
+}
+.tabcell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 14px;
+}
+.tabcell::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid var(--board-string);
+}
+.tabcell__note {
+  position: relative;
+  padding: 0 2px;
+  background: var(--surface-1);
+  border-radius: 4px;
+  color: var(--text);
+  font-weight: 600;
+}
+.tabcol.is-col .tabcell__note {
+  background: transparent;
+}
+.tabcell.is-pm .tabcell__note {
+  text-decoration: underline dotted;
+}
+.tabcell.is-cursor {
+  outline: 2px solid var(--accent);
+  outline-offset: -3px;
+  border-radius: 6px;
+}
+.tabcol__dur {
+  font-size: 0.7em;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 26px;
+}
+.tabbar__fill {
+  grid-column: 1 / -1;
+  font-size: 0.75em;
+  margin: 0 0 0 1.8em;
+}
+.tabbar__fill.is-short {
+  color: var(--text-muted);
+}
+.tabbar__fill.is-long {
+  color: var(--danger);
+}
+
+/* Touch pad */
+.tabpad {
+  display: grid;
+  gap: 10px;
+}
+.tabpad__group {
+  display: grid;
+  gap: 6px;
+}
+.tabpad__frets,
+.tabpad__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tabpad__key {
+  min-width: 44px;
+  min-height: 44px;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-1);
+  border: 1px solid var(--hairline-strong);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.tabpad__key:hover {
+  background: var(--surface-2);
+}
+.tabpad__key.is-on {
+  background: var(--accent);
+  color: var(--text-on-accent);
+  border-color: var(--accent);
+}
+.tabpad__key:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tabpad__key--wide {
+  padding: 0 12px;
+}
+
+.tabedit__keys {
+  margin-top: var(--space-3);
+  color: var(--text-muted);
+}
+.tabedit__keys dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 4px 16px;
+}
+.tabedit__keys dl > div {
+  display: flex;
+  gap: 8px;
+}
+.tabedit__keys dt {
+  flex: none;
+  min-width: 9em;
+}
+.tabedit__keys dd {
+  margin: 0;
+}
+.tabedit__keys kbd {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* Scrolling tab strip on the Stage (task 5.7). */
+.tabstrip {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 10px;
+  background: var(--surface-1);
+  margin: 8px 0;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.tabstrip__line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px solid var(--board-string);
+}
+.tabstrip__head {
+  position: absolute;
+  left: 25%;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  z-index: 1;
+}
+.tabstrip__inner {
+  position: absolute;
+  left: 25%;
+  top: 0;
+  bottom: 0;
+  will-change: transform;
+}
+.tabstrip__col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.tabstrip__col.is-bar {
+  border-left: 2px solid var(--board-fret);
+}
+.tabstrip__chord {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.tabstrip__cell {
+  position: absolute;
+  left: 2px;
+  transform: translateY(-50%);
+  padding: 0 3px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  background: var(--surface-1);
+}
+.tabstrip__col.is-now .tabstrip__cell {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}

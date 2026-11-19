@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  beatIndexAt,
   barStarts,
   barTicks,
   newTab,
@@ -129,5 +130,13 @@ describe('tab model', () => {
     expect(problems.join(' | ')).toMatch(/fret 30/);
     expect(problems.join(' | ')).toMatch(/no length/);
     expect(validateTab({ ...newTab('t', 'T'), tuning: [1, 2], capo: 20 }).length).toBe(2);
+  });
+
+  it('beatIndexAt finds the sounding beat', () => {
+    const beats = [{ tick: 0 }, { tick: 480 }, { tick: 720 }];
+    expect([-1, 0, 479, 480, 719, 720, 99999].map((t) => beatIndexAt(beats, t))).toEqual([
+      -1, 0, 0, 1, 1, 2, 2,
+    ]);
+    expect(beatIndexAt([], 0)).toBe(-1);
   });
 });

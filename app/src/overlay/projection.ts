@@ -43,7 +43,9 @@ export type OverlayItem =
       string: number;
       fret: number;
     })
-  | (Ellipse & { kind: 'muted'; string: number });
+  | (Ellipse & { kind: 'muted'; string: number })
+  /** Tab play-along: a note coming up, approaching its spot (lead 1 → 0). */
+  | (Ellipse & { kind: 'ring'; opacity: number; string: number; fret: number });
 
 /** Ellipse that a board circle of radius rMm centred at (xMm, yMm) becomes in the image. */
 export function projectCircle(H: Mat3, xMm: number, yMm: number, rMm: number): Ellipse {
@@ -70,6 +72,38 @@ export function projectCircle(H: Mat3, xMm: number, yMm: number, rMm: number): E
 /** Local distance between neighbouring strings (mm). */
 export function stringSpacingMm(model: InstrumentModel, xMm: number): number {
   return stringSpread(model, Math.max(0, xMm)) / (model.strings - 1);
+}
+
+/** How far (mm, toward the bridge) a ring starts when a note is a full look-ahead away. */
+export const APPROACH_MM = 45;
+
+/**
+ * Approaching notes (docs/specs/05-ux.md §4): each ring slides along its string from the bridge side
+ * toward its spot and shrinks to the dot size as the note gets closer.
+ */
+export function projectApproach(
+  rings: readonly { string: number; fret: number; lead: number }[],
+  H: Mat3,
+  model: InstrumentModel,
+  options: Pick<OverlayOptions, 'dotScale' | 'flipStrings'>,
+): OverlayItem[] {
+  const out: OverlayItem[] = [];
+  // Furthest first, so the nearest ring is drawn on top.
+  for (const ring of [...rings].sort((a, b) => b.lead - a.lead)) {
+    if (ring.fret > model.frets) continue;
+    const string = options.flipStrings ? model.strings + 1 - ring.string : ring.string;
+    const { xMm } = boardPoint(model, string, ring.fret);
+    const x = xMm + ring.lead * APPROACH_MM;
+    const r = 0.36 * stringSpacingMm(model, xMm) * options.dotScale * (1 + ring.lead);
+    out.push({
+      kind: 'ring',
+      ...projectCircle(H, x, stringY(model, string, Math.max(0, x)), r),
+      opacity: 0.35 + 0.65 * (1 - ring.lead),
+      string: ring.string,
+      fret: ring.fret,
+    });
+  }
+  return out;
 }
 
 export function projectShape(

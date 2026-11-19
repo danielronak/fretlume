@@ -20,6 +20,7 @@ import {
   type BackupCounts,
 } from '@storage/backup';
 import { Button, Chip, Dialog, Toggle, useToast } from '@ui/index';
+import { downloadText } from '@ui/download';
 import { TUNING_OPTIONS } from '@features/tools/tuningOptions';
 import './settings.css';
 
@@ -84,18 +85,6 @@ const GUITARS: [GuitarProfileId, MessageKey][] = [
   ['classical', 'guitarClassical'],
 ];
 
-/** Start a download of a text file. */
-function download(fileName: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = fileName;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 type Pending = {
   backup: Backup;
   counts: BackupCounts;
@@ -113,7 +102,7 @@ export function Settings() {
   const exportBackup = async () => {
     const backup = await createBackup(currentSettings());
     const fileName = backupFileName();
-    download(fileName, JSON.stringify(backup, null, 2));
+    downloadText(fileName, JSON.stringify(backup, null, 2));
     toast.show(t('backupSaved', { file: fileName }));
   };
 

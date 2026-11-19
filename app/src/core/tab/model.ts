@@ -112,6 +112,19 @@ export function timeline(tab: Tab): TimedBeat[] {
   return out;
 }
 
+/** Index of the beat sounding at `tick` (the last beat starting at or before it); −1 before the first. */
+export function beatIndexAt(beats: readonly Pick<TimedBeat, 'tick'>[], tick: number): number {
+  if (beats.length === 0 || tick < beats[0]!.tick) return -1;
+  let lo = 0;
+  let hi = beats.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (beats[mid]!.tick <= tick) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
+}
+
 /** Start tick of each bar, plus the total length as the last element. */
 export function barStarts(tab: Tab): number[] {
   const starts: number[] = [];

@@ -103,3 +103,10 @@
     animation: none;
   }
 }
+
+/* Tab play-along: a note coming up (docs/specs/05-ux.md §4). */
+.fretboard__approach {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2.5;
+}

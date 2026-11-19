@@ -16,17 +16,17 @@ does everything the reference app does — free and offline.
 - [x] **5.3 Playground:** free canvas — pick any item, stack up to 3 layers (e.g. chord + pentatonic +
       triads) with per-layer colour/opacity, quick root/position steppers, a progression strip (enter
       `C G Am F`, step through chords with their CAGED options), send to Stage.
-- [ ] **5.4 Tab model + playback engine:** `Tab` model, tick clock on the audio scheduler, string synth
+- [x] **5.4 Tab model + playback engine:** `Tab` model, tick clock on the audio scheduler, string synth
       playback with techniques (hammer/pull = no re-pluck, slide = pitch glide, bend = pitch curve,
       mute = noise burst, palm mute = short decay), tempo %, loop A–B, count-in.
-- [ ] **5.5 Tab editor:** six-line grid; keyboard-first editing (arrows, digits incl. two-digit frets,
+- [x] **5.5 Tab editor:** six-line grid; keyboard-first editing (arrows, digits incl. two-digit frets,
       duration keys, `h p / \ b r x ~`, bar insert/delete, copy/paste, undo/redo); touch editing with a
       fret pad; chord-symbol row; tuning/capo/tempo/time signature; autosave to IndexedDB.
-- [ ] **5.6 Import/export:** alphaTab for GP3–GP8 and MusicXML (pick the guitar track; map to `Tab`);
+- [x] **5.6 Import/export:** alphaTab for GP3–GP8 and MusicXML (pick the guitar track; map to `Tab`);
       ASCII tab parser; ChordPro chord sheets; export JSON and ASCII. Test files: author small fixtures
       in each text format; for binary GP formats generate fixtures with alphaTab's own exporter if
       available, else cover with MusicXML + ASCII and mark GP import "best effort" with a parser smoke test.
-- [ ] **5.7 Tab play-along on the neck and on the diagram:** current notes solid, upcoming notes as
+- [x] **5.7 Tab play-along on the neck and on the diagram:** current notes solid, upcoming notes as
       approaching rings (spec 05 §4), chord ghost one beat early, scrolling tab strip in the deck.
 - [ ] **5.8 Lessons shell + how-to guides:** lesson list and player UI running `explain`/`demo` sections
       (content arrives in Phase 8); 6 short how-to guides with our own illustrations.

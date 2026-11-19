@@ -91,6 +91,24 @@ export function drawOverlay(
   const minRadius = MIN_DOT_RADIUS * dotScale;
   for (const item of items) {
     const c = toCanvas(view, { x: item.cx, y: item.cy });
+    if (item.kind === 'ring') {
+      const [rx, ry] = screenAxes(view, item, minRadius);
+      ctx.globalAlpha = item.opacity * fade;
+      ctx.beginPath();
+      ctx.ellipse(
+        c.x,
+        c.y,
+        rx,
+        ry,
+        view.mirror ? Math.PI - item.angle : item.angle,
+        0,
+        2 * Math.PI,
+      );
+      ctx.lineWidth = Math.max(2, ry * 0.22);
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      continue;
+    }
     if (item.kind === 'muted') {
       const r = screenAxes(view, item, minRadius)[0];
       ctx.globalAlpha = 0.9 * fade;

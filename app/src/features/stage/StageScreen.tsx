@@ -13,7 +13,7 @@ import { TUNINGS } from '@core/theory/tuning';
 import type { Shape } from '@core/theory/types';
 import { t, type MessageKey } from '@i18n/index';
 import { FlatFretboard } from '@overlay/FlatFretboard';
-import { projectShape, type OverlayItem } from '@overlay/projection';
+import { projectApproach, projectShape, type OverlayItem } from '@overlay/projection';
 import { Button, Slider, Toggle } from '@ui/index';
 import type { InstrumentId, LockReply } from '@vision/core';
 import { apply, fromControlPoints, type Mat3, type Pt } from '@vision/geometry';
@@ -41,6 +41,8 @@ import type { SearchHint } from '@vision/autoLock';
 import { readFrameStamp } from '@vision/stamp';
 import { diagnostics, FRAME_WIDTH } from '@/diagnostics/recorder';
 import { buildDeck, type DeckEntry } from './deck';
+import { playAlongShape } from '@core/tab/playalong';
+import { TabDeck, useTabStage } from '@features/tabs/TabDeck';
 import { clearColorCache, drawGrid, drawOverlay, toCanvas, toVideo, type View } from './draw';
 import './stage.css';
 
@@ -148,6 +150,8 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
     if (!kind || root === null || !params.type || !isValidType(kind, params.type)) return null;
     return buildDeck(kind, root, params.type, tuning, model.frets);
   }, [source, run, kind, root, params.type, tuning, model.frets]);
+  // A tab to play along with (/stage/tab/:tabId, task 5.7).
+  const tabStage = useTabStage(params.tabId ?? null);
   const [showAll, setShowAll] = useState(true);
   // Deck transport: the session engine (learn/session.ts) steps through the deck's entries; a run
   // brings its own timing (seconds or bars per card, repeats, tempo).
@@ -642,7 +646,26 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
         const predicted = pose?.H ? predictorRef.current.at(shownMs) : null;
         const H = predicted ? fromControlPoints(predicted, model) : pose?.H;
         shownHRef.current = H ?? null;
-        if (pose && H && shownShape) {
+        if (pose && H && tabStage.tab) {
+          const tabFrame = tabStage.frame();
+          if (tabFrame) {
+            const options = {
+              labelMode,
+              colorMode: colorMode === 'group' ? ('note' as const) : colorMode,
+              activeGroups: ['now'],
+              dotScale: settings.dotScale,
+              flipStrings: settings.flipStrings,
+            };
+            const capo = tabStage.tab.capo;
+            items = [
+              ...projectApproach(tabFrame.upcoming, H, model, options),
+              ...projectShape(playAlongShape(tabStage.tab, tabFrame), H, model, options),
+            ];
+            const sounding = new Set(tabFrame.current.map((n) => `${n.string}-${n.fret + capo}`));
+            const fade = pose.state === 'locked' ? 1 : pose.state === 'recovering' ? 0.4 : 0.15;
+            drawOverlay(ctx, view, items, fade, settings.dotScale, sounding);
+          }
+        } else if (pose && H && shownShape) {
           items = projectShape(shownShape, H, model, {
             labelMode,
             colorMode:
@@ -752,7 +775,7 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
   return (
     <section className="screen stage" data-testid="screen-stage">
       <header className="stage__head">
-        <h1>{deck?.title ?? t('stageTitle')}</h1>
+        <h1>{deck?.title ?? tabStage.tab?.title ?? t('stageTitle')}</h1>
         {pill ? (
           <span className={`stage__pill stage__pill--${pill.tone}`} role="status">
             {pill.text}
@@ -760,7 +783,7 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
         ) : null}
       </header>
 
-      {!deck ? (
+      {!deck && !params.tabId ? (
         <p className="screen__lede">
           {t('stageNothing')} <Link to="/library">{t('stageNothingAction')}</Link>
         </p>
@@ -986,6 +1009,16 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
         </div>
       ) : null}
 
+      {tabStage.tab ? (
+        <TabDeck
+          stage={tabStage}
+          showDiagram={withoutCamera || !running}
+          frets={model.frets}
+          labelMode={labelMode}
+          colorMode={colorMode}
+          leftHanded={settings.handedness === 'left'}
+        />
+      ) : null}
       {deck && entry ? (
         <div className="stage__deck" data-testid="stage-deck">
           <div className="stage__deck-title">

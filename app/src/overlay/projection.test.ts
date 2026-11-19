@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { boardPoint, INSTRUMENTS } from '@core/guitar/instrument';
 import { chordVoicings, voicingToShape } from '@core/theory/chords';
 import { apply, fromControlPoints, type Mat3 } from '@vision/geometry';
-import { projectCircle, projectShape } from './projection';
+import { APPROACH_MM, projectApproach, projectCircle, projectShape } from './projection';
 
 const model = INSTRUMENTS.steelAcoustic;
 const H: Mat3 = fromControlPoints(
@@ -87,5 +87,30 @@ describe('projectShape', () => {
     expect(d(big).rx).toBeCloseTo(1.5 * d(small).rx, 6);
     const ghosts = projectShape(shape, H, model, { ...options, activeGroups: ['nothing'] });
     expect(ghosts.every((i) => i.kind === 'muted' || i.opacity === 0.35)).toBe(true);
+  });
+});
+
+describe('projectApproach', () => {
+  it('a ring lands on its note as lead reaches 0 and starts toward the bridge, larger', () => {
+    const [near, far] = projectApproach(
+      [
+        { string: 3, fret: 5, lead: 1 },
+        { string: 3, fret: 5, lead: 0 },
+      ],
+      H,
+      model,
+      { dotScale: 1, flipStrings: false },
+    ).reverse() as [
+      Extract<ReturnType<typeof projectApproach>[number], { kind: 'ring' }>,
+      Extract<ReturnType<typeof projectApproach>[number], { kind: 'ring' }>,
+    ];
+    const spot = boardPoint(model, 3, 5);
+    const at = apply(H, spot.xMm, spot.yMm);
+    expect(near.cx).toBeCloseTo(at.x, 6);
+    expect(near.cy).toBeCloseTo(at.y, 6);
+    const start = apply(H, spot.xMm + APPROACH_MM, spot.yMm);
+    expect(Math.hypot(far.cx - start.x, far.cy - start.y)).toBeLessThan(3);
+    expect(far.rx).toBeGreaterThan(near.rx * 1.5);
+    expect(near.opacity).toBe(1);
   });
 });

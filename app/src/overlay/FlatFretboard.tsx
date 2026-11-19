@@ -23,6 +23,8 @@ export interface FlatFretboardProps {
   activeGroups?: readonly string[];
   /** Dots sounding right now ("string-fret" keys): drawn with a bright pulse ring. */
   pulse?: ReadonlySet<string>;
+  /** Tab play-along (neck layout): notes coming up, as rings sliding in from the bridge side. */
+  approach?: readonly { string: number; fret: number; lead: number }[];
 }
 
 interface DotProps {
@@ -114,6 +116,7 @@ function NeckDiagram({
   leftHanded = false,
   activeGroups,
   pulse,
+  approach,
 }: FlatFretboardProps) {
   const fretW = 56;
   const stringH = 26;
@@ -128,8 +131,9 @@ function NeckDiagram({
 
   const flip = (x: number) => (leftHanded ? width - x : x);
   const wireX = (fret: number) => flip(padLeft + fret * fretW);
-  const noteX = (fret: number) =>
-    fret === 0 ? flip(padLeft - 22) : flip(padLeft + (fret - 1) * fretW + fretW * 0.62);
+  const rawNoteX = (fret: number) =>
+    fret === 0 ? padLeft - 22 : padLeft + (fret - 1) * fretW + fretW * 0.62;
+  const noteX = (fret: number) => flip(rawNoteX(fret));
   const stringY = (s: number) => padTop + (s - 1) * stringH; // string 1 (high e) on top, like tab
   const midY = padTop + boardH / 2;
 
@@ -214,6 +218,19 @@ function NeckDiagram({
             colorMode={colorMode}
             dim={!isActive(mark, activeGroups)}
             pulse={pulse?.has(`${mark.string}-${mark.fret}`) ?? false}
+          />
+        ))}
+      {approach
+        ?.filter((a) => a.fret <= frets && a.string <= strings)
+        .map((a, i) => (
+          <circle
+            key={`a${i}`}
+            className="fretboard__approach"
+            data-testid="fretboard-approach"
+            cx={flip(rawNoteX(a.fret) + a.lead * fretW * 1.5)}
+            cy={stringY(a.string)}
+            r={r * (1 + a.lead)}
+            opacity={0.35 + 0.65 * (1 - a.lead)}
           />
         ))}
     </svg>

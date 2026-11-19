@@ -15,8 +15,10 @@ const LEGATO_SKIP_S = 0.015;
 
 export interface PlayOptions {
   tempoPct?: number;
-  /** Loop bars [from, to) (0-based, `to` exclusive); without it the whole tab plays once. */
+  /** Loop bars [from, to) (0-based, `to` exclusive); without it the tab plays once. */
   loop?: [number, number];
+  /** Without a loop: the bar to start from (0-based; default 0). */
+  startBar?: number;
   /** One bar of clicks before the music. */
   countIn?: boolean;
   a4Hz?: number;
@@ -70,7 +72,7 @@ export class TabPlayer {
     this.options = options;
     const starts = barStarts(tab);
     const last = starts.length - 1;
-    const [a, b] = options.loop ?? [0, last];
+    const [a, b] = options.loop ?? [options.startBar ?? 0, last];
     this.fromTick = starts[Math.max(0, Math.min(a, last))]!;
     this.toTick = starts[Math.max(1, Math.min(b, last))]!;
     this.looping = options.loop !== undefined;

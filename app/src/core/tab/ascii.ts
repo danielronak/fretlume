@@ -32,7 +32,8 @@ const DURATIONS: [string, number][] = [
   ['s', TPQ / 4],
   ['t', TPQ / 8],
 ];
-function durationToken(ticks: number): string {
+/** Short rhythm token: w h q e s t, "." when dotted, {ticks} otherwise. */
+export function durationToken(ticks: number): string {
   for (const [c, d] of DURATIONS) {
     if (ticks === d) return c;
     if (ticks === d * 1.5) return `${c}.`;
@@ -78,9 +79,19 @@ export function parseToken(text: string): TabNote | null {
   if ((m = /^([hp/\\])(\d{1,2})$/.exec(text)))
     return { string: 0, fret: Number(m[2]), tech: m[1] as Technique };
   if ((m = /^(\d{1,2})b(\d{1,2}(?:\.5)?)$/.exec(text)))
-    return { string: 0, fret: Number(m[1]), tech: 'b', bendSemis: Number(m[2]) - Number(m[1]) };
+    return {
+      string: 0,
+      fret: Number(m[1]),
+      tech: 'b',
+      bendSemis: Math.abs(Number(m[2]) - Number(m[1])) || 1,
+    };
   if ((m = /^(\d{1,2}(?:\.5)?)r(\d{1,2})$/.exec(text)))
-    return { string: 0, fret: Number(m[2]), tech: 'r', bendSemis: Number(m[1]) - Number(m[2]) };
+    return {
+      string: 0,
+      fret: Number(m[2]),
+      tech: 'r',
+      bendSemis: Math.abs(Number(m[1]) - Number(m[2])) || 1,
+    };
   if ((m = /^(\d{1,2})~$/.exec(text))) return { string: 0, fret: Number(m[1]), tech: '~' };
   if ((m = /^(\d{1,2})$/.exec(text))) return { string: 0, fret: Number(m[1]) };
   return null;
