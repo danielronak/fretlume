@@ -4,7 +4,7 @@ import { useSettings } from '@/state/settings';
 import type { LibraryKind } from '@core/theory/library/index';
 import { pcPairName } from '@core/theory/pitch';
 import { TUNINGS } from '@core/theory/tuning';
-import { t, type MessageKey } from '@i18n/index';
+import { t } from '@i18n/index';
 import { Chip, useToast } from '@ui/index';
 import {
   DEFAULT_TYPE,
@@ -24,13 +24,8 @@ import { SearchBox } from './SearchBox';
 import { ArpeggioView, ChordView, KeyView, ScaleView, TriadView, type ViewProps } from './views';
 import './library.css';
 
-export const KIND_TAB_LABEL: Record<LibraryKind, MessageKey> = {
-  chord: 'libKindChord',
-  scale: 'libKindScale',
-  triad: 'libKindTriad',
-  key: 'libKindKey',
-  arpeggio: 'libKindArpeggio',
-};
+export { KIND_TAB_LABEL } from './kindLabels';
+import { KIND_TAB_LABEL } from './kindLabels';
 
 const VIEWS: Record<LibraryKind, (props: ViewProps) => React.JSX.Element | null> = {
   chord: ChordView,

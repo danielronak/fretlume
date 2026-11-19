@@ -17,6 +17,10 @@ export function Tools() {
           <h2>{t('toolMetronomeTitle')}</h2>
           <p>{t('toolMetronomeBody')}</p>
         </Link>
+        <Link to="/playground" className="tool-card" data-testid="tool-playground">
+          <h2>{t('toolsPlayground')}</h2>
+          <p>{t('toolsPlaygroundBody')}</p>
+        </Link>
       </div>
       <MicrophonePanel />
     </div>

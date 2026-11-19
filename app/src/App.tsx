@@ -9,6 +9,7 @@ import { Shell } from '@features/Shell';
 import { Settings } from '@features/settings/Settings';
 import { LibraryScreen, RunsScreen, SavedScreen } from '@features/library/LibraryScreen';
 import { RunBuilder } from '@features/runs/RunBuilder';
+import { Playground } from '@features/playground/Playground';
 import { HelpGuide, HelpIndex } from '@features/help/Help';
 import { Tools } from '@features/tools/Tools';
 import { Tuner } from '@features/tools/Tuner';
@@ -43,6 +44,8 @@ const router = createHashRouter([
       { path: 'stage', element: <StageScreen /> },
       { path: 'stage/:kind/:root/:type', element: <StageScreen /> },
       { path: 'stage/run/:runId', element: <StageScreen /> },
+      { path: 'stage/playground', element: <StageScreen source="playground" /> },
+      { path: 'playground', element: <Playground /> },
       ...destinations
         .filter((destination) => !['/library', '/tools', '/stage'].includes(destination.path))
         .map((destination) => ({

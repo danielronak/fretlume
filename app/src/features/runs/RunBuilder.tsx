@@ -6,9 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSettings } from '@/state/settings';
 import { libraryItem } from '@core/theory/library/index';
-import { pcPairName } from '@core/theory/pitch';
 import { TUNINGS } from '@core/theory/tuning';
-import type { LibraryKind } from '@core/theory/library/index';
 import { t, type MessageKey } from '@i18n/index';
 import {
   DEFAULT_CARD_AMOUNT,
@@ -26,8 +24,7 @@ import { getRun, newRunId, saveRun } from '@storage/runs';
 import { useLive } from '@storage/useLive';
 import { Icon } from '@ui/icons';
 import { Button, IconButton, Toggle, useToast } from '@ui/index';
-import { DEFAULT_TYPE, itemId, LIBRARY_KINDS, typeOptions } from '@features/library/model';
-import { KIND_TAB_LABEL } from '@features/library/LibraryScreen';
+import { ItemPicker } from '@features/library/ItemPicker';
 import { cardTitle, formatDuration, resolveCard } from './runCards';
 import './runs.css';
 
@@ -79,9 +76,6 @@ function NumberField({
 
 /** Step 1: pick cards from the library, favourites or folders. */
 function Choose({ run, setRun }: { run: PracticeRun; setRun: (r: PracticeRun) => void }) {
-  const [kind, setKind] = useState<LibraryKind>('chord');
-  const [root, setRoot] = useState(0);
-  const [typeId, setTypeId] = useState(DEFAULT_TYPE.chord);
   const favourites = useLive(() => listFavourites(), [], [] as string[]);
   const folders = useLive<Folder[]>(() => listFolders(), [], []);
   const add = (ids: string[]) => {
@@ -100,61 +94,7 @@ function Choose({ run, setRun }: { run: PracticeRun; setRun: (r: PracticeRun) =>
     <div className="runs__choose">
       <section className="lib-section">
         <h2>{t('runChooseBrowse')}</h2>
-        <div className="runs__picker">
-          <label className="runs__field">
-            <span>{t('runChooseKind')}</span>
-            <select
-              value={kind}
-              data-testid="run-kind"
-              onChange={(e) => {
-                const k = e.target.value as LibraryKind;
-                setKind(k);
-                setTypeId(DEFAULT_TYPE[k]);
-              }}
-            >
-              {LIBRARY_KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {t(KIND_TAB_LABEL[k])}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="runs__field">
-            <span>{t('runChooseRoot')}</span>
-            <select
-              value={root}
-              data-testid="run-root"
-              onChange={(e) => setRoot(Number(e.target.value))}
-            >
-              {Array.from({ length: 12 }, (_, pc) => (
-                <option key={pc} value={pc}>
-                  {pcPairName(pc)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="runs__field">
-            <span>{t('runChooseType')}</span>
-            <select
-              value={typeId}
-              data-testid="run-type"
-              onChange={(e) => setTypeId(e.target.value)}
-            >
-              {typeOptions(kind).map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button
-            variant="primary"
-            onClick={() => add([itemId(kind, root, typeId)])}
-            data-testid="run-add"
-          >
-            {t('runAdd')}
-          </Button>
-        </div>
+        <ItemPicker label={t('runAdd')} onPick={(id) => add([id])} />
       </section>
       {favourites.length > 0 ? (
         <section className="lib-section">

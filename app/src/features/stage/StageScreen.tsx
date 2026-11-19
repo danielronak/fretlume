@@ -23,6 +23,7 @@ import { stepDurationMs } from '@learn/session';
 import { playNotes } from '@audio/player';
 import { getRun } from '@storage/runs';
 import { useLive } from '@storage/useLive';
+import { loadPlayground, playgroundDeck } from '@features/playground/model';
 import { cardTitle, resolveCard } from '@features/runs/runCards';
 import { useSession } from '@learn/useSession';
 import type { Step } from '@learn/session';
@@ -117,7 +118,7 @@ declare global {
   }
 }
 
-export function StageScreen() {
+export function StageScreen({ source }: { source?: 'playground' } = {}) {
   const params = useParams();
   const settings = useSettings();
   const update = useSettings((s) => s.update);
@@ -136,6 +137,7 @@ export function StageScreen() {
     null,
   );
   const deck = useMemo(() => {
+    if (source === 'playground') return playgroundDeck(loadPlayground(), tuning, model.frets);
     if (run) {
       const entries = run.cards
         .map((card) => resolveCard(card, tuning, model.frets))
@@ -145,7 +147,7 @@ export function StageScreen() {
     }
     if (!kind || root === null || !params.type || !isValidType(kind, params.type)) return null;
     return buildDeck(kind, root, params.type, tuning, model.frets);
-  }, [run, kind, root, params.type, tuning, model.frets]);
+  }, [source, run, kind, root, params.type, tuning, model.frets]);
   const [showAll, setShowAll] = useState(true);
   // Deck transport: the session engine (learn/session.ts) steps through the deck's entries; a run
   // brings its own timing (seconds or bars per card, repeats, tempo).
@@ -170,7 +172,7 @@ export function StageScreen() {
     send({ type: 'setTempo', bpm: run.tempoBpm });
   }, [run, send]);
   const labelMode = run?.labelMode ?? settings.labelMode;
-  const colorMode = run?.colorMode ?? settings.colorMode;
+  const colorMode = source === 'playground' ? 'group' : (run?.colorMode ?? settings.colorMode);
   const entryIndex = session.index;
   const loop = session.loop;
   const entry: DeckEntry | null =

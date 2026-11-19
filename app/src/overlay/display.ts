@@ -31,11 +31,23 @@ const SHAPE_VARS: Record<string, string> = {
   '2nd': 'var(--inv-second)',
 };
 
+/** Playground layer colours (learn/playground.ts layerGroup). */
+export const LAYER_COLORS = [
+  'var(--shape-e)',
+  'var(--shape-a)',
+  'var(--shape-c)',
+  'var(--shape-g)',
+  'var(--shape-d)',
+  'var(--dot-single)',
+] as const;
+
 /** Colour of a group id: CAGED letters (an octave repeat "E+12" keeps E's colour), inversions, positions. */
 export function groupColor(groupId: string): string {
   const base = groupId.split('+')[0] ?? groupId;
   const known = SHAPE_VARS[base];
   if (known) return known;
+  const layer = /^layer-(\d)$/.exec(base);
+  if (layer) return LAYER_COLORS[Number(layer[1]) % LAYER_COLORS.length]!;
   const nps = /^nps(\d)$/.exec(base);
   if (nps) return `var(--note-${((Number(nps[1]) - 1) * 5) % 12})`;
   return 'var(--dot-single)';
