@@ -36,20 +36,20 @@
   "G32": {
     "gate": "success ≥ 0.97 at σ = 5 px and ≥ 0.90 at σ = 8 px (worst along < 0.25 fret, across < 0.35 string spacing, frets 0–17)",
     "frames": 200,
-    "msPerLock": 237.8,
+    "msPerLock": 276,
     "cases": [
       {
         "taps": 4,
         "sigma": 5,
         "frames": 200,
-        "success": 0.945,
-        "polarityDetected": 0.955
+        "success": 0.94,
+        "polarityDetected": 0.96
       },
       {
         "taps": 4,
         "sigma": 8,
         "frames": 200,
-        "success": 0.915,
+        "success": 0.91,
         "polarityDetected": 0.95
       },
       {
@@ -63,7 +63,7 @@
         "taps": 6,
         "sigma": 8,
         "frames": 200,
-        "success": 0.935,
+        "success": 0.93,
         "polarityDetected": 0.955
       }
     ],
@@ -73,67 +73,67 @@
         {
           "threshold": 0.3,
           "accepted": 0.999,
-          "precision": 0.93
+          "precision": 0.926
         },
         {
           "threshold": 0.35,
           "accepted": 0.999,
-          "precision": 0.93
+          "precision": 0.926
         },
         {
           "threshold": 0.4,
           "accepted": 0.994,
-          "precision": 0.93
+          "precision": 0.926
         },
         {
           "threshold": 0.45,
           "accepted": 0.988,
-          "precision": 0.929
+          "precision": 0.925
         },
         {
           "threshold": 0.5,
           "accepted": 0.973,
-          "precision": 0.929
+          "precision": 0.925
         },
         {
           "threshold": 0.55,
           "accepted": 0.971,
-          "precision": 0.931
+          "precision": 0.927
         },
         {
           "threshold": 0.6,
-          "accepted": 0.966,
-          "precision": 0.931
+          "accepted": 0.965,
+          "precision": 0.929
         },
         {
           "threshold": 0.65,
-          "accepted": 0.953,
-          "precision": 0.933
+          "accepted": 0.951,
+          "precision": 0.93
         },
         {
           "threshold": 0.7,
-          "accepted": 0.899,
+          "accepted": 0.896,
           "precision": 0.933
         },
         {
           "threshold": 0.75,
-          "accepted": 0.81,
-          "precision": 0.952
+          "accepted": 0.809,
+          "precision": 0.951
         },
         {
           "threshold": 0.8,
-          "accepted": 0.662,
-          "precision": 0.958
+          "accepted": 0.661,
+          "precision": 0.96
         },
         {
           "threshold": 0.85,
-          "accepted": 0.445,
-          "precision": 0.975
+          "accepted": 0.441,
+          "precision": 0.977
         },
         {
           "threshold": 0.9,
-          "accepted": 0.229,
-          "precision": 0.973
+          "accepted": 0.226,
+          "precision": 0.972
         },
         {
           "threshold": 0.925,
@@ -146,7 +146,7 @@
           "precision": 1
         },
         {
-          "threshold": 0.97,
+          "threshold": 0.975,
           "accepted": 0,
           "precision": 0
         }
@@ -157,30 +157,30 @@
     "gate": "≥ 98 % of frames good (same criterion as G3.2); 0 index slips",
     "clips": 60,
     "frames": 2340,
-    "goodFrames": 0.9919,
+    "goodFrames": 0.9949,
     "clipsWithSlip": 0,
-    "msPerFrame": 64.9,
+    "msPerFrame": 39.9,
     "worstClips": [
       {
-        "clip": "g33-0",
-        "good": 27,
+        "clip": "g33-52",
+        "good": 33,
         "frames": 39,
         "slipped": false
       },
       {
         "clip": "g33-50",
-        "good": 37,
-        "frames": 39,
-        "slipped": false
-      },
-      {
-        "clip": "g33-54",
-        "good": 37,
+        "good": 36,
         "frames": 39,
         "slipped": false
       },
       {
         "clip": "g33-33",
+        "good": 38,
+        "frames": 39,
+        "slipped": false
+      },
+      {
+        "clip": "g33-37",
         "good": 38,
         "frames": 39,
         "slipped": false
@@ -195,39 +195,39 @@
   },
   "G35": {
     "gate": "≤ 2.0 M image pixel samples per frame in tracking mode",
-    "meanSamples": 294828,
+    "meanSamples": 212740,
     "maxSamples": 294912
   },
   "G34": {
     "gate": "published control points jitter ≤ 0.7 px RMS on static clips",
     "clips": 12,
-    "jitterRmsPx": 0.356,
-    "worstClipRmsPx": 1.025,
-    "medianBiasPx": 0.22
+    "jitterRmsPx": 0.338,
+    "worstClipRmsPx": 0.988,
+    "medianBiasPx": 0.2
   },
   "G43": {
     "gate": "≥ 95 % correct, ≤ 1 % wrong index, ≤ 0.5 % false lock without a guitar (single-frame proxy)",
     "frames": 200,
     "locked": 0.945,
-    "correct": 0.89,
-    "wrongIndex": 0.005,
+    "correct": 0.88,
+    "wrongIndex": 0.01,
     "negatives": 200,
     "falseLock": 0,
-    "msPerAttempt": 1010
+    "msPerAttempt": 1061
   },
   "G33t": {
     "gate": "none yet (recorded): tracking through angle changes at the app frame rate",
     "clips": 24,
     "trackedHz": 7.5,
     "normal": {
-      "goodFrames": 0.921,
-      "wrongWhileLocked": 0.079,
+      "goodFrames": 0.9253,
+      "wrongWhileLocked": 0.0661,
       "indexCorrections": 0,
       "medianFramesToRecover": 0
     },
     "startOneFretOff": {
-      "goodFrames": 0.8003,
-      "wrongWhileLocked": 0.1997,
+      "goodFrames": 0.783,
+      "wrongWhileLocked": 0.217,
       "indexCorrections": 24,
       "medianFramesToRecover": 4
     }
@@ -238,12 +238,16 @@
     "trackedHz": 10,
     "latencyMs": 100,
     "withoutPrediction": {
-      "meanErrorPx": 6.72,
-      "framesFullyRight": 0.542
+      "meanErrorPx": 7.6,
+      "framesFullyRight": 0.545
     },
     "withPrediction": {
-      "meanErrorPx": 3.82,
-      "framesFullyRight": 0.648
+      "meanErrorPx": 5.19,
+      "framesFullyRight": 0.658
+    },
+    "at15HzWithPrediction": {
+      "meanErrorPx": 2.12,
+      "framesFullyRight": 0.82
     }
   }
 }

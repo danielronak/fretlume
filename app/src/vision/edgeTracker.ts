@@ -53,6 +53,8 @@ export interface RefineOptions {
    * letting a partly hidden board re-estimate it each frame makes the grid slide; D-022).
    */
   perspectiveDamping?: { along: number; across: number; shear?: number };
+  /** Stop after the second round once a round moves no control point by more than this (px). */
+  settlePx?: number;
   /** Return the last strip and the measurements made on it (for debugging). */
   debug?: boolean;
 }
@@ -86,6 +88,26 @@ export interface RefineResult {
 export function pyRound(x: number): number {
   const r = Math.round(x);
   return Math.abs(x % 1) === 0.5 && r % 2 !== 0 ? r - 1 : r;
+}
+
+const lumaPlanes = new WeakMap<object, Float32Array>();
+
+/** The frame as one luma channel (cached per frame buffer). */
+function lumaImage(image: Image): Image {
+  let plane = lumaPlanes.get(image.data);
+  if (!plane) {
+    const { data } = image;
+    plane = new Float32Array(image.width * image.height);
+    for (let i = 0, k = 0; i < plane.length; i++, k += 4)
+      plane[i] = 0.299 * data[k]! + 0.587 * data[k + 1]! + 0.114 * data[k + 2]!;
+    lumaPlanes.set(image.data, plane);
+  }
+  return {
+    width: image.width,
+    height: image.height,
+    data: plane as unknown as Uint8Array,
+    channels: 1,
+  };
 }
 
 export class EdgeTracker {
@@ -137,8 +159,11 @@ export class EdgeTracker {
   }
 
   /** Strip ← image through M (strip px → image px), blurred; returns pixel samples taken. */
-  private rectify(image: Image, M: Mat3, mode: 'parity' | 'improved'): number {
+  private rectify(colour: Image, M: Mat3, mode: 'parity' | 'improved'): number {
     const { raw, valid } = this;
+    // Colour frames are read through a luma plane made once per frame (each strip pixel needs four
+    // image pixels, three rounds a frame: converting them every time cost a third of a tracking frame).
+    const image = colour.channels === 4 ? lumaImage(colour) : colour;
     const { width, height, data, channels } = image;
     const [m0, m1, m2, m3, m4, m5, m6, m7, m8] = M as unknown as number[] as [
       number,
@@ -320,7 +345,11 @@ export class EdgeTracker {
    * scale), first per station, then along a robust line through all stations, then narrowly.
    * Returns correspondences board (x, stringY) ↔ strip (column, row).
    */
-  private stringCue(maxFret: number): { src: Pt[]; dst: Pt[]; weights: number[] } {
+  private stringCue(
+    maxFret: number,
+    knownSign: 1 | -1 | null = null,
+    colStep = 1,
+  ): { src: Pt[]; dst: Pt[]; weights: number[]; sign: 1 | -1 } {
     const { strip, valid, ky, model, cols0, spacing } = this;
     const strings = model.strings;
     // Two-sided horizontal ridges: a string is lighter (sign 1) or darker (sign -1) than the board
@@ -349,7 +378,9 @@ export class EdgeTracker {
     }
     const centreRow = this.syh * ky;
     const stations: Station[] = [];
-    for (const sign of [1, -1]) {
+    // Whether strings show lighter or darker than the board is decided on a refinement's first round;
+    // later rounds of the same frame reuse it (half the work).
+    for (const sign of knownSign ? [knownSign] : ([1, -1] as const)) {
       for (let n = 1; n <= maxFret; n++) {
         const a = cols0[n - 1]! + 0.25 * spacing[n - 1]!;
         const b = cols0[n]! - 0.25 * spacing[n - 1]!;
@@ -363,7 +394,7 @@ export class EdgeTracker {
         let validCount = 0;
         for (let r = 2; r < STRIP_H - 2; r++) {
           let m = 0;
-          for (let c = c0; c <= c1; c++) {
+          for (let c = c0; c <= c1; c += colStep) {
             if (valid[r * STRIP_W + c]) validCount++;
             column[m] = ridgeAt(r, c, sign);
             steps[m++] = r >= 6 && r < STRIP_H - 6 ? wideStep(r, c) : 0;
@@ -372,7 +403,7 @@ export class EdgeTracker {
           profile[r] = median(column, m);
           edges[r] = median(steps, m);
         }
-        if (validCount < 0.6 * (c1 - c0 + 1) * (STRIP_H - 4)) continue;
+        if (validCount < (0.6 * (c1 - c0 + 1) * (STRIP_H - 4)) / colStep) continue;
         // Each cue is scaled by its own peak so that neither dominates on contrast alone.
         normalizePeak(profile);
         normalizePeak(edges);
@@ -388,7 +419,7 @@ export class EdgeTracker {
         });
       }
     }
-    if (stations.length < 3) return { src: [], dst: [], weights: [] };
+    if (stations.length < 3) return { src: [], dst: [], weights: [], sign: knownSign ?? 1 };
 
     // The string pattern repeats, so a shift by one string scores almost as well. "Guards" one
     // string-gap outside each outer string should be empty; a shifted fit puts a real string there.
@@ -432,9 +463,9 @@ export class EdgeTracker {
     });
     const total = (sign: number) =>
       fits.filter((f) => f.sign === sign).reduce((a, f) => a + f.score, 0);
-    const sign = total(1) >= total(-1) ? 1 : -1;
+    const sign: 1 | -1 = knownSign ?? (total(1) >= total(-1) ? 1 : -1);
     const mine = fits.filter((f) => f.sign === sign && f.score > 0);
-    if (mine.length < 3) return { src: [], dst: [], weights: [] };
+    if (mine.length < 3) return { src: [], dst: [], weights: [], sign };
 
     // Robust lines t(x) and k(x) through the stations (iteratively reweighted least squares).
     const line = (ys: number[], xs: number[], w0: number[]) => {
@@ -567,6 +598,7 @@ export class EdgeTracker {
       src: [...src, ...edgeSrc],
       dst: [...dst, ...edgeDst],
       weights: [...weights, ...edgeWeights],
+      sign,
     };
   }
 
@@ -579,6 +611,7 @@ export class EdgeTracker {
     const { ky, xs, spacing, cols0, model } = this;
     let H = H0;
     let inliers = 0;
+    let stringSign: 1 | -1 | null = null;
     let score = 0;
     let samples = 0;
     let debugInfo: RefineResult['debug'];
@@ -733,7 +766,14 @@ export class EdgeTracker {
       let stringPointsStrip: Pt[] = [];
       let stringBoard: Pt[] = [];
       if (mode === 'improved' && (options.strings ?? true)) {
-        const cue = this.stringCue(Math.min(15, this.frets));
+        // Tracking reads every second column between frets (the profile is a median across them;
+        // lag work 2026-11-19: half the cost, no loss on the benches); a lock reads them all.
+        const cue = this.stringCue(
+          Math.min(15, this.frets),
+          it === 0 ? null : stringSign,
+          wide ? 1 : 2,
+        );
+        stringSign = cue.sign;
         stringPointsStrip = cue.dst;
         stringBoard = cue.src;
         src.push(...cue.src);
@@ -834,13 +874,16 @@ export class EdgeTracker {
           });
           if (w.filter((v) => v > 0).length < 12) return stop();
         }
+      let moved = Infinity;
       if (mode === 'improved') {
         // No round moves a control point by more than the nut's width (twice that when locking).
         const before = controlPointsPx(H, model);
         const after = controlPointsPx(Hn, model);
         const limit = (it === 0 ? 2 : 1) * nutPx(H);
-        if (after.some((p, i) => !(Math.hypot(p.x - before[i]!.x, p.y - before[i]!.y) < limit)))
-          return stop();
+        moved = Math.max(
+          ...after.map((p, i) => Math.hypot(p.x - before[i]!.x, p.y - before[i]!.y)),
+        );
+        if (!(moved < limit)) return stop();
       }
       H = Hn;
       inliers = w.filter((v) => v > 0).length;
@@ -854,6 +897,13 @@ export class EdgeTracker {
           strings: stringPointsStrip,
           stringBoard,
         };
+      // Settled: a round after the first that moved no control point by more than `settlePx` ends the
+      // refinement early (lag work, 2026-11-19: on a steady guitar the third round changes nothing).
+      const settle = options.settlePx ?? 0;
+      if (it >= 1 && settle > 0 && moved < settle) {
+        it++;
+        break;
+      }
     }
     return { H, inliers, score, samples, ...(debugInfo ? { debug: debugInfo } : {}) };
   }

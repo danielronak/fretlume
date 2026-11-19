@@ -4,7 +4,7 @@
 
 ## Now
 - **Current phase:** 5 — next to start (Phase 4 done 2026-11-17 with auto-lock as an opt-in beta)
-- **Next task:** owner field test of 0.3.7 (covered frets, D-027); then lag (processing speed), then Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
+- **Next task:** owner field test of 0.3.8 (lag, D-028), then Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
 - **Last release:** 0.3.0 (Phase 4), 2026-11-17 — live at https://danielronak.github.io/fretlume/ (tags v0.1.0–v0.3.0)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
@@ -14,7 +14,7 @@
 - **Golden set downloads (optional).** Wikimedia hosts are allowed on the environment, but this session's
   automatic permission check refused the download. To let a future session collect real guitar photos for
   gate G4.4, allow it when asked (or add a permission rule for fetching from upload.wikimedia.org).
-- **🎸 Field test of 0.3.7 (D-027: covered frets; D-026: smooth overlay, dim rooms):** Stage with "Lock automatically (beta)" on; play, then
+- **🎸 Field test of 0.3.8 (D-028: lag; D-027: covered frets):** Stage with "Lock automatically (beta)" on; play, then
   turn the guitar, tilt it, and move the camera. Questions: does the grid follow a slow tilt? After a fast
   move, does it put itself right or search again within a second or two? Export diagnostics with camera video
   straight after anything that looks wrong.
@@ -50,8 +50,8 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 0 Bootstrap | **done** 2026-11-16 | v0.0 | verify green locally and in CI (12 unit, 8 browser tests); first Pages deploy waits for the owner to enable Pages |
 | 1 Theory engine | **done** 2026-11-16 | — | 218 tests; core line coverage 99.2 %; fingering agreement 91.3 %; `docs/benchmarks/catalogue.json` |
 | 2 Shell, Library, Tuner | **done** 2026-11-17 | v0.1 (0.1.0) | G6.1 18/18 within 1 cent; first load 1.41 MB; 283 unit + 29 smoke e2e |
-| 3 Camera + manual lock | **done** 2026-11-17; since D-022 (2026-11-18) only G3.2 σ5 fails | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 94.5 % σ5 / 91.5 % σ8 with 4 taps (fail σ5); G3.3 99.2 % frames, 0 slips (pass); G3.3t tilts 92.1 % (recorded, D-023); G3.4 0.36 px (pass); G3.5 pass; e2e 60/60 |
-| 4 Synthetic + auto-lock | **done** 2026-11-17, G4.3 failing, G4.4 not measured | v0.3 (0.3.0) 🎸 | G4.1 3.3 px, G4.2 3.9 px pass; G4.3 89.0 % / 0.5 % wrong index / 0 % false (fail on correct %, D-026); auto-lock opt-in beta (D-021) |
+| 3 Camera + manual lock | **done** 2026-11-17; since D-022 (2026-11-18) only G3.2 σ5 fails | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 94.5 % σ5 / 91.5 % σ8 with 4 taps (fail σ5); G3.3 99.5 % frames, 0 slips (pass); G3.3t tilts 92.5 % (recorded); G3.4 0.34 px (pass); OverlayLag 2.1 px at 15 Hz (D-028); G3.5 pass; e2e 60/60 |
+| 4 Synthetic + auto-lock | **done** 2026-11-17, G4.3 failing, G4.4 not measured | v0.3 (0.3.0) 🎸 | G4.1 3.3 px, G4.2 3.9 px pass; G4.3 88.0 % / 1.0 % wrong index / 0 % false (fail on correct %, D-028); auto-lock opt-in beta (D-021) |
 | 5 Runs, playground, tabs (parity) | not started | v0.4 | |
 | 6 Listening | not started | v0.5 🎸 | |
 | 7 Hand vision | not started | v0.6 🎸 | |
@@ -140,6 +140,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 2026-11-19 | same laptop, 0.3.5, evening light | "Works quite well"; asks for refinements to speed and lighting. Diagnostics with video: ~4.5 min of poses, long locked runs (up to 55 s), 2 losses in the whole session, confidence ≈ 0.71, ~10 tracked frames/s (65 ms per frame). Video (10 s): during a move the grid trails by about a fret for a few frames; one NeckNet snap-back landed a fret towards the headstock and was corrected within ≈ 0.6 s. No lighting change in the clip. | Next: speed (grid lag while moving; snap-back index) and lighting (owner to say which situation). |
 | 2026-11-19 | same laptop, 0.3.5 → owner reply | "Dim room mostly but that's not too bad; go ahead with speed fixes, making it seamless and smooth is most important." | 0.3.6 (D-026): overlay predicted to the frame on screen (OverlayLag 6.7 → 3.8 px); dim-room auto-lock no longer shifted by weak index verdicts (dim clip 5/15 → 11/14; G4.3 wrong index 2 → 0.5 %). |
 | 2026-11-19 | same laptop, 0.3.6 | "Slightly better", "quite good"; covering the frets makes the overlay go away for a bit; some lag. Diagnostics: 4 losses, 3 automatic re-locks unsure of the index (hand over the inlays) → confirm step, overlay gone until confirmed. Video segment clean. Worker 66 ms, tracked every 96 ms. | 0.3.7 (D-027): after a short loss an uncertain index is aligned with the previous grid instead of asking. Lag next: processing speed. |
+| 2026-11-19 | same laptop, 0.3.7 → owner reply | "Work on the lag first." | 0.3.8 (D-028): 42 % less work per tracked frame (≈ 15 instead of 10 updates a second on the owner's laptop); on-screen error while moving 3.8 → 2.1 px at those rates. |
 
 ## Decisions log pointer
 See `docs/DECISIONS.md` (created in Phase 0). Architecture decisions A1–A10 are in `MASTER_PLAN.md` §2.

@@ -51,6 +51,9 @@ export interface TrackingOptions {
   filter?: OneEuroOptions;
 }
 
+/** A tracking round that moves no control point by more than this (px) ends the refinement. */
+const SETTLE_PX = 1;
+
 /**
  * Index-check margin (score of the best shift over the runner-up) needed to move the grid. With the
  * hand over the inlays only the nut cue is left, worth ≈ 0.8 on the owner's guitar; at 0.6 no
@@ -196,6 +199,8 @@ export class TrackingSession {
       const startH = fromControlPoints(start, model);
       const out = this.tracker.refine(image, startH, {
         iterations: recovering ? 3 : this.options.iterations,
+        // A steady guitar settles in two rounds; the third is skipped then (lag work, 2026-11-19).
+        settlePx: SETTLE_PX,
         wide: recovering,
         polarity: this.polarity,
       });

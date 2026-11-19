@@ -365,3 +365,24 @@ guitar has really moved and the usual rules apply (confirm step). Used by the re
 fret shift).
 **Measured.** Unit tests (one or two frets off either way → aligned; a moved neck → refused). Fast-move
 clips unchanged (270/348 good, 0 lost). Not yet measured on a real occlusion: next field test.
+
+## D-028 · 2026-11-19 · Lag: 42 % less work per tracked frame; watchdog once a second
+**Context.** Owner on 0.3.7: a bit of lag; asked to work on it before new features. Their laptop spent 66 ms
+per tracked frame (640×360), so the grid updated about every 100 ms (every 3rd camera frame). Profile on
+the owner's frames: rectifying the strip 27.8 ms and the string cue 25.5 ms of 73 ms (three rounds each).
+**Decision.** (1) Colour frames are converted to a luma plane once per frame (the strip read four RGBA
+pixels per sample in each of three rounds). (2) Whether strings show lighter or darker is decided in a
+refinement's first round and reused in later rounds. (3) While tracking, the string cue reads every second
+column between frets (its profile is a median across them). (4) While tracking, a round that moves no
+control point by more than 1 px ends the refinement (a steady guitar settles in two rounds). Locks keep all
+columns and rounds. (5) The NeckNet watchdog checks once a second with two strikes (was twice a second,
+three strikes): each check delays one tracked frame in the same worker.
+**Measured.** Same process, interleaved, owner's frames: 91 → 53 ms per frame (−42 %); image samples per
+frame 294,912 → 212,740 (G3.5). G3.3 99.5 % good, 0 slips (was 99.2 %); G3.3t 92.5 % (was 92.1 %); G3.4 jitter
+0.34 px; G3.2 4 taps 94.0 / 91.0 %, 6 taps 92.0 / 93.0 % (≈ unchanged); G4.3 88.0 % correct, 1.0 % wrong
+index, 0 false locks. On-screen error while moving, each tracker at its rate on the owner's laptop (0.3.7 at
+10 Hz / 100 ms; now ≈ 15 Hz / 65 ms): mean 3.82 → 2.12 px, frames within 5 px 76 → 90 %. At a fixed 10 Hz the
+new tracker's mean is higher (5.19 px) because of one clip where, after a fast move stopped, the
+constant-velocity start overshot and the grid slid a fret per frame; at 15 Hz that clip tracks
+(6.7 px mean). Starting the search at a fraction of the predicted motion was tried and made things worse.
+In the app the watchdog catches such a slide (and the re-acquire puts the grid back).

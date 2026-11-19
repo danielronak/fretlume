@@ -39,8 +39,9 @@ export class VisionCore {
   private net: Network | null = null;
   private auto: AutoLocker | null = null;
   private autoInstrument: InstrumentId | null = null;
-  // Twice a second: a wrong grid shows for at most about a second before the search takes over.
-  private watchdog = new TrackingWatchdog({ everyMs: 500 });
+  // Once a second, two strikes: a wrong grid shows for about two seconds at most. NeckNet runs in this
+  // worker, so each check delays one tracked frame; checking twice a second made a visible stutter.
+  private watchdog = new TrackingWatchdog({ everyMs: 1000, strikes: 2 });
   /** Last pose in processing px, for the watchdog. */
   private lastPose: Pose | null = null;
   /** The watchdog ended tracking; the next track() reports the loss. */

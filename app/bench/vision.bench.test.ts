@@ -379,7 +379,7 @@ describe('G3.3–G3.5: tracking after a lock', () => {
     ];
     const dirs = await ensureClips(specs);
     const FRAME = 1000 / 30;
-    const run = (predict: boolean) => {
+    const run = (predict: boolean, stride = 3, latencyMs = 100) => {
       let n = 0;
       let sumPx = 0;
       let good = 0;
@@ -389,10 +389,10 @@ describe('G3.3–G3.5: tracking after a lock', () => {
         const s = new TrackingSession(new EdgeTracker(model));
         s.lock(labels[0]!.H!, labels[0]!.polarity ?? 'bright', 0, readFrame(dir, labels[0]!));
         const results: { ready: number; t: number; pts: Pt[]; moving: boolean }[] = [];
-        for (let k = 3; k < labels.length; k += 3) {
+        for (let k = stride; k < labels.length; k += stride) {
           const pose = s.update(readFrame(dir, labels[k]!), k * FRAME)!;
           results.push({
-            ready: k * FRAME + 100,
+            ready: k * FRAME + latencyMs,
             t: k * FRAME,
             pts: pose.controlPoints,
             moving: pose.state === 'locked' && pose.measured,
@@ -400,7 +400,7 @@ describe('G3.3–G3.5: tracking after a lock', () => {
         }
         const pred = new PosePredictor(STAGE_PREDICTOR);
         let ri = 0;
-        for (let j = 3; j < labels.length; j++) {
+        for (let j = stride; j < labels.length; j++) {
           const tShown = j * FRAME;
           while (ri < results.length && results[ri]!.ready <= tShown + 30) {
             const r = results[ri]!;
@@ -428,6 +428,9 @@ describe('G3.3–G3.5: tracking after a lock', () => {
       latencyMs: 100,
       withoutPrediction: run(false),
       withPrediction: run(true),
+      // The owner's laptop: 66 ms per frame up to 0.3.7 (tracked every ~100 ms), ≈ 39 ms since the
+      // lag work (D-028), so every 2nd camera frame with ≈ 65 ms from capture to drawing.
+      at15HzWithPrediction: run(true, 2, 65),
     };
     save();
   }, 3_600_000);
