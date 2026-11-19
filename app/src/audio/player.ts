@@ -10,7 +10,8 @@ import { audioEngine } from './engine';
 const cache = new Map<string, AudioBuffer>();
 let output: GainNode | null = null;
 
-function master(context: AudioContext): GainNode {
+/** The shared output bus (tab playback uses it too). */
+export function master(context: AudioContext): GainNode {
   if (!output || output.context !== context) {
     output = context.createGain();
     output.gain.value = 0.8;
@@ -19,7 +20,8 @@ function master(context: AudioContext): GainNode {
   return output;
 }
 
-function bufferFor(context: AudioContext, midi: number, a4Hz: number): AudioBuffer {
+/** A plucked-string tone for `midi`, rendered once and cached. */
+export function bufferFor(context: AudioContext, midi: number, a4Hz: number): AudioBuffer {
   const key = `${context.sampleRate}:${a4Hz}:${midi}`;
   let buffer = cache.get(key);
   if (!buffer) {
