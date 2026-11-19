@@ -58,6 +58,7 @@ self.onmessage = (event: MessageEvent<VisionRequest>) => {
           message.tMs,
           message.scale,
           message.frame ? pixels(message.frame) : undefined,
+          message.reacquire ?? false,
         );
         break;
       case 'frame': {

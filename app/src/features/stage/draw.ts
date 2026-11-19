@@ -40,37 +40,58 @@ export function clearColorCache(): void {
   cssColorCache.clear();
 }
 
-/** Dots never shrink below this mean radius on screen (CSS px), so a small neck stays readable. */
+/**
+ * Dots never shrink below this mean radius on screen (CSS px) at dot size 100 %, so a small neck stays
+ * readable. The floor follows the dot size setting (field test 2026-11-19: with the neck small in the
+ * picture every dot sat on a fixed floor and the setting changed nothing).
+ */
 export const MIN_DOT_RADIUS = 7;
 
 /** On-screen semi-axes, enlarged together (keeping the board's foreshortening) when tiny. */
-export function screenAxes(view: View, item: Pick<OverlayItem, 'rx' | 'ry'>): [number, number] {
+export function screenAxes(
+  view: View,
+  item: Pick<OverlayItem, 'rx' | 'ry'>,
+  minRadius = MIN_DOT_RADIUS,
+): [number, number] {
   const rx = item.rx * view.scale;
   const ry = item.ry * view.scale;
   const mean = Math.sqrt(Math.max(1e-6, rx * ry));
-  const k = mean < MIN_DOT_RADIUS ? MIN_DOT_RADIUS / mean : 1;
+  const k = mean < minRadius ? minRadius / mean : 1;
   return [Math.max(0.5, rx * k), Math.max(0.5, ry * k)];
 }
 
-function ellipsePath(ctx: CanvasRenderingContext2D, view: View, item: OverlayItem): void {
+function ellipsePath(
+  ctx: CanvasRenderingContext2D,
+  view: View,
+  item: OverlayItem,
+  minRadius: number,
+): void {
   const c = toCanvas(view, { x: item.cx, y: item.cy });
   const angle = view.mirror ? Math.PI - item.angle : item.angle;
-  const [rx, ry] = screenAxes(view, item);
+  const [rx, ry] = screenAxes(view, item, minRadius);
   ctx.beginPath();
   ctx.ellipse(c.x, c.y, rx, ry, angle, 0, 2 * Math.PI);
 }
 
-/** Dots, open-string rings and mute crosses; `fade` multiplies every opacity (0..1). */
+/** Dots smaller than this radius (px) show no letter: it would not fit. Default-size dots (7 px) do. */
+const MIN_LABEL_DOT_PX = 6;
+
+/**
+ * Dots, open-string rings and mute crosses; `fade` multiplies every opacity (0..1); `dotScale` is the
+ * player's dot size setting (it also scales the smallest size a dot is drawn at).
+ */
 export function drawOverlay(
   ctx: CanvasRenderingContext2D,
   view: View,
   items: OverlayItem[],
   fade: number,
+  dotScale = 1,
 ): void {
+  const minRadius = MIN_DOT_RADIUS * dotScale;
   for (const item of items) {
     const c = toCanvas(view, { x: item.cx, y: item.cy });
     if (item.kind === 'muted') {
-      const r = screenAxes(view, item)[0];
+      const r = screenAxes(view, item, minRadius)[0];
       ctx.globalAlpha = 0.9 * fade;
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = Math.max(1.5, r * 0.35);
@@ -83,9 +104,9 @@ export function drawOverlay(
       continue;
     }
     ctx.globalAlpha = item.opacity * fade;
-    const [rx, ry] = screenAxes(view, item);
+    const [rx, ry] = screenAxes(view, item, minRadius);
     const [first, second] = item.colors.map(resolveColor);
-    ellipsePath(ctx, view, item);
+    ellipsePath(ctx, view, item, minRadius);
     if (item.kind === 'open') {
       ctx.lineWidth = Math.max(2, ry * 0.35);
       ctx.strokeStyle = first!;
@@ -96,7 +117,7 @@ export function drawOverlay(
       if (second) {
         // Split dot: the second colour fills one half.
         ctx.save();
-        ellipsePath(ctx, view, item);
+        ellipsePath(ctx, view, item, minRadius);
         ctx.clip();
         ctx.fillStyle = second;
         ctx.fillRect(c.x, c.y - rx, rx, 2 * rx);
@@ -104,13 +125,14 @@ export function drawOverlay(
       }
     }
     if (item.root) {
-      ellipsePath(ctx, view, item);
+      ellipsePath(ctx, view, item, minRadius);
       ctx.lineWidth = Math.max(1.5, ry * 0.22);
       ctx.strokeStyle = '#ffffff';
       ctx.stroke();
     }
-    if (item.label && item.kind === 'dot') {
-      const size = Math.max(9, ry * 1.1);
+    // The letter follows the dot; on a dot too small to hold a readable letter it is left out.
+    if (item.label && item.kind === 'dot' && ry >= MIN_LABEL_DOT_PX) {
+      const size = ry * 1.25;
       ctx.font = `600 ${size.toFixed(1)}px system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';

@@ -94,6 +94,14 @@ export class AutoLocker {
     this.status = { ...this.status, state: 'searching', hint: 'no-neck', H: null, confidence: 0 };
   }
 
+  /**
+   * One detection and fit on this frame, without the verification over several frames: used to put
+   * the grid back while tracking is recovering (the tracking session then checks it frame by frame).
+   */
+  find(image: Image): AutoLockStatus {
+    return this.search(image);
+  }
+
   /** One camera frame. Detection runs only every `detectEverySec` while searching. */
   update(image: Image, tMs: number): AutoLockStatus {
     if (this.status.state === 'verifying') return (this.status = this.verify(image));

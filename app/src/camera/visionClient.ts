@@ -116,9 +116,23 @@ export class VisionClient {
   }
 
   /** Start tracking; `frame` is the lock frame at the current tier's size (see TrackingSession.lock). */
-  confirm(H: Mat3, polarity: 'bright' | 'dark', tMs: number, frame?: ImageBitmap): void {
+  confirm(
+    H: Mat3,
+    polarity: 'bright' | 'dark',
+    tMs: number,
+    frame?: ImageBitmap,
+    reacquire = false,
+  ): void {
     this.post(
-      { type: 'confirm', H, polarity, tMs, scale: this.tiers.scale, ...(frame ? { frame } : {}) },
+      {
+        type: 'confirm',
+        H,
+        polarity,
+        tMs,
+        scale: this.tiers.scale,
+        reacquire,
+        ...(frame ? { frame } : {}),
+      },
       frame ? [frame] : [],
     );
   }

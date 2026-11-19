@@ -4,7 +4,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useSettings, type GuitarProfileId } from '@/state/settings';
+import { DOT_SCALE_MAX, DOT_SCALE_MIN, useSettings, type GuitarProfileId } from '@/state/settings';
 import { camera, type CameraStatus } from '@/camera/camera';
 import { debugEnabled, VisionClient } from '@/camera/visionClient';
 import { INSTRUMENTS, type InstrumentModel } from '@core/guitar/instrument';
@@ -274,10 +274,9 @@ export function StageScreen() {
     // so a lock whose fret index is certain resumes straight away.
     if (resumeRef.current && a.indexSure) {
       diagnostics.event(performance.now(), `auto-resume ${a.confidence.toFixed(2)}`);
-      const c = client();
-      c.stop();
-      c.confirm(a.H, a.polarity, performance.now());
-      c.start(video);
+      // Started by the effect below, after the framing effect's clean-up has stopped the frame pump
+      // (starting it here was undone by that clean-up: field test 2026-11-19, tracking never resumed).
+      pendingResumeRef.current = { H: a.H, polarity: a.polarity };
       setPhase('tracking');
       return;
     }
@@ -315,6 +314,28 @@ export function StageScreen() {
     setPhase('confirm');
   };
   const onAutoLocked = (a: AutoMessage) => onAutoLockedRef.current(a);
+
+  // An automatic re-lock after a loss: start tracking once the tracking phase is in place.
+  const pendingResumeRef = useRef<{ H: Mat3; polarity: 'bright' | 'dark' } | null>(null);
+  useEffect(() => {
+    const pending = pendingResumeRef.current;
+    const video = videoRef.current;
+    if (phase !== 'tracking' || !pending || !video) return;
+    pendingResumeRef.current = null;
+    const c = client();
+    c.confirm(pending.H, pending.polarity, performance.now(), undefined, true);
+    c.start(video);
+  }, [phase, client]);
+
+  // Debug builds only (localStorage fretlume.debug): let e2e tests simulate losing the neck.
+  useEffect(() => {
+    if (!debugEnabled()) return;
+    const w = window as unknown as { __fretlumeForceLost?: () => void };
+    w.__fretlumeForceLost = () => setStatus({ state: 'searching', confidence: 0 });
+    return () => {
+      delete w.__fretlumeForceLost;
+    };
+  }, []);
 
   // Tracking lost the neck for good: with automatic lock on, go back to looking for it.
   useEffect(() => {
@@ -406,7 +427,7 @@ export function StageScreen() {
       resizeWidth: Math.round(frozen.bitmap.width * scale),
       resizeHeight: Math.round(frozen.bitmap.height * scale),
     });
-    c.confirm(confirmedH, lock.polarity, frozen.tMs, frame);
+    c.confirm(confirmedH, lock.polarity, frozen.tMs, frame, shift === 0);
     diagnostics.confirm(shift);
     // Re-locks after a loss may skip the confirm step only if this one needed no fret shift.
     resumeRef.current = shift === 0;
@@ -520,7 +541,7 @@ export function StageScreen() {
             flipStrings: settings.flipStrings,
           });
           const fade = pose.state === 'locked' ? 1 : pose.state === 'recovering' ? 0.4 : 0.15;
-          drawOverlay(ctx, view, items, fade);
+          drawOverlay(ctx, view, items, fade, settings.dotScale);
         }
       }
       const now = performance.now();
@@ -899,8 +920,8 @@ export function StageScreen() {
             <Slider
               label={t('stageDotSize')}
               value={settings.dotScale}
-              min={0.6}
-              max={1.6}
+              min={DOT_SCALE_MIN}
+              max={DOT_SCALE_MAX}
               step={0.1}
               onChange={(v) => update({ dotScale: v })}
               format={(v) => `${Math.round(v * 100)} %`}

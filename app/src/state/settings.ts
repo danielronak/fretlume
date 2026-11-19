@@ -9,6 +9,10 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { STORAGE_PREFIX } from '@/config';
 import type { ColorMode, LabelMode } from '@overlay/display';
 
+/** Dot size range on the Stage (a fraction of the default, which is set by the string spacing). */
+export const DOT_SCALE_MIN = 0.4;
+export const DOT_SCALE_MAX = 2;
+
 export type Theme = 'dark' | 'light';
 export type Handedness = 'right' | 'left';
 export type GuitarProfileId = 'steel-acoustic' | 'electric' | 'classical';
@@ -117,7 +121,9 @@ export function sanitizeSettings(input: unknown): Settings {
   out.a4Hz = Math.min(450, Math.max(430, out.a4Hz));
   out.metronomeBpm = Math.min(260, Math.max(30, Math.round(out.metronomeBpm)));
   if (![1, 2, 3, 4].includes(out.metronomeSubdivision)) out.metronomeSubdivision = 1;
-  out.dotScale = Number.isFinite(out.dotScale) ? Math.min(1.6, Math.max(0.6, out.dotScale)) : 1;
+  out.dotScale = Number.isFinite(out.dotScale)
+    ? Math.min(DOT_SCALE_MAX, Math.max(DOT_SCALE_MIN, out.dotScale))
+    : 1;
   const taps = out.lockTaps;
   out.lockTaps =
     Array.isArray(taps) &&

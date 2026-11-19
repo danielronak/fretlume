@@ -4,7 +4,7 @@
 
 ## Now
 - **Current phase:** 5 — next to start (Phase 4 done 2026-11-17 with auto-lock as an opt-in beta)
-- **Next task:** owner field test of 0.3.4 (watchdog fix, D-024), then Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
+- **Next task:** owner field test of 0.3.5 (auto re-lock, quick moves, dot size; D-025), then Phase 5 (`docs/phases/phase-05-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
 - **Last release:** 0.3.0 (Phase 4), 2026-11-17 — live at https://danielronak.github.io/fretlume/ (tags v0.1.0–v0.3.0)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
@@ -14,7 +14,7 @@
 - **Golden set downloads (optional).** Wikimedia hosts are allowed on the environment, but this session's
   automatic permission check refused the download. To let a future session collect real guitar photos for
   gate G4.4, allow it when asked (or add a permission rule for fetching from upload.wikimedia.org).
-- **🎸 Field test of 0.3.4 (watchdog fix D-024; angle changes D-023):** Stage with "Lock automatically (beta)" on; play, then
+- **🎸 Field test of 0.3.5 (D-025: auto re-lock, quick moves, dot size):** Stage with "Lock automatically (beta)" on; play, then
   turn the guitar, tilt it, and move the camera. Questions: does the grid follow a slow tilt? After a fast
   move, does it put itself right or search again within a second or two? Export diagnostics with camera video
   straight after anything that looks wrong.
@@ -136,6 +136,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 2026-11-18 | same laptop, 0.3.1 | 10 s of 640-px video (100 frames), recorded after tracking was lost. Replayed through the app's code: NeckNet corners usable on 13/16 sampled frames; the fret fit slanted the grid because misread faint strings tilted the frets through the shared perspective; on a still guitar tracked corners jumped 10–40 px per frame and a bad fit (confidence 0.3–0.4) was accepted, lost by 2.2 s. Auto-lock did not resume after a loss (bug). | Fixed in 0.3.2 (D-022): decoupled fit, tracking damping + plausibility guard, candidate ranking, auto-lock resumes after a loss. Replay now: steady 1–7 px per frame for all 42 frames with the guitar in view. Synthetic G3.3/G3.4 now pass. Frames not committed (privacy). |
 | 2026-11-18 | same laptop, 0.3.2 | "Definitely better than last time", but turning or tilting the guitar or the camera messed up tracking, and it did not find the neck again by itself at the new angle. No diagnostics file. Replay of the earlier recording: during a fast lift the grid slid 1–2 frets onto the headstock while staying "locked". | 0.3.3 (D-023): tilt clips + bench G3.3t, per-frame shape guard, fret-index correction while tracking, NeckNet watchdog that hands back to auto-lock. |
 | 2026-11-19 | same laptop, 0.3.3 | "It almost doesn't work at all now." Diagnostics without video: tracking ended by the new watchdog right after good frames (confidence 0.77); several auto-resumes and manual re-locks. Replay of the 0.3.1 frames through `VisionCore` at 640×360: NeckNet put one or two corners on something else on 11/43 frames, which the watchdog took for a wrong grid. | 0.3.4 (D-024): watchdog needs 3 of 4 corners off on 3 checks in a row; replay 43/43 agree. Asked for the next file with camera video. |
+| 2026-11-19 | same laptop, 0.3.4 | Works well with angles; quick moves lose tracking and the re-lock never comes right; dot size can't be changed. Diagnostics (no video): every automatic re-lock after a loss was followed by no tracking at all until a manual re-lock (Stage bug); dot size stuck at the 7 px on-screen minimum. | 0.3.5 (D-025): resume bug fixed with an e2e test; NeckNet re-acquires while recovering; dot size 40–200 % with the minimum scaled. |
 
 ## Decisions log pointer
 See `docs/DECISIONS.md` (created in Phase 0). Architecture decisions A1–A10 are in `MASTER_PLAN.md` §2.

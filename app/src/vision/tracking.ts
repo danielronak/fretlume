@@ -140,6 +140,11 @@ export class TrackingSession {
     this.published = this.publish(points, 1, tMs, true);
   }
 
+  /** The pose published last (null before a lock). */
+  get pose(): Pose | null {
+    return this.published;
+  }
+
   get wirePolarity(): 'bright' | 'dark' {
     return this.polarity;
   }

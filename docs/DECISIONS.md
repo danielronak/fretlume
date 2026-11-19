@@ -308,3 +308,22 @@ fixed it (logged, margin 0.91). Not in `verify`; recorded, not loosened.
 **Lesson.** D-023 was validated on synthetic clips, where NeckNet's corners are clean, and on the real
 recording only with `TrackingSession`, not with the watchdog. Real-frame replays now go through
 `VisionCore` (worker logic) at the owner's processing size.
+
+## D-025 · 2026-11-19 · Auto re-lock really resumes; NeckNet re-acquires while recovering; dot size works
+**Context.** Owner on 0.3.4: works well with angles, but quick moves lose tracking, "retracking never comes
+right", and the dot size cannot be changed. Diagnostics (1515 poses, no video): after each loss the
+automatic lock found the neck ("auto-resume"), but no pose was recorded until the owner re-locked by hand,
+up to 50 s later. Cause: the resume path started the frame pump and then switched to the tracking phase;
+the framing effect's clean-up ran after it and stopped the pump (and the worker's session). The dot size:
+dots have a minimum on-screen radius (7 px) so a small neck stays readable; with the neck small in the
+owner's picture every dot sat on that floor, so the setting (60–160 %) changed nothing visible.
+**Decision.** (1) The resume is started by an effect after the phase change; e2e test "after losing the
+neck" (debug hook forces a loss) fails on the old code (frame stamp frozen) and passes now. (2) While
+tracking is RECOVERING and the player's grid needed no fret shift, NeckNet detection + snap + index check
+run up to 4×/s and re-lock at once when the index is certain; a watchdog disagreement triggers the same.
+With NeckNet loaded, RECOVERING turns into SEARCHING after 0.7 s instead of 1.5 s. (3) The dot size range
+is 40–200 % and the minimum on-screen size scales with it; letters follow the dot and are left out on dots
+under 6 px radius.
+**Measured.** Fast moves (tilt clips, every 12th frame ≈ 0.4 s of motion per tracked frame, 12 clips):
+lost 3 → 0, good frames 228/321 → 270/348; the owner's recording: no spurious re-acquire, tracking
+unchanged. Remaining: on such fast moves the grid can sit wrong for a while before a check catches it.

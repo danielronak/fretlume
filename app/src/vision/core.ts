@@ -45,6 +45,10 @@ export class VisionCore {
   private lastPose: Pose | null = null;
   /** The watchdog ended tracking; the next track() reports the loss. */
   private watchLost = false;
+  /** NeckNet may put the grid back while tracking recovers (see track). */
+  private reacquire = false;
+  private lastReacquireMs = -Infinity;
+  private finder: AutoLocker | null = null;
 
   get model(): InstrumentModel {
     return INSTRUMENTS[this.instrument];
@@ -63,6 +67,7 @@ export class VisionCore {
     if (id === this.instrument) return;
     this.instrument = id;
     this.session = null;
+    this.finder = null;
   }
 
   /** Snap a lock from taps (video px) on one frame scaled by `scale`. */
@@ -86,9 +91,14 @@ export class VisionCore {
     tMs: number,
     scale: number,
     image?: Image,
+    reacquire = false,
   ): void {
     this.scale = scale;
-    this.session = new TrackingSession(this.tracker());
+    this.reacquire = reacquire;
+    this.lastReacquireMs = -Infinity;
+    // With NeckNet to fall back on, a lost neck is handed over sooner (field test 2026-11-19: quick
+    // moves lost the neck, and the wide search from the old pose rarely found it).
+    this.session = new TrackingSession(this.tracker(), this.net ? { searchAfterMs: 700 } : {});
     this.session.lock(multiply(scaling(scale), Hvideo), polarity, tMs, image);
     this.watchdog.reset(tMs);
     this.lastPose = null;
@@ -110,6 +120,7 @@ export class VisionCore {
   setNetwork(net: Network | null): void {
     this.net = net;
     this.auto = null;
+    this.finder = null;
   }
 
   /**
@@ -152,12 +163,38 @@ export class VisionCore {
     if (!this.net || !this.session || !pose || pose.state !== 'locked') return;
     if (!this.watchdog.due(tMs)) return;
     const verdict = compare(detectNeck(this.net, image), pose.controlPoints);
+    // NeckNet sees the neck elsewhere: try to put the grid there now rather than after three checks.
+    if (verdict === 'disagree') {
+      this.lastReacquireMs = -Infinity;
+      if (this.reacquireOn(image, tMs)) return;
+    }
     if (this.watchdog.record(verdict, tMs)) {
       this.session = null;
       this.watchLost = true;
       this.auto?.reset();
     }
   }
+
+  /**
+   * While tracking recovers (frames have stopped fitting, usually after a quick move), ask NeckNet
+   * where the neck is now and lock there straight away when the fit and its fret index are sure. Only
+   * when the player's confirmed grid needed no fret shift, at most four times a second.
+   */
+  private reacquireOn(image: Image, tMs: number): Pose | null {
+    const net = this.net;
+    if (!net || !this.reacquire || !this.session || tMs - this.lastReacquireMs < 250) return null;
+    this.lastReacquireMs = tMs;
+    this.finder ??= new AutoLocker(this.tracker(), (img) => detectNeck(net, img));
+    const found = this.finder.find(image);
+    if (found.state !== 'verifying' || !found.H || !found.indexSure) return null;
+    this.session.lock(found.H, found.polarity, tMs, image);
+    this.watchdog.reset(tMs);
+    this.reacquired++;
+    return this.session.pose;
+  }
+
+  /** Times NeckNet put the grid back while recovering (diagnostics, benches). */
+  reacquired = 0;
 
   /** Track one frame; returns the pose in video px, or null when not tracking. */
   track(image: Image, tMs: number, scale: number): (Pose & { samples: number }) | null {
@@ -184,8 +221,9 @@ export class VisionCore {
       this.session.rescale(scale / this.scale);
       this.scale = scale;
     }
-    const pose = this.session.update(image, tMs);
+    let pose = this.session.update(image, tMs);
     if (!pose) return null;
+    if (pose.state === 'recovering') pose = this.reacquireOn(image, tMs) ?? pose;
     this.lastPose = pose;
     const back = scaling(1 / scale);
     return {

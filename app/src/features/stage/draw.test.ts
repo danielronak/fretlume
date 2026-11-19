@@ -36,4 +36,10 @@ describe('screenAxes', () => {
     expect(Math.sqrt(rx * ry)).toBeCloseTo(MIN_DOT_RADIUS, 6);
     expect(rx / ry).toBeCloseTo(2, 6);
   });
+  it('scales the smallest size with the dot size setting (field test 2026-11-19)', () => {
+    const view = { mirror: false, scale: 1, videoWidth: 1280 };
+    const small = screenAxes(view, { rx: 2, ry: 2 }, MIN_DOT_RADIUS * 0.4);
+    const big = screenAxes(view, { rx: 2, ry: 2 }, MIN_DOT_RADIUS * 2);
+    expect(big[0] / small[0]).toBeCloseTo(5, 6);
+  });
 });

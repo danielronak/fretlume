@@ -16,6 +16,8 @@ export type VisionRequest =
       tMs: number;
       scale: number;
       frame?: ImageBitmap;
+      /** May NeckNet put the grid back by itself after a loss (the confirmed grid needed no shift)? */
+      reacquire?: boolean;
     }
   | { type: 'frame'; frame: ImageBitmap; tMs: number; scale: number; debug: boolean }
   | { type: 'stop' }

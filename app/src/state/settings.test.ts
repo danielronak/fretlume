@@ -30,7 +30,8 @@ describe('sanitizeSettings', () => {
 
 describe('stage settings', () => {
   it('clamps dot size and validates remembered taps', () => {
-    expect(sanitizeSettings({ dotScale: 5 }).dotScale).toBe(1.6);
+    expect(sanitizeSettings({ dotScale: 5 }).dotScale).toBe(2);
+    expect(sanitizeSettings({ dotScale: 0.1 }).dotScale).toBe(0.4);
     expect(
       sanitizeSettings({ lockTaps: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8] }).lockTaps,
     ).toHaveLength(8);

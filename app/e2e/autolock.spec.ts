@@ -119,6 +119,65 @@ for (const [clip, guitar] of [
   });
 }
 
+test.describe('auto-lock: after losing the neck', () => {
+  test.use({
+    fakeMedia: { video: 'clip-lock-easy.mjpeg', audio: 'tone-110hz.wav' },
+    seedSettings: { onboarded: true, guitar: 'steel-acoustic', autoLock: true },
+  });
+
+  // Field test 2026-11-19: the automatic re-lock after a loss "succeeded" but tracking never started
+  // again (the overlay froze until a manual re-lock).
+  test('finds the neck again by itself and tracking resumes', async ({ mediaPage: page }) => {
+    await page.addInitScript(() => localStorage.setItem('fretlume.debug', '1'));
+    await page.goto('/#/stage/chord/G/maj');
+    await page.getByRole('button', { name: 'Start camera' }).first().click();
+    await page.getByTestId('stage-confirm').waitFor({ timeout: 45_000 });
+    await page.getByTestId('stage-confirm').click();
+    await page.waitForTimeout(1500);
+    await page.evaluate(() =>
+      (window as unknown as { __fretlumeForceLost: () => void }).__fretlumeForceLost(),
+    );
+    // Back to searching, then tracking again without any click.
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              (window as unknown as { __fretlumeStage?: { phase: string } }).__fretlumeStage?.phase,
+          ),
+        { timeout: 30_000 },
+      )
+      .toBe('framing');
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              (window as unknown as { __fretlumeStage?: { phase: string } }).__fretlumeStage?.phase,
+          ),
+        { timeout: 45_000 },
+      )
+      .toBe('tracking');
+    await expect(page.getByTestId('stage-confirm')).toHaveCount(0);
+    // Poses keep arriving: the frame stamp moves on.
+    const stamp = () =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __fretlumeStage?: StageDebug }).__fretlumeStage?.pose?.stamp ??
+          -1,
+      );
+    await page.waitForTimeout(1000);
+    const first = await stamp();
+    await page.waitForTimeout(1500);
+    expect(await stamp()).not.toBe(first);
+    const worst = await worstErrors(page, labelsOf('lock-easy'), 8);
+    expect(
+      worst.filter((w) => w < 3).length / worst.length,
+      `worst errors ${worst.map((w) => w.toFixed(2))}`,
+    ).toBeGreaterThanOrEqual(0.75);
+  });
+});
+
 test.describe('auto-lock: no guitar', () => {
   test.use({
     fakeMedia: { video: 'clip-no-guitar.mjpeg', audio: 'tone-110hz.wav' },
