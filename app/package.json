@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test --trace off",
     "test:smoke": "playwright test --trace off --grep @smoke",
-    "bench:vision": "vitest run --config vitest.bench.config.ts bench/vision.bench.test.ts"
+    "bench:vision": "vitest run --config vitest.bench.config.ts bench/vision.bench.test.ts",
+    "audio:plan": "vitest run --config vitest.bench.config.ts bench/audio-plan.bench.test.ts"
   },
   "dependencies": {
     "@coderline/alphatab": "1.9.0",

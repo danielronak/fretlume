@@ -7,7 +7,7 @@ it does not do this.
 **Sessions:** 3–4.
 
 ## Tasks
-- [ ] **6.1 Audio fixture factory** (`tools/audio`, Python + TS twin of the string model): notes, chords,
+- [x] **6.1 Audio fixture factory** (`tools/audio`, Python + TS twin of the string model): notes, chords,
       strums, faults, tab phrases; augmentations; FluidSynth path if `apt-get install fluidsynth
       fluid-soundfont-gm` works (optional). Manifest JSON with ground truth. Listen-check is impossible
       for the agent → validate fixtures spectrally (fundamental where expected, decay plausible).

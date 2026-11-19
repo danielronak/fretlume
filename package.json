@@ -19,6 +19,7 @@
     "format": "prettier --write .",
     "test": "npm run test -w app",
     "fixtures": "node tools/fixtures/make.mjs",
+    "fixtures:audio": "npm run audio:plan -w app && uv run --project tools/audio python tools/audio/render.py && uv run --project tools/audio python tools/audio/validate.py",
     "test:e2e": "npm run fixtures && npm run test:e2e -w app",
     "test:smoke": "npm run fixtures && npm run test:smoke -w app",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run test:smoke",

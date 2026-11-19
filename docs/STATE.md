@@ -3,8 +3,8 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 5 — complete (exit gate passed; v0.4.0 released 2026-11-19). Next: Phase 6.
-- **Next task:** Phase 6, first task (`docs/phases/phase-06-*.md`). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
+- **Current phase:** 6 — in progress (6.1 audio fixture factory done). Phase 5 complete, v0.4.0 released 2026-11-19.
+- **Next task:** Phase 6 task 6.2 analysis core (`docs/phases/phase-06-*.md`). Audio corpus: `npm run fixtures:audio` (needs uv; FluidSynth + fluid-soundfont-gm via apt for the GM guitars). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
 - **Last release:** 0.4.0 (Phase 5), 2026-11-19 — live at https://danielronak.github.io/fretlume/ (tagged by the Release workflow)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
@@ -56,7 +56,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 3 Camera + manual lock | **done** 2026-11-17; since D-022 (2026-11-18) only G3.2 σ5 fails | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 94.5 % σ5 / 91.5 % σ8 with 4 taps (fail σ5); G3.3 99.5 % frames, 0 slips (pass); G3.3t tilts 92.5 % (recorded); G3.4 0.34 px (pass); OverlayLag 2.1 px at 15 Hz (D-028); G3.5 pass; e2e 60/60 |
 | 4 Synthetic + auto-lock | **done** 2026-11-17, G4.3 failing, G4.4 not measured | v0.3 (0.3.0) 🎸 | G4.1 3.3 px, G4.2 3.9 px pass; G4.3 88.0 % / 1.0 % wrong index / 0 % false (fail on correct %, D-028); auto-lock opt-in beta (D-021) |
 | 5 Runs, playground, tabs (parity) | ✅ done 2026-11-19 | v0.4.0 | practice runs gate passes; tabs gate (keyboard hammer-on/slide/bend → play → export ASCII → re-import identical) passes; GP7, MusicXML, ChordPro, ASCII, JSON import tested; play-along on camera and diagram (D-029, D-030) |
-| 6 Listening | not started | v0.5 🎸 | |
+| 6 Listening | in progress (6.1 done) | v0.5 🎸 | fixture corpus: 49 notes × 4 instruments, 576 clean strums, 517 faults, 64 string-by-string, 4 phrases; clean notes 100 % on pitch (validation.json) |
 | 7 Hand vision | not started | v0.6 🎸 | |
 | 8 Curriculum & songs | not started | v0.7 | |
 | 9 Personalisation | not started | v0.8 🎸 | |
@@ -141,6 +141,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | D2 | Licence | MIT |
 | D3 | Repository visibility (public = unlimited free CI minutes and free GitHub Pages) | Public |
 | D4 | Allow Wikimedia hosts for the real-image golden set (Phase 4) | Ask when Phase 4 starts |
+| D5 | **Free vs paid** (owner, 2026-11-19: "I can't be selling the same app"). The plan, CLAUDE.md rule 2 and the MIT licence on a public repo assume free and open source; selling needs a different licence/visibility and possibly accounts or a store wrapper | Keep building free; differentiation (listening, hand vision, adaptive course) is the plan either way |
 
 ## Blockers
 - None.
