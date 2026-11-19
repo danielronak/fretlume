@@ -17,6 +17,13 @@ import { projectShape, type OverlayItem } from '@overlay/projection';
 import { Button, Slider, Toggle } from '@ui/index';
 import type { InstrumentId, LockReply } from '@vision/core';
 import { apply, fromControlPoints, type Mat3, type Pt } from '@vision/geometry';
+import { cardNotes } from '@learn/cardSound';
+import { runSteps, type PracticeRun } from '@learn/run';
+import { stepDurationMs } from '@learn/session';
+import { playNotes } from '@audio/player';
+import { getRun } from '@storage/runs';
+import { useLive } from '@storage/useLive';
+import { cardTitle, resolveCard } from '@features/runs/runCards';
 import { useSession } from '@learn/useSession';
 import type { Step } from '@learn/session';
 import { PosePredictor, STAGE_PREDICTOR } from '@overlay/predict';
@@ -121,24 +128,49 @@ export function StageScreen() {
   // ---------- what to show ----------
   const root = parseRootSlug(params.root);
   const kind = isLibraryKind(params.kind) ? params.kind : null;
+  // A practice run (/stage/run/:runId) or one library item (/stage/:kind/:root/:type).
+  const runId = params.runId ?? null;
+  const run = useLive<PracticeRun | null>(
+    () => (runId ? getRun(runId) : Promise.resolve(null)),
+    [runId],
+    null,
+  );
   const deck = useMemo(() => {
+    if (run) {
+      const entries = run.cards
+        .map((card) => resolveCard(card, tuning, model.frets))
+        .filter((r): r is NonNullable<typeof r> => r !== null)
+        .map((r) => ({ ...r.entry, label: cardTitle(r) }));
+      return { title: run.name, entries };
+    }
     if (!kind || root === null || !params.type || !isValidType(kind, params.type)) return null;
     return buildDeck(kind, root, params.type, tuning, model.frets);
-  }, [kind, root, params.type, tuning, model.frets]);
+  }, [run, kind, root, params.type, tuning, model.frets]);
   const [showAll, setShowAll] = useState(true);
-  // Deck transport: the session engine (learn/session.ts) steps through the deck's entries.
-  const deckSteps: Step<DeckEntry>[] = useMemo(
-    () =>
-      (deck?.entries ?? []).map((e, i) => ({
-        id: String(i),
-        show: e,
-        advance: settings.stageAutoSeconds
-          ? { auto: 'timer' as const, seconds: settings.stageAutoSeconds }
-          : ('manual' as const),
-      })),
-    [deck, settings.stageAutoSeconds],
-  );
+  // Deck transport: the session engine (learn/session.ts) steps through the deck's entries; a run
+  // brings its own timing (seconds or bars per card, repeats, tempo).
+  const deckSteps: Step<DeckEntry>[] = useMemo(() => {
+    if (run && deck) {
+      return runSteps(run)
+        .slice(0, deck.entries.length)
+        .map((step, i) => ({ ...step, show: deck.entries[i]! }));
+    }
+    return (deck?.entries ?? []).map((e, i) => ({
+      id: String(i),
+      show: e,
+      advance: settings.stageAutoSeconds
+        ? { auto: 'timer' as const, seconds: settings.stageAutoSeconds }
+        : ('manual' as const),
+    }));
+  }, [run, deck, settings.stageAutoSeconds]);
   const [session, send] = useSession(deckSteps);
+  useEffect(() => {
+    if (!run) return;
+    send({ type: 'setLoop', loop: run.loop });
+    send({ type: 'setTempo', bpm: run.tempoBpm });
+  }, [run, send]);
+  const labelMode = run?.labelMode ?? settings.labelMode;
+  const colorMode = run?.colorMode ?? settings.colorMode;
   const entryIndex = session.index;
   const loop = session.loop;
   const entry: DeckEntry | null =
@@ -513,11 +545,39 @@ export function StageScreen() {
       send({ type: 'setLoop', loop: typeof v === 'function' ? v(loop) : v }),
     [send, loop],
   );
-  // Choosing an auto-advance time starts the deck; "off" pauses it.
+  // Choosing an auto-advance time starts the deck; "off" pauses it (runs have their own Start).
   useEffect(() => {
+    if (runId) return;
     if (settings.stageAutoSeconds && count > 1) send({ type: 'start' });
     else send({ type: 'pause' });
-  }, [settings.stageAutoSeconds, count, send]);
+  }, [runId, settings.stageAutoSeconds, count, send]);
+
+  // A run with sound: each card's notes play when it comes up; their dots pulse as they sound.
+  const [pulse, setPulse] = useState<ReadonlySet<string>>(() => new Set());
+  useEffect(() => {
+    if (!run?.sound || !session.playing || !entry) return;
+    const notes = cardNotes(
+      entry.shape,
+      entry.activeGroups,
+      stepDurationMs(session, session.index),
+    );
+    if (notes.length === 0) return;
+    void playNotes(
+      notes.map((n) => ({ midi: n.midi, offset: n.offset })),
+      settings.a4Hz,
+    );
+    const timers = notes.map((n) =>
+      window.setTimeout(() => setPulse(new Set([`${n.string}-${n.fret}`])), 30 + n.offset * 1000),
+    );
+    const last = notes[notes.length - 1]!;
+    timers.push(window.setTimeout(() => setPulse(new Set()), 30 + last.offset * 1000 + 400));
+    return () => {
+      timers.forEach((id) => clearTimeout(id));
+      setPulse(new Set());
+    };
+    // Once per card and repeat, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.sound, session.playing, session.index, session.repeat, entry]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest('input, select, textarea')) return;
@@ -582,17 +642,17 @@ export function StageScreen() {
         shownHRef.current = H ?? null;
         if (pose && H && shownShape) {
           items = projectShape(shownShape, H, model, {
-            labelMode: settings.labelMode,
+            labelMode,
             colorMode:
-              entry && entry.activeGroups.length === 0 && settings.colorMode === 'group'
+              entry && entry.activeGroups.length === 0 && colorMode === 'group'
                 ? 'degree'
-                : settings.colorMode,
+                : colorMode,
             activeGroups: entry?.activeGroups ?? [],
             dotScale: settings.dotScale,
             flipStrings: settings.flipStrings,
           });
           const fade = pose.state === 'locked' ? 1 : pose.state === 'recovering' ? 0.4 : 0.15;
-          drawOverlay(ctx, view, items, fade, settings.dotScale);
+          drawOverlay(ctx, view, items, fade, settings.dotScale, pulse);
         }
       }
       const now = performance.now();
@@ -928,18 +988,25 @@ export function StageScreen() {
         <div className="stage__deck" data-testid="stage-deck">
           <div className="stage__deck-title">
             <strong data-testid="stage-entry">{entry.label}</strong>
-            <span>
-              {entryIndex + 1} / {count}
+            <span data-testid="stage-entry-count">
+              {run
+                ? `${t('stageRunCard', { n: entryIndex + 1, total: count })}${
+                    (run.cards[entryIndex]?.repeats ?? 1) > 1
+                      ? ` · ${t('stageRunRepeat', { n: session.repeat + 1, total: run.cards[entryIndex]!.repeats })}`
+                      : ''
+                  }`
+                : `${entryIndex + 1} / ${count}`}
             </span>
           </div>
           {withoutCamera || !running ? (
             <FlatFretboard
               shape={entry.shape}
               frets={model.frets}
-              labelMode={settings.labelMode}
-              colorMode={settings.colorMode}
+              labelMode={labelMode}
+              colorMode={colorMode}
               leftHanded={settings.handedness === 'left'}
               activeGroups={entry.activeGroups}
+              pulse={pulse}
             />
           ) : null}
           <div className="stage__actions">
@@ -949,7 +1016,7 @@ export function StageScreen() {
             <Button onClick={() => step(1)} aria-label={t('stageDeckNext')} data-testid="deck-next">
               {t('stageDeckNext')} ►
             </Button>
-            {settings.stageAutoSeconds ? (
+            {settings.stageAutoSeconds || run ? (
               <Button
                 variant="ghost"
                 onClick={() => send({ type: session.playing ? 'pause' : 'start' })}
@@ -969,19 +1036,21 @@ export function StageScreen() {
             />
           </div>
           <div className="stage__settings">
-            <label className="stage__select">
-              {t('stageDeckAuto')}
-              <select
-                value={settings.stageAutoSeconds}
-                onChange={(e) => update({ stageAutoSeconds: Number(e.target.value) })}
-              >
-                {[0, 4, 8, 15, 30].map((s) => (
-                  <option key={s} value={s}>
-                    {s === 0 ? t('stageDeckAutoOff') : t('stageDeckAutoSeconds', { s })}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {run ? null : (
+              <label className="stage__select">
+                {t('stageDeckAuto')}
+                <select
+                  value={settings.stageAutoSeconds}
+                  onChange={(e) => update({ stageAutoSeconds: Number(e.target.value) })}
+                >
+                  {[0, 4, 8, 15, 30].map((s) => (
+                    <option key={s} value={s}>
+                      {s === 0 ? t('stageDeckAutoOff') : t('stageDeckAutoSeconds', { s })}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <Slider
               label={t('stageDotSize')}
               value={settings.dotScale}

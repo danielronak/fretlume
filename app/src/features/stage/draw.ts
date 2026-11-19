@@ -86,6 +86,7 @@ export function drawOverlay(
   items: OverlayItem[],
   fade: number,
   dotScale = 1,
+  pulse?: ReadonlySet<string>,
 ): void {
   const minRadius = MIN_DOT_RADIUS * dotScale;
   for (const item of items) {
@@ -123,6 +124,24 @@ export function drawOverlay(
         ctx.fillRect(c.x, c.y - rx, rx, 2 * rx);
         ctx.restore();
       }
+    }
+    if (pulse?.has(`${item.string}-${item.fret}`)) {
+      // The note is sounding (practice runs, tab play-along): a bright ring outside the dot.
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(
+        c.x,
+        c.y,
+        rx + 5,
+        ry + 5,
+        view.mirror ? Math.PI - item.angle : item.angle,
+        0,
+        2 * Math.PI,
+      );
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+      ctx.restore();
     }
     if (item.root) {
       ellipsePath(ctx, view, item, minRadius);

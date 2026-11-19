@@ -20,9 +20,13 @@ export type IconName =
   | 'play'
   | 'trash'
   | 'edit'
-  | 'help';
+  | 'help'
+  | 'chevronUp'
+  | 'chevronDown';
 
 const paths: Record<IconName, ReactNode> = {
+  chevronUp: <path d="M6 15l6-6 6 6" />,
+  chevronDown: <path d="M6 9l6 6 6-6" />,
   // A sun rising over a horizon line.
   today: (
     <>

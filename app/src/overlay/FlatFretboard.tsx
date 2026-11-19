@@ -21,6 +21,8 @@ export interface FlatFretboardProps {
   leftHanded?: boolean;
   /** Groups to emphasise; marks outside them are dimmed. */
   activeGroups?: readonly string[];
+  /** Dots sounding right now ("string-fret" keys): drawn with a bright pulse ring. */
+  pulse?: ReadonlySet<string>;
 }
 
 interface DotProps {
@@ -31,16 +33,18 @@ interface DotProps {
   labelMode: LabelMode;
   colorMode: ColorMode;
   dim: boolean;
+  pulse?: boolean;
 }
 
 /** One note: a filled dot (split in two colours when it belongs to two groups), ring on roots, label. */
-function Dot({ x, y, r, mark, labelMode, colorMode, dim }: DotProps) {
+function Dot({ x, y, r, mark, labelMode, colorMode, dim, pulse }: DotProps) {
   const colors = markColors(mark, colorMode);
   const label = markLabel(mark, labelMode);
   const classes = [
     'fretboard__mark',
     mark.role === 'ghost' ? 'fretboard__mark--ghost' : '',
     dim ? 'fretboard__mark--dim' : '',
+    pulse ? 'fretboard__mark--pulse' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -62,6 +66,7 @@ function Dot({ x, y, r, mark, labelMode, colorMode, dim }: DotProps) {
           <circle className="fretboard__ring" cx={x} cy={y} r={r + 2.5} />
         </>
       ) : null}
+      {pulse ? <circle className="fretboard__pulse" cx={x} cy={y} r={r + 4} /> : null}
       {label ? (
         <text className="fretboard__label" x={x} y={y} fontSize={fontSize}>
           {label}
@@ -108,6 +113,7 @@ function NeckDiagram({
   colorMode = 'group',
   leftHanded = false,
   activeGroups,
+  pulse,
 }: FlatFretboardProps) {
   const fretW = 56;
   const stringH = 26;
@@ -207,6 +213,7 @@ function NeckDiagram({
             labelMode={labelMode}
             colorMode={colorMode}
             dim={!isActive(mark, activeGroups)}
+            pulse={pulse?.has(`${mark.string}-${mark.fret}`) ?? false}
           />
         ))}
     </svg>
@@ -220,6 +227,7 @@ function BoxDiagram({
   colorMode = 'degree',
   leftHanded = false,
   activeGroups,
+  pulse,
 }: FlatFretboardProps) {
   const rows = 5;
   const stringW = 30;
@@ -343,6 +351,7 @@ function BoxDiagram({
               labelMode={labelMode}
               colorMode={colorMode}
               dim={!isActive(mark, activeGroups)}
+              pulse={pulse?.has(`${mark.string}-${mark.fret}`) ?? false}
             />
           ) : null,
         )}

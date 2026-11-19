@@ -7,7 +7,8 @@ import { PlaceholderScreen } from '@features/PlaceholderScreen';
 import { destinations } from '@features/routes';
 import { Shell } from '@features/Shell';
 import { Settings } from '@features/settings/Settings';
-import { LibraryScreen, SavedScreen } from '@features/library/LibraryScreen';
+import { LibraryScreen, RunsScreen, SavedScreen } from '@features/library/LibraryScreen';
+import { RunBuilder } from '@features/runs/RunBuilder';
 import { HelpGuide, HelpIndex } from '@features/help/Help';
 import { Tools } from '@features/tools/Tools';
 import { Tuner } from '@features/tools/Tuner';
@@ -31,6 +32,8 @@ const router = createHashRouter([
       { path: 'settings/field-test', element: <FieldTest /> },
       { path: 'library', element: <Navigate to="/library/chord/C/maj" replace /> },
       { path: 'library/saved', element: <SavedScreen /> },
+      { path: 'library/runs', element: <RunsScreen /> },
+      { path: 'library/runs/:runId', element: <RunBuilder /> },
       { path: 'help', element: <HelpIndex /> },
       { path: 'help/:guide', element: <HelpGuide /> },
       { path: 'tools', element: <Tools /> },
@@ -39,6 +42,7 @@ const router = createHashRouter([
       { path: 'library/:kind/:root/:type', element: <LibraryScreen /> },
       { path: 'stage', element: <StageScreen /> },
       { path: 'stage/:kind/:root/:type', element: <StageScreen /> },
+      { path: 'stage/run/:runId', element: <StageScreen /> },
       ...destinations
         .filter((destination) => !['/library', '/tools', '/stage'].includes(destination.path))
         .map((destination) => ({

@@ -160,3 +160,21 @@ describe('backup', () => {
     expect(after).toEqual({ ...DEFAULT_SETTINGS, theme: 'light', onboarded: true });
   });
 });
+
+describe('practice runs', () => {
+  it('save, list newest first, copy, delete; unknown items are dropped on read', async () => {
+    const { saveRun, listRuns, copyRun, deleteRun, getRun } = await import('./runs');
+    const { newRun } = await import('@learn/run');
+    const a = await saveRun(newRun('run-a', 'Warm-up', ['chord-0-maj', 'chord-7-maj']));
+    await new Promise((r) => setTimeout(r, 2));
+    await saveRun(newRun('run-b', 'Scales', ['scale-9-minor-pentatonic', 'nonsense-1-x']));
+    const list = await listRuns();
+    expect(list.map((r) => r.name)).toEqual(['Scales', 'Warm-up']);
+    expect(list[0]!.cards.map((c) => c.itemId)).toEqual(['scale-9-minor-pentatonic']);
+    const copy = await copyRun(a, 'Warm-up (copy)');
+    expect((await getRun(copy.id))!.cards).toHaveLength(2);
+    await deleteRun('run-a');
+    expect(await getRun('run-a')).toBeNull();
+    await expect(saveRun({ ...a, name: '  ' })).rejects.toThrow();
+  });
+});

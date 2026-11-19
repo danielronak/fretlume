@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { DEFAULT_CARD_AMOUNT, newRun, type PracticeRun } from '@learn/run';
+import { listRuns, newRunId, saveRun } from '@storage/runs';
 import { t } from '@i18n/index';
 import {
   createFolder,
@@ -101,6 +104,52 @@ export function FolderButton({ itemId, name }: { itemId: string; name: string })
             </Button>
           </form>
         </div>
+      </Dialog>
+    </>
+  );
+}
+
+/** Adds the item as a card to a practice run, or starts a new run with it (parity P-F10). */
+export function AddToRunButton({ itemId, name }: { itemId: string; name: string }) {
+  const [open, setOpen] = useState(false);
+  const runs = useLive<PracticeRun[]>(() => listRuns(), [], []);
+  const toast = useToast();
+  const navigate = useNavigate();
+  const addTo = async (run: PracticeRun) => {
+    const card = { itemId, entry: 0, amount: DEFAULT_CARD_AMOUNT[run.unit], repeats: 1 };
+    await saveRun({ ...run, cards: [...run.cards, card] });
+    toast.show(t('addToRunDone', { run: run.name }));
+    setOpen(false);
+  };
+  const startNew = async () => {
+    const run = await saveRun(newRun(newRunId(), name, [itemId]));
+    setOpen(false);
+    navigate(`/library/runs/${run.id}`);
+  };
+  return (
+    <>
+      <IconButton label={t('addToRun')} onClick={() => setOpen(true)} data-testid="add-to-run">
+        <Icon name="play" />
+      </IconButton>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title={t('addToRunTitle', { name })}
+        actions={
+          <Button variant="primary" onClick={() => void startNew()}>
+            {t('addToRunNew')}
+          </Button>
+        }
+      >
+        <ul className="folder-dialog__list">
+          {runs.map((run) => (
+            <li key={run.id}>
+              <Button variant="ghost" onClick={() => void addTo(run)}>
+                {run.name}
+              </Button>
+            </li>
+          ))}
+        </ul>
       </Dialog>
     </>
   );

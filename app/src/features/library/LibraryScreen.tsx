@@ -17,8 +17,9 @@ import {
   relatedItems,
   typeOptions,
 } from './model';
-import { FavouriteButton, FolderButton } from './SaveButtons';
+import { AddToRunButton, FavouriteButton, FolderButton } from './SaveButtons';
 import { Saved } from './Saved';
+import { RunsList } from '@features/runs/RunsList';
 import { SearchBox } from './SearchBox';
 import { ArpeggioView, ChordView, KeyView, ScaleView, TriadView, type ViewProps } from './views';
 import './library.css';
@@ -40,7 +41,7 @@ const VIEWS: Record<LibraryKind, (props: ViewProps) => React.JSX.Element | null>
 };
 
 /** Kind tabs as links, so every view has its own address. */
-function KindTabs({ active, root }: { active: LibraryKind | 'saved'; root: number }) {
+function KindTabs({ active, root }: { active: LibraryKind | 'saved' | 'runs'; root: number }) {
   return (
     <nav className="lib-tabs" aria-label={t('libKindsLabel')}>
       {LIBRARY_KINDS.map((kind) => (
@@ -60,6 +61,14 @@ function KindTabs({ active, root }: { active: LibraryKind | 'saved'; root: numbe
       >
         {t('libSaved')}
       </Link>
+      <Link
+        to="/library/runs"
+        className="lib-tabs__tab"
+        aria-current={active === 'runs' ? 'page' : undefined}
+        data-testid="tab-runs"
+      >
+        {t('libRuns')}
+      </Link>
     </nav>
   );
 }
@@ -70,7 +79,7 @@ function Frame({
   root,
 }: {
   children: React.ReactNode;
-  active: LibraryKind | 'saved';
+  active: LibraryKind | 'saved' | 'runs';
   root: number;
 }) {
   return (
@@ -80,6 +89,14 @@ function Frame({
       <KindTabs active={active} root={root} />
       {children}
     </div>
+  );
+}
+
+export function RunsScreen() {
+  return (
+    <Frame active="runs" root={0}>
+      <RunsList />
+    </Frame>
   );
 }
 
@@ -162,6 +179,7 @@ export function LibraryScreen() {
           <div className="lib-item__actions">
             <FavouriteButton itemId={details.id} name={name} />
             <FolderButton itemId={details.id} name={name} />
+            <AddToRunButton itemId={details.id} name={name} />
             <Link
               className="btn btn--primary"
               to={`/stage/${kind}/${params.root}/${typeId}`}

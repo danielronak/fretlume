@@ -81,3 +81,25 @@
   stroke-linecap: round;
   opacity: 0.55;
 }
+/* A dot whose note is sounding (practice runs, tab play-along). */
+.fretboard__pulse {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2.5;
+  animation: fretboard-pulse 0.35s ease-out;
+}
+@keyframes fretboard-pulse {
+  from {
+    stroke-width: 6;
+    opacity: 0.4;
+  }
+  to {
+    stroke-width: 2.5;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fretboard__pulse {
+    animation: none;
+  }
+}
