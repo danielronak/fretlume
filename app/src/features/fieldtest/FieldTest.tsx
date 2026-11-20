@@ -26,6 +26,7 @@ const STEPS: Step[] = [
   { id: 'move', text: 'fieldMove', to: '/stage/chord/D/maj' },
   { id: 'relock', text: 'fieldRelock', to: '/stage/chord/E/min' },
   { id: 'tuner', text: 'fieldTuner', to: '/tools/tuner' },
+  { id: 'listen', text: 'fieldListen', to: '/stage/chord/G/maj' },
   { id: 'export', text: 'fieldExport' },
 ];
 

@@ -3,17 +3,21 @@
 *Update this file whenever a task completes, a decision is made, or a blocker appears.*
 
 ## Now
-- **Current phase:** 6 — in progress (6.1 fixtures, 6.2 analysis core, 6.3 real-time listener, 6.4 judging + wait-mode, 6.5 feedback UX, 6.6 tabs + What am I playing?, 6.7 benches/e2e done; G6.2/4/5/6 pass, G6.3 strum mode fails → fallback, D-031). Phase 5 complete, v0.4.0 released 2026-11-19.
-- **Next task:** Phase 6 task 6.9 release v0.5 (6.8 GuitarSet is optional and needs zenodo.org); then Phase 7 (`docs/phases/phase-06-*.md`). Audio corpus: `npm run fixtures:audio` (needs uv; FluidSynth + fluid-soundfont-gm via apt for the GM guitars). Carry-overs: G3.2 σ5 4 taps (94.5 %); G4.3 (87.5 % / 2 % wrong index), G4.4 golden set, StripNet, per-guitar memory (D-021).
-- **Last release:** 0.4.0 (Phase 5), 2026-11-19 — live at https://danielronak.github.io/fretlume/ (tagged by the Release workflow)
+- **Current phase:** 6 — complete except gate G6.3 strum mode (fallback ladder applied, D-031); v0.5.0 released 2026-11-20. Optional 6.8 (GuitarSet) needs zenodo.org. Next: Phase 7 (hand vision).
+- **Next task:** Phase 7, first task (`docs/phases/phase-07-*.md`).
+- **Last release:** 0.5.0 (Phase 6), 2026-11-20 — live at https://danielronak.github.io/fretlume/ (tagged by the Release workflow)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
-- **Last updated:** 2026-11-19
+- **Last updated:** 2026-11-20
 
 ## Waiting on the owner (does not block building)
 - **Golden set downloads (optional).** Wikimedia hosts are allowed on the environment, but this session's
   automatic permission check refused the download. To let a future session collect real guitar photos for
   gate G4.4, allow it when asked (or add a permission rule for fetching from upload.wikimedia.org).
+- **🎸 Field test of 0.5.0 (listening):** Settings → Field test, new step “Listen”: on the Stage, G major,
+  step to “Voicing 1 · 320003”, switch Listen on, strum G, then C and D slowly. Did it hear you? Any false
+  “did not ring”? Try “Check string by string”, and Tabs → Play along with Listen + Wait for me. Then
+  Export diagnostics (it now includes listening verdicts; never audio).
 - **🎸 Optional field test of 0.4.0 (tabs and lessons):** Tabs → New tab, type a few notes with the keyboard
   (or the fret pad on a phone), press Play; then "Play along on my guitar" with the camera on. Is it clear
   which note comes next from the sliding rings? Try importing a Guitar Pro file you own. Also open Learn.
@@ -56,13 +60,24 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 3 Camera + manual lock | **done** 2026-11-17; since D-022 (2026-11-18) only G3.2 σ5 fails | v0.2 (0.2.0) 🎸 | G3.1 pass; G3.2 94.5 % σ5 / 91.5 % σ8 with 4 taps (fail σ5); G3.3 99.5 % frames, 0 slips (pass); G3.3t tilts 92.5 % (recorded); G3.4 0.34 px (pass); OverlayLag 2.1 px at 15 Hz (D-028); G3.5 pass; e2e 60/60 |
 | 4 Synthetic + auto-lock | **done** 2026-11-17, G4.3 failing, G4.4 not measured | v0.3 (0.3.0) 🎸 | G4.1 3.3 px, G4.2 3.9 px pass; G4.3 88.0 % / 1.0 % wrong index / 0 % false (fail on correct %, D-028); auto-lock opt-in beta (D-021) |
 | 5 Runs, playground, tabs (parity) | ✅ done 2026-11-19 | v0.4.0 | practice runs gate passes; tabs gate (keyboard hammer-on/slide/bend → play → export ASCII → re-import identical) passes; GP7, MusicXML, ChordPro, ASCII, JSON import tested; play-along on camera and diagram (D-029, D-030) |
-| 6 Listening | in progress (6.1–6.2 done) | v0.5 🎸 | G6.2 F1 0.994 ✅, G6.4 1.0 ms ✅, G6.5 0 % ✅, G6.6 1.5 % ✅, G6.3 sbs 1.00 ✅, G6.3 strum ❌ (muted recall 0.70, overall 0.89; D-031); scripted players e2e ✅ (D-032); fixture corpus: 49 notes × 4 instruments, 576 clean strums, 517 faults, 64 string-by-string, 4 phrases; clean notes 100 % on pitch (validation.json) |
+| 6 Listening | ✅ done 2026-11-20 (G6.3 strum ❌ → fallback) | v0.5.0 🎸 | G6.2 F1 0.994 ✅, G6.4 1.0 ms ✅, G6.5 0 % ✅, G6.6 1.5 % ✅, G6.3 sbs 1.00 ✅, G6.3 strum ❌ (muted recall 0.70, overall 0.89; D-031); scripted players e2e ✅ (D-032); fixture corpus: 49 notes × 4 instruments, 576 clean strums, 517 faults, 64 string-by-string, 4 phrases; clean notes 100 % on pitch (validation.json) |
 | 7 Hand vision | not started | v0.6 🎸 | |
 | 8 Curriculum & songs | not started | v0.7 | |
 | 9 Personalisation | not started | v0.8 🎸 | |
 | 10 Jam tools | not started | v0.9 | |
 | 11 Perf / a11y / mobile | not started | v0.10 🎸 | |
 | 12 Release | not started | v1.0 | |
+
+## Done in Phase 6 (2026-11-20)
+- 6.1 audio fixture corpus (`npm run fixtures:audio`): theory-driven plan, Karplus–Strong twin + FluidSynth GM
+  guitars, augmentations, spectral validation. 6.2 analysis core (`app/src/audio/analysis/`): unique-harmonic
+  chord verdicts, strum timing, single-note checks with octave guards, onsets refined in the time domain,
+  self-masking, chroma. 6.3 real-time listener (resampler + ListenerCore in a worker). 6.4 wait-mode,
+  attempts, "mark as played", attempt log. 6.5 coach line, judged dot rings, string-by-string check,
+  run summary. 6.6 tab play-along listening (timeline judging with timing; wait-mode), What am I playing?
+  6.7 audio bench + scripted-player e2e. 6.9 release 0.5.0; diagnostics include listening verdicts.
+- Gates: G6.2 ✅ F1 0.994 / octave 0.37 % · G6.4 ✅ 1.0 ms · G6.5 ✅ 0 % · G6.6 ✅ 1.6 % of a core · G6.3
+  string-by-string ✅ 1.00 · G6.3 strum ❌ overall 0.889 (0.92), muted recall 0.70 (0.75), false-fail 4.95 % ✅.
 
 ## Done in Phase 5 (2026-11-19)
 - 5.1 session engine (`learn/session.ts`) driving the Stage deck; 5.2 practice runs (builder, storage, Stage

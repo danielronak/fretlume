@@ -60,6 +60,14 @@ describe('DiagnosticsRecorder', () => {
     });
     d.confirm(-1);
     d.event(5, 'relock');
+    d.listen({
+      tMs: 6,
+      kind: 'chord',
+      expected: [{ string: 4, midi: 50 }],
+      ok: false,
+      perNote: [{ string: 4, state: 'missing', score: 0.1 }],
+    });
+    d.cost(0.0312345);
     const b = d.bundle(
       '0.2.0',
       { cores: 4 },
@@ -70,9 +78,12 @@ describe('DiagnosticsRecorder', () => {
     expect(b.poses).toHaveLength(1);
     expect(b.locks[0]!.confirmedShift).toBe(-1);
     expect(b.frames).toEqual([]);
+    expect(b.listen[0]!.perNote[0]!.state).toBe('missing');
+    expect(b.listenCost).toEqual([0.0312]);
     expect(b.exportedAt).toBe('2026-11-17T10:00:00.000Z');
     d.clear();
     expect(d.poses).toHaveLength(0);
+    expect(d.listenRecords).toHaveLength(0);
   });
 
   it('names files by date', () => {

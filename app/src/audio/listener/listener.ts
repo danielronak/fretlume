@@ -17,6 +17,13 @@ class Listener {
   private stopBlocks: (() => void) | null = null;
   private stopAppSounds: (() => void) | null = null;
   private readonly handlers = new Set<Handler>();
+  private readonly costListeners = new Set<(share: number) => void>();
+
+  /** The worker's CPU share, every 5 s while listening. */
+  onCost(listener: (share: number) => void): () => void {
+    this.costListeners.add(listener);
+    return () => this.costListeners.delete(listener);
+  }
   /** AudioContext time of the listener's t = 0. */
   private epoch = 0;
   /** Worker CPU share of real time (G6.6 in the field), updated every 5 s. */
@@ -33,8 +40,10 @@ class Listener {
     if (snap.status !== 'running') throw new Error('microphone is not running');
     this.worker = new Worker(new URL('./listener.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = (e: MessageEvent<FromWorker>) => {
-      if (e.data.type === 'cost') this.cost = e.data.share;
-      else for (const ev of e.data.events) for (const h of this.handlers) h(ev);
+      if (e.data.type === 'cost') {
+        this.cost = e.data.share;
+        for (const c of this.costListeners) c(e.data.share);
+      } else for (const ev of e.data.events) for (const h of this.handlers) h(ev);
     };
     this.post({ type: 'init', sampleRate: snap.sampleRate });
     this.stopAppSounds = onAppSound((t) => this.appSound(t));

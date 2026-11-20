@@ -576,6 +576,8 @@ export const en = {
   fieldMove: 'Move the guitar and watch the overlay follow',
   fieldRelock: 'Re-lock after moving away',
   fieldTuner: 'Tune all six strings',
+  fieldListen:
+    'Turn Listen on (Next to “Voicing 1”), play G, C and D slowly: did it hear you? Any false “did not ring”?',
   fieldExport: 'Export diagnostics',
   fieldDiagTitle: 'Diagnostics',
   fieldDiagBody:

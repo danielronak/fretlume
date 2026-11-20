@@ -27,7 +27,7 @@ it does not do this.
 - [x] **6.7 Benches + e2e:** `npm run bench:audio` → gates **G6.2–G6.6**; scripted players (perfect /
       muted-string / wrong-fret / sloppy-timing) through the fake microphone on a 6-step run.
 - [ ] **6.8** (Optional, report only) GuitarSet evaluation if the owner allows `zenodo.org`.
-- [ ] **6.9** Tag `v0.5`, deploy, 🎸 request: "play G, C, D slowly; did it hear you? any false fails?"
+- [x] **6.9** Tag `v0.5`, deploy, 🎸 request: "play G, C, D slowly; did it hear you? any false fails?"
       — diagnostics include verdict logs.
 
 ## Acceptance (exit gate)

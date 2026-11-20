@@ -1,6 +1,7 @@
 /**
  * Diagnostics (docs/specs/06-testing-and-data.md §4): a short in-memory record of what the vision
- * pipeline did, exported only when the player asks. Camera frames are kept only after the player
+ * pipeline and the listener did, exported only when the player asks. No audio is ever kept: listening
+ * records are verdicts (what was expected, how each string was judged). Camera frames are kept only after the player
  * switches "Include camera frames" on, at 10 per second for the last 10 seconds, and only in memory.
  */
 import type { LockReply } from '@vision/core';
@@ -26,6 +27,18 @@ export interface LockRecord {
   confirmedShift?: number;
 }
 
+/** One listening verdict (phase 6 task 6.9). */
+export interface ListenRecord {
+  tMs: number;
+  kind: 'note' | 'chord';
+  expected: { string: number; midi: number }[];
+  ok: boolean;
+  /** Per string: state, score relative to the threshold, and the pitch heard instead when wrong. */
+  perNote: { string: number; state: string; score: number; heard?: number }[];
+  extra?: { string: number; score: number }[];
+  deltaMs?: number;
+}
+
 export interface FrameRecord {
   tMs: number;
   /** JPEG data URL at reduced size. */
@@ -42,6 +55,9 @@ export interface DiagnosticsBundle {
   poses: PoseRecord[];
   locks: LockRecord[];
   events: { tMs: number; text: string }[];
+  listen: ListenRecord[];
+  /** Share of one CPU core the listener worker used (sampled every 5 s). */
+  listenCost: number[];
   frames: FrameRecord[];
 }
 
@@ -57,6 +73,8 @@ export class DiagnosticsRecorder {
   locks: LockRecord[] = [];
   events: { tMs: number; text: string }[] = [];
   frames: FrameRecord[] = [];
+  listenRecords: ListenRecord[] = [];
+  listenCost: number[] = [];
   /** The player agreed to keep camera frames for the next export. */
   recordFrames = false;
   private lastFrameMs = -Infinity;
@@ -87,6 +105,16 @@ export class DiagnosticsRecorder {
   event(tMs: number, text: string): void {
     this.events.push({ tMs, text });
     if (this.events.length > 200) this.events.shift();
+  }
+
+  listen(record: ListenRecord): void {
+    this.listenRecords.push(record);
+    if (this.listenRecords.length > 300) this.listenRecords.shift();
+  }
+
+  cost(share: number): void {
+    this.listenCost.push(+share.toFixed(4));
+    if (this.listenCost.length > 120) this.listenCost.shift();
   }
 
   /** True when a frame should be captured now (consent given and the interval has passed). */
@@ -122,6 +150,8 @@ export class DiagnosticsRecorder {
       poses: [...this.poses],
       locks: [...this.locks],
       events: [...this.events],
+      listen: [...this.listenRecords],
+      listenCost: [...this.listenCost],
       frames: this.recordFrames ? [...this.frames] : [],
     };
   }
@@ -131,6 +161,8 @@ export class DiagnosticsRecorder {
     this.locks = [];
     this.events = [];
     this.frames = [];
+    this.listenRecords = [];
+    this.listenCost = [];
   }
 }
 

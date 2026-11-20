@@ -13,6 +13,7 @@ import { playNotes } from '@audio/player';
 import { attemptFromChord, attemptFromNote } from '@learn/attempt';
 import { coachChord, coachNote, judgedDots, type Coach } from '@learn/coach';
 import { logAttempt } from '@storage/attempts';
+import { diagnostics } from '@/diagnostics/recorder';
 
 export interface StringCheck {
   /** Strings still to play, low to high; results so far. */
@@ -76,7 +77,11 @@ export function useListening(options: {
   useEffect(() => {
     if (!on || mic.status !== 'running') return;
     listener.start();
-    return () => listener.stop();
+    const off = listener.onCost((share) => diagnostics.cost(share));
+    return () => {
+      off();
+      listener.stop();
+    };
   }, [on, mic.status]);
 
   // What the listener should expect: the string check's next string, or the step.
@@ -150,6 +155,20 @@ export function useListening(options: {
       };
       if (ev.type === 'chord' && target) {
         const v: Verdict = ev.verdict;
+        diagnostics.listen({
+          tMs: Date.now(),
+          kind: 'chord',
+          expected: target.notes.map((n) => ({ string: n.string, midi: n.midi })),
+          ok: v.ok,
+          perNote: v.perNote.map((n) => ({
+            string: n.string,
+            state: n.state,
+            score: +n.score.toFixed(3),
+            ...(n.heard !== undefined ? { heard: n.heard } : {}),
+          })),
+          extra: v.extra.map((x) => ({ string: x.string, score: +x.score.toFixed(3) })),
+          ...(info.deltaMs !== undefined ? { deltaMs: Math.round(info.deltaMs) } : {}),
+        });
         streak.current = v.ok ? streak.current + 1 : 0;
         fails.current = v.ok ? 0 : fails.current + 1;
         setCoach(coachChord(v, { streak: streak.current, failsInARow: fails.current }));
@@ -161,6 +180,21 @@ export function useListening(options: {
       } else if (ev.type === 'note' && target) {
         const n = target.notes[0]!;
         const ch: NoteCheck = ev.check;
+        diagnostics.listen({
+          tMs: Date.now(),
+          kind: 'note',
+          expected: [{ string: n.string, midi: n.midi }],
+          ok: ch.ok,
+          perNote: [
+            {
+              string: n.string,
+              state: ch.state,
+              score: +ch.score.toFixed(3),
+              ...(ch.heard !== undefined ? { heard: ch.heard } : {}),
+            },
+          ],
+          ...(info.deltaMs !== undefined ? { deltaMs: Math.round(info.deltaMs) } : {}),
+        });
         streak.current = ch.ok ? streak.current + 1 : 0;
         setCoach(coachNote(ch, n.string, { streak: streak.current }));
         setDots(new Map([[`${n.string}-${n.fret + (o.capo ?? 0)}`, ch.ok ? 'good' : 'fix']]));
