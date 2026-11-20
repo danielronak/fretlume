@@ -442,3 +442,14 @@
 .metronome__start {
   min-width: 160px;
 }
+
+.what__big {
+  font-size: clamp(3rem, 12vw, 6rem);
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.what__note {
+  font-size: 0.9em;
+}

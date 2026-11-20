@@ -23,6 +23,8 @@ export interface PlayOptions {
   /** One bar of clicks before the music. */
   countIn?: boolean;
   a4Hz?: number;
+  /** Keep time without sound (the count-in still clicks): the listener hears only the player. */
+  silent?: boolean;
   onEnd?: () => void;
 }
 
@@ -61,6 +63,13 @@ export class TabPlayer {
   private spt = 0;
   private looping = false;
   private options: PlayOptions = {};
+
+  /** AudioContext time at which `tick` sounds in the current pass (for timing judgements). */
+  contextTimeOf(tick: number): number | null {
+    if (!this.context || !this.playing) return null;
+    const passStart = this.origin + this.pass * this.windowS;
+    return passStart + (tick - this.fromTick) * this.spt;
+  }
 
   get playing(): boolean {
     return this.timer !== null;
@@ -161,6 +170,7 @@ export class TabPlayer {
   }
 
   private schedule(v: Voice, offset: number): void {
+    if (this.options.silent) return;
     const context = this.context!;
     if (v.kind === 'legato' && v.gain === 0) return; // a slide target: the glide plays it
     const when = Math.max(context.currentTime, offset + v.start);

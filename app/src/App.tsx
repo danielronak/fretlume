@@ -17,6 +17,7 @@ import { HelpGuide, HelpIndex } from '@features/help/Help';
 import { Tools } from '@features/tools/Tools';
 import { Tuner } from '@features/tools/Tuner';
 import { MetronomeScreen } from '@features/tools/MetronomeScreen';
+import { WhatAmIPlaying } from '@features/tools/WhatAmIPlaying';
 import { Welcome } from '@features/welcome/Welcome';
 import { StageScreen } from '@features/stage/StageScreen';
 import { FieldTest } from '@features/fieldtest/FieldTest';
@@ -43,6 +44,7 @@ const router = createHashRouter([
       { path: 'tools', element: <Tools /> },
       { path: 'tools/tuner', element: <Tuner /> },
       { path: 'tools/metronome', element: <MetronomeScreen /> },
+      { path: 'tools/what', element: <WhatAmIPlaying /> },
       { path: 'library/:kind/:root/:type', element: <LibraryScreen /> },
       { path: 'stage', element: <StageScreen /> },
       { path: 'stage/:kind/:root/:type', element: <StageScreen /> },

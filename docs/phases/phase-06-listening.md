@@ -21,10 +21,10 @@ it does not do this.
 - [x] **6.5 Feedback UX:** dots pulse green/amber/red per string; one-line coach message from templates
       (spec 04 §8); string-by-string check flow; score summary at the end of a run (accuracy, timing,
       clean streak, tempo); gentle sounds; captions.
-- [ ] **6.6 Apply everywhere:** practice runs (optional judging toggle), tab play-along (note hits,
+- [x] **6.6 Apply everywhere:** practice runs (optional judging toggle), tab play-along (note hits,
       timing, wait-mode per note/bar, score), tuner already done, "What am I playing?" tool
       (chroma suggestion + reverse chord lookup).
-- [ ] **6.7 Benches + e2e:** `npm run bench:audio` → gates **G6.2–G6.6**; scripted players (perfect /
+- [x] **6.7 Benches + e2e:** `npm run bench:audio` → gates **G6.2–G6.6**; scripted players (perfect /
       muted-string / wrong-fret / sloppy-timing) through the fake microphone on a 6-step run.
 - [ ] **6.8** (Optional, report only) GuitarSet evaluation if the owner allows `zenodo.org`.
 - [ ] **6.9** Tag `v0.5`, deploy, 🎸 request: "play G, C, D slowly; did it hear you? any false fails?"

@@ -835,6 +835,15 @@ export const en = {
   listenSummary:
     'Done: {correct} of {attempts} attempts clean, {firstTry} first time, best streak {streak}.',
   listenOneString: 'That was a strum: pick just the one string.',
+  tabListenScore: '{hits} of {attempts} right · timing off by {ms} ms on average',
+  whatTitle: 'What am I playing?',
+  whatCard: 'Strum a chord and see its name, with a link to it in the library.',
+  whatLede:
+    'Turn on the microphone and strum. The best guess shows large; others that fit are listed below.',
+  whatWaiting: 'Strum a chord and let it ring.',
+  whatOthers: 'Could also be: {chords}',
+  whatOpen: 'Open {chord} in the library',
+  whatNote: 'A guess from the sound, not a judgement: close voicings can look alike.',
 } as const;
 
 export type MessageKey = keyof typeof en;

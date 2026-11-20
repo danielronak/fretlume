@@ -1,11 +1,18 @@
 /** The listening engine's worker: resamples microphone blocks to 22.05 kHz and runs ListenerCore. */
 import { Resampler } from '../dsp/resample';
-import { ANALYSIS_RATE, ListenerCore, type Expectation, type ListenerEvent } from './core';
+import {
+  ANALYSIS_RATE,
+  ListenerCore,
+  type Expectation,
+  type ListenerEvent,
+  type TimedExpectation,
+} from './core';
 
 export type ToWorker =
   | { type: 'init'; sampleRate: number }
   | { type: 'audio'; samples: Float32Array }
   | { type: 'expect'; expectation: Expectation | null }
+  | { type: 'timeline'; items: TimedExpectation[] }
   | { type: 'appSound'; t: number }
   | { type: 'suggest'; on: boolean };
 
@@ -40,6 +47,9 @@ self.onmessage = (event: MessageEvent<ToWorker>) => {
     }
     case 'expect':
       core.expect(m.expectation);
+      return;
+    case 'timeline':
+      core.expectTimeline(m.items);
       return;
     case 'appSound':
       core.appSound(m.t);

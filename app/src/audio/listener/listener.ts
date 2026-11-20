@@ -7,7 +7,7 @@
 import { onAppSound } from '../appSounds';
 import { audioEngine } from '../engine';
 import { microphone } from '../microphone';
-import type { Expectation, ListenerEvent } from './core';
+import type { Expectation, ListenerEvent, TimedExpectation } from './core';
 import type { FromWorker, ToWorker } from './listener.worker';
 
 type Handler = (event: ListenerEvent) => void;
@@ -68,6 +68,11 @@ class Listener {
 
   expect(expectation: Expectation | null): void {
     this.post({ type: 'expect', expectation });
+  }
+
+  /** Timeline mode (tab play-along): items carry listener times (see toListenerTime). */
+  expectTimeline(items: TimedExpectation[]): void {
+    this.post({ type: 'timeline', items });
   }
 
   suggest(on: boolean): void {

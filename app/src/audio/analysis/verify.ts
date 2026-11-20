@@ -85,6 +85,8 @@ export const LENIENCY: Record<Leniency, Thresholds> = {
 export const HARMONICS = 10;
 /** A single note must reach this fraction of the strongest nearby candidate. */
 const SINGLE_RELATIVE = 0.1;
+/** A present-looking chord note is called a fret off only if a neighbour is this many times stronger. */
+const PRESENT_NEIGHBOUR_RATIO = 3.5;
 const DECAY = 0.84;
 const tolCents = (h: number) => 25 + 3 * (h - 1);
 
@@ -193,25 +195,27 @@ export function verifyNotes(
     const score = evidence / threshold;
     let state: NoteState = score >= 1 ? 'present' : score >= t.weak ? 'weak' : 'missing';
     let heard: number | undefined;
-    if (state !== 'present') {
-      let best = 0;
-      for (const d of [-1, 1, -2, 2]) {
-        const m = n.midi + d;
-        if (pitches.includes(m)) continue;
-        const e = uniqueEvidence(
-          spec,
-          sr,
-          hz(m),
-          pitches.filter((q) => q !== n.midi).map(hz),
-        ).evidence;
-        if (e > best) {
-          best = e;
-          heard = m;
-        }
+    // A neighbour a semitone or two away clearly stronger: the finger is a fret off. For a note that
+    // looks present (leakage from a loud neighbour can lift it over the threshold) the neighbour must
+    // be much stronger.
+    let best = 0;
+    for (const d of [-1, 1, -2, 2]) {
+      const m = n.midi + d;
+      if (pitches.includes(m)) continue;
+      const e = uniqueEvidence(
+        spec,
+        sr,
+        hz(m),
+        pitches.filter((q) => q !== n.midi).map(hz),
+      ).evidence;
+      if (e > best) {
+        best = e;
+        heard = m;
       }
-      if (best >= threshold && best >= t.neighbour * evidence) state = 'wrong';
-      else heard = undefined;
     }
+    const ratio = state === 'present' ? PRESENT_NEIGHBOUR_RATIO : t.neighbour;
+    if (best >= threshold && best >= ratio * evidence) state = 'wrong';
+    else heard = undefined;
     return { ...n, state, evidence, score, ...(heard !== undefined ? { heard } : {}) };
   });
 

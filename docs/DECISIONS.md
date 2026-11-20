@@ -445,7 +445,9 @@ picking, shown as the top three guesses; not graded.
 **Measured** (`docs/benchmarks/audio-phase6.json`): G6.2 ✅ F1 0.994, octave errors 0.37 % · G6.4 ✅ median
 1.0 ms · G6.5 ✅ 0 false passes in 49, played notes 100 % · G6.6 ✅ 1.5 % of one core · G6.3 string-by-string
 ✅ muted recall 1.00, played strings 1.00 · **G6.3 strum mode ❌** (standard): clean pass 0.951 (false-fail
-4.9 % ✅), faults caught 0.760, muted-string recall 0.694 (gate 0.75), overall accuracy 0.879 (gate 0.92).
+4.95 % ✅), faults caught 0.785, muted-string recall 0.697 (gate 0.75), overall accuracy 0.889 (gate 0.92).
+A present-looking chord note is also called "a fret off" when a semitone neighbour is 3.5× stronger
+(leakage from a loud neighbour had lifted it over the threshold); this raised faults caught from 0.760.
 Chroma top-1 0.32–0.43, top-3 0.66–0.83.
 **Fallback ladder** (phase 6): (a) relaxed leniency is the default for beginners (false-fail 3.7 %); (b) when
 a chord verdict has unsure notes or low confidence, the app offers the string-by-string check, which
@@ -454,3 +456,21 @@ learned (spec §4.7). Muted octave doublings are undecidable from one strum's sp
 open item for G6.3 (more strum-timing work or hand vision in Phase 7).
 **Alternatives.** NNLS with fixed harmonic templates (envelopes differ too much between guitars);
 trained transcription (needs a model and real data, ADR A4 avoids it).
+
+## D-032 · 2026-11-20 · Listening in practice: wait-mode, timeline judging for tabs, silent playback
+**Context.** Tasks 6.4–6.6: judge the player on the Stage deck, in tab play-along and in free play.
+**Decision.** (1) The session engine gains `advance: { auto: 'on-correct', holdMs }` (wait-mode), attempts,
+a streak, and "mark as played" (the escape hatch: no step can trap the player). A right attempt in
+wait-mode completes its hold even when the deck is not auto-playing. (2) The listener judges the step's
+expectation (a chord when the shown marks have at most one per string, a single note for one mark; whole
+scales are not judged). In single-note mode a strum (onsets within 130 ms) is ignored, so the
+string-by-string check only counts single strings. (3) Tab play-along: with Listen on, playback keeps time
+silently (the count-in still clicks) because self-masking would otherwise hide the player's notes that
+coincide with the app's; continuous play uses a **timeline** of expected beats on the listener's clock —
+each onset is matched to the nearest unjudged beat within ±180 ms and reported with its timing error;
+wait-mode steps note by note. (4) Every judged attempt goes to the local `events` table as an
+`AttemptEvent`. (5) Feedback: one coach line (wrong note > missing > ringing silent string > weak > streak),
+green/amber rings on the judged dots, an end-of-run summary, a quiet chime on a clean chord. (6) "What am I
+playing?" shows the smoothed top chroma guess and alternatives, with a library link.
+**Alternatives.** Spectral subtraction of the app's own playback (needs the room's transfer function);
+judging continuous tab play with a moving single expectation (verdicts were cancelled by the next beat).

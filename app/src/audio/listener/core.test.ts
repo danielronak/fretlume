@@ -91,3 +91,35 @@ describe('ListenerCore', () => {
     expect(ev.some((e) => e.type === 'level' && e.rms > 0.01)).toBe(true);
   });
 });
+
+describe('ListenerCore timeline mode', () => {
+  it('matches each onset to its beat and reports the timing', () => {
+    const core = new ListenerCore();
+    core.expectTimeline([
+      { id: 'b0', kind: 'note', notes: [{ string: 3, fret: 2, midi: 57 }], t: 0.3 },
+      { id: 'b1', kind: 'note', notes: [{ string: 3, fret: 4, midi: 59 }], t: 0.9 },
+      { id: 'b2', kind: 'note', notes: [{ string: 2, fret: 1, midi: 60 }], t: 1.5 },
+    ]);
+    // On time, 40 ms late, and a wrong note for the third.
+    const ev = run(
+      core,
+      mix(
+        [
+          [57, 0.3],
+          [59, 0.94],
+          [61, 1.5],
+        ],
+        2.4,
+      ),
+    ).filter((e) => e.type === 'note');
+    expect(
+      ev.map(
+        (e) => e.type === 'note' && [e.id, e.check.ok, Math.round((e.deltaMs ?? 0) / 10) * 10 + 0],
+      ),
+    ).toEqual([
+      ['b0', true, 0],
+      ['b1', true, 40],
+      ['b2', false, 0],
+    ]);
+  });
+});

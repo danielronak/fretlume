@@ -2,35 +2,36 @@
   "G6_3": {
     "summary": {
       "relaxed": {
-        "cleanPass": 0.9627,
-        "falseFail": 0.0373,
-        "faultsCaught": 0.4536,
-        "mutedRecallStrum": 0.6901,
-        "overallAccuracy": 0.7721
+        "cleanPass": 0.9624,
+        "falseFail": 0.0376,
+        "faultsCaught": 0.5126,
+        "mutedRecallStrum": 0.694,
+        "overallAccuracy": 0.794
       },
       "standard": {
-        "cleanPass": 0.9508,
-        "falseFail": 0.0492,
-        "faultsCaught": 0.7597,
-        "mutedRecallStrum": 0.694,
-        "overallAccuracy": 0.8793
+        "cleanPass": 0.9505,
+        "falseFail": 0.0495,
+        "faultsCaught": 0.7853,
+        "mutedRecallStrum": 0.6966,
+        "overallAccuracy": 0.8887
       },
       "strict": {
-        "cleanPass": 0.9334,
-        "falseFail": 0.0666,
-        "faultsCaught": 0.7756,
+        "cleanPass": 0.9331,
+        "falseFail": 0.0669,
+        "faultsCaught": 0.7911,
         "mutedRecallStrum": 0.7005,
-        "overallAccuracy": 0.8744
+        "overallAccuracy": 0.88
       }
     },
     "gate": "accuracy ≥ 0.92 overall; false-fail ≤ 5 % (standard); muted recall ≥ 0.75 strum, ≥ 0.97 string-by-string",
     "detail": {
       "relaxed/chords-ks": {
         "n": 576,
-        "accuracy": 0.9479,
+        "accuracy": 0.9462,
         "errors": {
           "missing+unsure": 3,
           "missing": 25,
+          "wrong+unsure+unsure": 1,
           "missing+unsure+unsure": 2
         }
       },
@@ -77,52 +78,53 @@
       },
       "relaxed/faults-ks": {
         "n": 517,
-        "accuracy": 0.499,
-        "mutedRecall": 0.7083,
+        "accuracy": 0.5629,
+        "mutedRecall": 0.7188,
         "errors": {
-          "wrong-fret": 76,
-          "extra-open": 127,
-          "muted": 56
+          "wrong-fret": 55,
+          "extra-open": 117,
+          "muted": 54
         }
       },
       "relaxed/faults-ks-aug": {
         "n": 517,
-        "accuracy": 0.4468,
+        "accuracy": 0.5106,
         "mutedRecall": 0.7083,
         "errors": {
           "muted": 72,
-          "wrong-fret": 82,
-          "extra-open": 132
+          "wrong-fret": 60,
+          "extra-open": 121
         }
       },
       "relaxed/faults-steel": {
         "n": 517,
-        "accuracy": 0.4487,
-        "mutedRecall": 0.6615,
+        "accuracy": 0.5048,
+        "mutedRecall": 0.6667,
         "errors": {
-          "muted": 68,
-          "wrong-fret": 85,
-          "extra-open": 132
+          "muted": 67,
+          "wrong-fret": 59,
+          "extra-open": 130
         }
       },
       "relaxed/faults-steel-aug": {
         "n": 517,
-        "accuracy": 0.4197,
+        "accuracy": 0.472,
         "mutedRecall": 0.6823,
         "errors": {
           "muted": 81,
-          "wrong-fret": 87,
-          "extra-open": 132
+          "wrong-fret": 63,
+          "extra-open": 129
         }
       },
       "standard/chords-ks": {
         "n": 576,
-        "accuracy": 0.9271,
+        "accuracy": 0.9253,
         "errors": {
           "missing+unsure": 3,
           "missing": 25,
           "unsure+unsure": 1,
           "extra1": 1,
+          "wrong+unsure+unsure": 1,
           "missing+unsure+unsure": 2,
           "unsure": 10
         }
@@ -180,52 +182,53 @@
       },
       "standard/faults-ks": {
         "n": 517,
-        "accuracy": 0.7737,
-        "mutedRecall": 0.7135,
+        "accuracy": 0.795,
+        "mutedRecall": 0.7188,
         "errors": {
-          "muted": 55,
-          "wrong-fret": 56,
+          "muted": 54,
+          "wrong-fret": 46,
           "extra-open": 6
         }
       },
       "standard/faults-ks-aug": {
         "n": 517,
-        "accuracy": 0.7563,
+        "accuracy": 0.7795,
         "mutedRecall": 0.7083,
         "errors": {
           "muted": 59,
-          "wrong-fret": 60,
+          "wrong-fret": 48,
           "extra-open": 7
         }
       },
       "standard/faults-steel": {
         "n": 517,
-        "accuracy": 0.7524,
-        "mutedRecall": 0.6667,
+        "accuracy": 0.7872,
+        "mutedRecall": 0.6719,
         "errors": {
-          "muted": 63,
-          "wrong-fret": 59,
+          "muted": 62,
+          "wrong-fret": 42,
           "extra-open": 6
         }
       },
       "standard/faults-steel-aug": {
         "n": 517,
-        "accuracy": 0.7563,
+        "accuracy": 0.7795,
         "mutedRecall": 0.6875,
         "errors": {
           "muted": 60,
-          "wrong-fret": 58,
+          "wrong-fret": 46,
           "extra-open": 8
         }
       },
       "strict/chords-ks": {
         "n": 576,
-        "accuracy": 0.9271,
+        "accuracy": 0.9253,
         "errors": {
           "missing+unsure": 3,
           "missing": 25,
           "unsure+unsure": 1,
           "extra1": 1,
+          "wrong+unsure+unsure": 1,
           "missing+unsure+unsure": 2,
           "unsure": 10
         }
@@ -302,41 +305,41 @@
       },
       "strict/faults-ks": {
         "n": 517,
-        "accuracy": 0.7795,
+        "accuracy": 0.795,
         "mutedRecall": 0.7188,
         "errors": {
           "muted": 54,
-          "wrong-fret": 54,
+          "wrong-fret": 46,
           "extra-open": 6
         }
       },
       "strict/faults-ks-aug": {
         "n": 517,
-        "accuracy": 0.7756,
+        "accuracy": 0.7892,
         "mutedRecall": 0.7083,
         "errors": {
           "muted": 55,
-          "wrong-fret": 55,
+          "wrong-fret": 48,
           "extra-open": 6
         }
       },
       "strict/faults-steel": {
         "n": 517,
-        "accuracy": 0.7795,
+        "accuracy": 0.795,
         "mutedRecall": 0.6823,
         "errors": {
           "muted": 58,
-          "wrong-fret": 50,
+          "wrong-fret": 42,
           "extra-open": 6
         }
       },
       "strict/faults-steel-aug": {
         "n": 517,
-        "accuracy": 0.7679,
+        "accuracy": 0.7853,
         "mutedRecall": 0.6927,
         "errors": {
           "muted": 57,
-          "wrong-fret": 55,
+          "wrong-fret": 46,
           "extra-open": 8
         }
       }
@@ -508,8 +511,8 @@
   },
   "G6_6": {
     "audioSeconds": 132,
-    "cpuSeconds": 2.03,
-    "shareOfOneCore": 0.0154,
+    "cpuSeconds": 2.07,
+    "shareOfOneCore": 0.0157,
     "gate": "≤ 25 % of one core",
     "note": "One strum per 2.2 s with onset detection running throughout; container CPU, Node."
   },

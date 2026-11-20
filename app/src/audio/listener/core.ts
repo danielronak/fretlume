@@ -36,10 +36,19 @@ export interface Expectation {
   a4Hz?: number;
 }
 
+/** An expected note or chord at a time on the listener's clock (tab play-along, timeline mode). */
+export interface TimedExpectation extends Expectation {
+  t: number;
+}
+
+/** How far an onset may be from its beat to count as an attempt at it. */
+const TIMELINE_WINDOW_S = 0.18;
+
 export type ListenerEvent =
   | { type: 'onset'; t: number }
-  | { type: 'note'; id: string; t: number; check: NoteCheck }
-  | { type: 'chord'; id: string; start: number; end: number; verdict: Verdict }
+  /** `deltaMs`: onset minus the expected time (timeline mode). */
+  | { type: 'note'; id: string; t: number; check: NoteCheck; deltaMs?: number }
+  | { type: 'chord'; id: string; start: number; end: number; verdict: Verdict; deltaMs?: number }
   | { type: 'suggest'; t: number; guesses: ChordGuess[] }
   /** A strum while a single note was expected: not judged (the string check wants one string). */
   | { type: 'strumIgnored'; id: string; t: number }
@@ -52,7 +61,14 @@ export class ListenerCore {
   private expectation: Expectation | null = null;
   private appSounds: number[] = [];
   /** A note waiting to be judged, or a strum still collecting plucks. */
-  private pending: { start: number; end: number; count: number } | null = null;
+  private pending: {
+    start: number;
+    end: number;
+    count: number;
+    item?: TimedExpectation;
+  } | null = null;
+  private timeline: TimedExpectation[] = [];
+  private readonly judgedIds = new Set<string>();
   private suggest = false;
   private lastSuggest = 0;
   private levelAcc = 0;
@@ -65,7 +81,15 @@ export class ListenerCore {
 
   expect(e: Expectation | null): void {
     this.expectation = e;
+    this.timeline = [];
     this.pending = null;
+  }
+
+  /** Timeline mode: each onset is an attempt at the nearest unjudged expected beat. */
+  expectTimeline(items: TimedExpectation[]): void {
+    this.expectation = null;
+    this.timeline = items;
+    if (this.pending && !this.pending.item) this.pending = null;
   }
 
   /** Free play: post chord suggestions ("What am I playing?") about four times a second. */
@@ -115,6 +139,20 @@ export class ListenerCore {
   }
 
   private onOnset(t: number): void {
+    if (!this.expectation && this.timeline.length) {
+      if (this.pending && t - this.pending.end <= STRUM_GAP_S) {
+        this.pending.end = t;
+        this.pending.count++;
+        return;
+      }
+      if (this.pending) return; // still waiting to judge the previous beat
+      let best: TimedExpectation | undefined;
+      for (const item of this.timeline)
+        if (!this.judgedIds.has(item.id) && Math.abs(item.t - t) <= TIMELINE_WINDOW_S)
+          if (!best || Math.abs(item.t - t) < Math.abs(best.t - t)) best = item;
+      if (best) this.pending = { start: t, end: t, count: 1, item: best };
+      return;
+    }
     const e = this.expectation;
     if (!e) return;
     // Plucks within 80 ms of each other are one strum.
@@ -125,19 +163,21 @@ export class ListenerCore {
   }
 
   private judgeIfDue(): ListenerEvent | null {
-    const e = this.expectation;
     const p = this.pending;
+    const e = p?.item ?? this.expectation;
     if (!e || !p) return null;
     const wait = e.kind === 'note' ? NOTE_WAIT_S : CHORD_WAIT_S;
     // A note waits from its first pluck; a strum from its last.
     if (this.now < p.end + wait) return null;
     this.pending = null;
+    const timed = p.item ? { deltaMs: (p.start - p.item.t) * 1000 } : {};
+    if (p.item) this.judgedIds.add(p.item.id);
     const opts = {
       ...(e.leniency ? { leniency: e.leniency } : {}),
       ...(e.a4Hz ? { a4Hz: e.a4Hz } : {}),
     };
     if (e.kind === 'note') {
-      if (p.count > 1) return { type: 'strumIgnored', id: e.id, t: p.start };
+      if (p.count > 1 && !p.item) return { type: 'strumIgnored', id: e.id, t: p.start };
       const from = p.start - 0.3;
       const x = this.slice(from, p.start + NOTE_WAIT_S);
       const spec = newEnergySpectrum(
@@ -150,6 +190,7 @@ export class ListenerCore {
         id: e.id,
         t: p.start,
         check: verifyNote(spec, ANALYSIS_RATE, e.notes[0]!.midi, opts),
+        ...timed,
       };
     }
     const from = p.start - 0.1;
@@ -178,6 +219,7 @@ export class ListenerCore {
       start: p.start,
       end: p.end,
       verdict: decide(refined, v.extra, leniency),
+      ...timed,
     };
   }
 

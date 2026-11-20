@@ -85,3 +85,45 @@ test.describe('listening: microphone blocked', () => {
     await expect(page.getByTestId('stage-entry')).not.toContainText('320003');
   });
 });
+
+test.describe('listening: tab play-along, wait for me', () => {
+  test.use({ fakeMedia: { video: 'bars-720p.mjpeg', audio: 'player-e-g-a.wav' } });
+
+  test('each note of the tab waits until it is played right', async ({ mediaPage: page }) => {
+    await page.goto('/#/tabs');
+    await page.getByTestId('tabs-paste').click();
+    await page
+      .getByTestId('tabs-paste-text')
+      .fill(
+        [
+          'e|-0---3---5---|',
+          'B|-------------|',
+          'G|-------------|',
+          'D|-------------|',
+          'A|-------------|',
+          'E|-------------|',
+        ].join('\n'),
+      );
+    await page.getByTestId('tabs-paste-import').click();
+    await page.getByTestId('tab-stage').click();
+    await page.getByRole('button', { name: 'Use without camera' }).click();
+    await page.getByRole('switch', { name: 'Listen' }).click();
+    await page.getByRole('switch', { name: 'Wait for me' }).click();
+    await expect(page.getByTestId('tab-listen-score')).toContainText(/[3-9] of [3-9] right/, {
+      timeout: 20_000,
+    });
+    await expect(coach(page)).toContainText(/Clean|in a row/);
+    await page.screenshot({ path: 'test-results/listen-tab.png' });
+  });
+});
+
+test.describe('what am I playing', () => {
+  test.use({ fakeMedia: { video: 'bars-720p.mjpeg', audio: 'player-g-perfect.wav' } });
+
+  test('names the strummed G among its guesses', async ({ mediaPage: page }) => {
+    await page.goto('/#/tools/what');
+    await page.getByRole('button', { name: 'Turn on the microphone' }).click();
+    await expect(page.getByTestId('screen-what')).toContainText(/\bG\b/, { timeout: 15_000 });
+    await page.screenshot({ path: 'test-results/what.png' });
+  });
+});

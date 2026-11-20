@@ -15,6 +15,13 @@ import { useLive } from '@storage/useLive';
 import { Button, Slider, Toggle } from '@ui/index';
 import { DeckFrame } from '@features/stage/DeckFrame';
 import { useTabPlayback } from './useTabPlayback';
+import type { Expectation, TimedExpectation } from '@audio/listener/core';
+import { audioEngine } from '@audio/engine';
+import { listener } from '@audio/listener/listener';
+import { coachTiming, type Coach } from '@learn/coach';
+import { useSettings } from '@/state/settings';
+import { ListenPanel } from '@features/listen/ListenPanel';
+import { useListening } from '@features/listen/useListening';
 import './tabs.css';
 
 /** Notes come into view this many beats before they sound. */
@@ -37,15 +44,26 @@ export function useTabStage(tabId: string | null) {
   const [loopOn, setLoopOn] = useState(false);
   const [loop, setLoop] = useState<[number, number]>([1, 1]);
   const bars = Math.max(1, starts.length - 1);
+  /** With listening on, playback keeps time without sound (the listener must hear only the player). */
+  const [silent, setSilent] = useState(false);
+  /** Wait-mode: step note by note; the playhead waits until each is played right. */
+  const [waitMode, setWaitMode] = useState(false);
+  const [waitIndex, setWaitIndex] = useState(0);
+  /** Timeline indices of beats with something to play. */
+  const noteBeats = useMemo(
+    () => beats.map((b, i) => (b.notes.some((n) => n.tech !== 'x') ? i : -1)).filter((i) => i >= 0),
+    [beats],
+  );
   const loopFrom = Math.min(loop[0], bars);
   const loopTo = Math.min(Math.max(loop[1], loopFrom), bars);
 
   /** Where the playhead is (ticks): the clock while playing, the loop or the start otherwise. */
   const tick = useCallback((): number => {
+    if (waitMode) return beats[noteBeats[waitIndex] ?? -1]?.tick ?? 0;
     const pos = playback.player.current?.position();
     if (pos?.playing) return pos.tick;
     return loopOn ? (starts[loopFrom - 1] ?? 0) : 0;
-  }, [playback.player, loopOn, starts, loopFrom]);
+  }, [playback.player, loopOn, starts, loopFrom, waitMode, beats, noteBeats, waitIndex]);
 
   const frame = useCallback((): PlayAlongFrame | null => {
     if (!tab) return null;
@@ -61,9 +79,40 @@ export function useTabStage(tabId: string | null) {
     if (playback.playing) playback.stop();
     else
       void playback.play(
-        loopOn ? { tempoPct, countIn, loop: [loopFrom - 1, loopTo] } : { tempoPct, countIn },
+        loopOn
+          ? { tempoPct, countIn, silent, loop: [loopFrom - 1, loopTo] }
+          : { tempoPct, countIn, silent },
       );
-  }, [playback, loopOn, tempoPct, countIn, loopFrom, loopTo]);
+  }, [playback, loopOn, tempoPct, countIn, loopFrom, loopTo, silent]);
+
+  /** The beat the player should be playing now (timeline index), or −1. */
+  const headIndex = playback.head
+    ? beats.findIndex((b) => b.bar === playback.head!.bar && b.beat === playback.head!.beat)
+    : -1;
+  const currentBeat = waitMode ? (noteBeats[waitIndex] ?? -1) : playback.playing ? headIndex : -1;
+  const expectation = useMemo((): Expectation | null => {
+    const b = beats[currentBeat];
+    if (!tab || !b) return null;
+    const notes = beatNotes(tab, b);
+    if (notes.length === 0) return null;
+    return {
+      id: `tab:${currentBeat}:${waitIndex}`,
+      kind: notes.length === 1 ? 'note' : 'chord',
+      notes,
+    };
+  }, [tab, beats, currentBeat, waitIndex]);
+  const nextWait = useCallback(
+    () => setWaitIndex((i) => (i + 1 < noteBeats.length ? i + 1 : 0)),
+    [noteBeats.length],
+  );
+  /** AudioContext time when beat `i` sounds in the current pass (continuous play). */
+  const beatContextTime = useCallback(
+    (i: number) => {
+      const b = beats[i];
+      return b ? (playback.player.current?.contextTimeOf(b.tick) ?? null) : null;
+    },
+    [beats, playback.player],
+  );
 
   return {
     tab,
@@ -73,6 +122,21 @@ export function useTabStage(tabId: string | null) {
     toggle,
     playing: playback.playing,
     bars,
+    listen: {
+      expectation,
+      currentBeat,
+      waitMode,
+      setWaitMode: (on: boolean) => {
+        if (on) playback.stop();
+        setWaitMode(on);
+        setWaitIndex(0);
+      },
+      nextWait,
+      waitIndex,
+      noteBeats,
+      setSilent,
+      beatContextTime,
+    },
     controls: {
       tempoPct,
       setTempoPct,
@@ -88,6 +152,18 @@ export function useTabStage(tabId: string | null) {
 }
 
 export type TabStage = ReturnType<typeof useTabStage>;
+
+/** The notes a beat asks for (muted 'x' notes are not), low string first; MIDI includes the capo. */
+function beatNotes(tab: Tab, b: TimedBeat) {
+  return b.notes
+    .filter((n) => n.tech !== 'x')
+    .map((n) => ({
+      string: n.string,
+      fret: n.fret,
+      midi: tab.tuning[n.string - 1]! + tab.capo + n.fret,
+    }))
+    .sort((a, x) => x.string - a.string);
+}
 
 /** One line of tab that scrolls under a fixed playhead. */
 function TabStrip({ tab, beats, tick }: { tab: Tab; beats: TimedBeat[]; tick: () => number }) {
@@ -182,6 +258,65 @@ export function TabDeck({
     return () => cancelAnimationFrame(raf);
   }, [showDiagram, stage]);
 
+  // ---------- listening (phase 6 task 6.6) ----------
+  const a4Hz = useSettings((x) => x.a4Hz);
+  const L = stage.listen;
+  const [timeline, setTimeline] = useState<TimedExpectation[] | null>(null);
+  const [score, setScore] = useState({ hits: 0, attempts: 0, absDelta: 0, timed: 0 });
+  const [timingCoach, setTimingCoach] = useState<Coach | null>(null);
+  const listening = useListening({
+    expectation: L.waitMode ? L.expectation : null,
+    timeline: !L.waitMode && stage.playing ? timeline : null,
+    sessionId: `tab:${tab?.id ?? ''}`,
+    label: tab?.title ?? '',
+    capo: tab?.capo ?? 0,
+    a4Hz,
+    onAttempt: (ok, _onset, info) => {
+      if (L.waitMode && ok) L.nextWait();
+      setScore((x) => ({
+        hits: x.hits + (ok ? 1 : 0),
+        attempts: x.attempts + 1,
+        absDelta: x.absDelta + (info.deltaMs !== undefined ? Math.abs(info.deltaMs) : 0),
+        timed: x.timed + (info.deltaMs !== undefined ? 1 : 0),
+      }));
+      setTimingCoach(info.deltaMs !== undefined ? coachTiming(info.deltaMs) : null);
+    },
+  });
+  // With listening on, playback keeps time silently; off again, wait-mode ends.
+  useEffect(() => {
+    L.setSilent(listening.on);
+    if (!listening.on) L.setWaitMode(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listening.on]);
+  // Continuous play: the beats of the next few seconds, on the listener's clock.
+  useEffect(() => {
+    if (!listening.on || !stage.playing || L.waitMode || !tab) {
+      setTimeline(null);
+      return;
+    }
+    const build = () => {
+      const now = audioEngine.context().currentTime;
+      const items: TimedExpectation[] = [];
+      stage.beats.forEach((b, i) => {
+        const ct = L.beatContextTime(i);
+        if (ct === null || ct < now - 1 || ct > now + 4) return;
+        const notes = beatNotes(tab, b);
+        if (notes.length === 0) return;
+        items.push({
+          id: `tab:${i}:${Math.round(ct * 10)}`,
+          kind: notes.length === 1 ? 'note' : 'chord',
+          notes,
+          t: listener.toListenerTime(ct),
+        });
+      });
+      setTimeline(items);
+    };
+    build();
+    const id = setInterval(build, 500);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listening.on, stage.playing, L.waitMode, tab, stage.beats]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).closest('input, select, textarea, button')) return;
@@ -217,10 +352,37 @@ export function TabDeck({
           activeGroups={['now']}
           pulse={pulse}
           approach={frame?.upcoming ?? []}
+          judged={listening.dots}
         />
       ) : null}
+      <ListenPanel
+        listening={listening}
+        waitMode={L.waitMode}
+        onWaitMode={L.setWaitMode}
+        {...(L.waitMode ? { onMarkPlayed: L.nextWait } : {})}
+        canCheck={L.expectation?.kind === 'chord'}
+      />
+      {listening.on && timingCoach ? (
+        <p className="listen__hint" role="status">
+          {t(timingCoach.key, timingCoach.params)}
+        </p>
+      ) : null}
+      {listening.on && score.attempts > 0 ? (
+        <p className="listen__hint" data-testid="tab-listen-score">
+          {t('tabListenScore', {
+            hits: score.hits,
+            attempts: score.attempts,
+            ms: score.timed ? Math.round(score.absDelta / score.timed) : 0,
+          })}
+        </p>
+      ) : null}
       <div className="stage__actions">
-        <Button variant="primary" onClick={stage.toggle} data-testid="tab-stage-play">
+        <Button
+          variant="primary"
+          onClick={stage.toggle}
+          disabled={L.waitMode}
+          data-testid="tab-stage-play"
+        >
           {stage.playing ? t('tabStop') : t('tabPlay')}
         </Button>
         <div className="tabedit__speed">

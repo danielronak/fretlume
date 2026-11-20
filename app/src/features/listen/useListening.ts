@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { NoteCheck, Verdict } from '@audio/analysis/verify';
 import { microphone, type MicStatus } from '@audio/microphone';
 import { useMicrophone } from '@audio/useMicrophone';
-import type { Expectation } from '@audio/listener/core';
+import type { Expectation, TimedExpectation } from '@audio/listener/core';
 import { listener } from '@audio/listener/listener';
 import { playNotes } from '@audio/player';
 import { attemptFromChord, attemptFromNote } from '@learn/attempt';
@@ -37,10 +37,13 @@ export interface Listening {
 
 export function useListening(options: {
   expectation: Expectation | null;
+  /** Timeline mode (tab play-along): expected beats with listener times; replaces `expectation`. */
+  timeline?: TimedExpectation[] | null;
   sessionId: string;
   label: string;
-  /** Called for every judged attempt at the current step (not during the string check). */
-  onAttempt?: (ok: boolean) => void;
+  /** Called for every judged attempt at the current step (not during the string check), with the
+   *  attempt's onset on the listener's clock (seconds). */
+  onAttempt?: (ok: boolean, onsetS: number, info: { id: string; deltaMs?: number }) => void;
   capo?: number;
   a4Hz: number;
 }): Listening {
@@ -78,14 +81,21 @@ export function useListening(options: {
 
   // What the listener should expect: the string check's next string, or the step.
   const expectation = check ? (check.queue[0] ?? null) : options.expectation;
+  const timeline = check ? null : (options.timeline ?? null);
   const expectKey = JSON.stringify(expectation);
+  const timelineKey = JSON.stringify(timeline);
   useEffect(() => {
     tries.current = 0;
-    if (!on || mic.status !== 'running') return;
+    if (!on || mic.status !== 'running' || timeline) return;
     listener.expect(expectation);
     setDots(new Map());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [on, mic.status, expectKey]);
+  }, [on, mic.status, expectKey, timeline === null]);
+  useEffect(() => {
+    if (!on || mic.status !== 'running' || !timeline) return;
+    listener.expectTimeline(timeline);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [on, mic.status, timelineKey]);
 
   useEffect(() => {
     if (!on) return;
@@ -121,17 +131,24 @@ export function useListening(options: {
         }));
         tries.current++;
       };
+      const target =
+        ('id' in ev && o.timeline?.find((i) => i.id === ev.id)) ||
+        ('id' in ev && ev.id === o.expectation?.id ? o.expectation : null);
+      const info = {
+        id: 'id' in ev ? ev.id : '',
+        ...('deltaMs' in ev && ev.deltaMs !== undefined ? { deltaMs: ev.deltaMs } : {}),
+      };
       const base = {
         tMs: Date.now(),
         sessionId: o.sessionId,
-        stepId: o.expectation?.id ?? '',
+        stepId: target ? target.id : '',
         skillIds: [],
-        target: { label: o.label, notes: o.expectation?.notes ?? [] },
+        target: { label: o.label, notes: target ? target.notes : [] },
         latencyMs: 0,
         scaffold: 'full' as const,
         usedHint: false,
       };
-      if (ev.type === 'chord' && ev.id === o.expectation?.id) {
+      if (ev.type === 'chord' && target) {
         const v: Verdict = ev.verdict;
         streak.current = v.ok ? streak.current + 1 : 0;
         fails.current = v.ok ? 0 : fails.current + 1;
@@ -140,16 +157,16 @@ export function useListening(options: {
         void logAttempt(attemptFromChord(base, v));
         if (v.ok) void chime(o.a4Hz);
         count(v.ok);
-        o.onAttempt?.(v.ok);
-      } else if (ev.type === 'note' && ev.id === o.expectation?.id) {
-        const n = o.expectation.notes[0]!;
+        o.onAttempt?.(v.ok, ev.start, info);
+      } else if (ev.type === 'note' && target) {
+        const n = target.notes[0]!;
         const ch: NoteCheck = ev.check;
         streak.current = ch.ok ? streak.current + 1 : 0;
         setCoach(coachNote(ch, n.string, { streak: streak.current }));
         setDots(new Map([[`${n.string}-${n.fret + (o.capo ?? 0)}`, ch.ok ? 'good' : 'fix']]));
         void logAttempt(attemptFromNote(base, ch, n.string));
         count(ch.ok);
-        o.onAttempt?.(ch.ok);
+        o.onAttempt?.(ch.ok, ev.t, info);
       }
     });
   }, [on]);

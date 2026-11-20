@@ -47,7 +47,7 @@ const OPEN = [64, 59, 55, 50, 45, 40];
 const G_FRETS = [3, 0, 0, 0, 2, 3]; // string 1 … 6
 function player({ mute = 0, shift = null, mode = 'strum' } = {}) {
   const sr = 48000;
-  const total = mode === 'strum+check' ? 13 : 10;
+  const total = mode === 'strum+check' ? 13 : mode === 'notes' ? 4.2 : 10;
   const out = new Float32Array(total * sr);
   const add = (midi, t, seed) => {
     // Ring until the end of the file (an abrupt stop would itself look like an onset).
@@ -65,7 +65,9 @@ function player({ mute = 0, shift = null, mode = 'strum' } = {}) {
       out[s0 + i] += 0.08 * ((seed / 2147483647) * 2 - 1) * Math.exp(-i / (sr * 0.004));
     }
   };
-  if (mode === 'strum+check') {
+  if (mode === 'notes') {
+    [64, 67, 69].forEach((midi, j) => add(midi, 0.5 + j * 1.2, 80 + j));
+  } else if (mode === 'strum+check') {
     // Two strums, then each string on its own (the muted one gives a dead click).
     for (let k = 0; k < 2; k++)
       strings.forEach((s, j) => {
@@ -91,6 +93,7 @@ function player({ mute = 0, shift = null, mode = 'strum' } = {}) {
   return out;
 }
 for (const [file, describe, opts] of [
+  ['player-e-g-a.wav', 'E4, G4, A4 on the high e string, 1.2 s apart (tab play-along player)', { mode: 'notes' }],
   ['player-g-perfect.wav', 'open G strummed cleanly every 2.5 s (scripted player)', {}],
   ['player-g-muted4.wav', 'open G with string 4 muted: two strums, then string by string (scripted player)', { mute: 4, mode: 'strum+check' }],
   ['player-g-wrong5.wav', 'open G with the string-5 finger a fret low (scripted player)', { shift: { string: 5, by: -1 } }],
