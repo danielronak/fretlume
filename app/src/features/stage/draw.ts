@@ -87,6 +87,7 @@ export function drawOverlay(
   fade: number,
   dotScale = 1,
   pulse?: ReadonlySet<string>,
+  judged?: ReadonlyMap<string, 'good' | 'fix'>,
 ): void {
   const minRadius = MIN_DOT_RADIUS * dotScale;
   for (const item of items) {
@@ -142,6 +143,25 @@ export function drawOverlay(
         ctx.fillRect(c.x, c.y - rx, rx, 2 * rx);
         ctx.restore();
       }
+    }
+    const verdict = judged?.get(`${item.string}-${item.fret}`);
+    if (verdict) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(
+        c.x,
+        c.y,
+        rx + 6,
+        ry + 6,
+        view.mirror ? Math.PI - item.angle : item.angle,
+        0,
+        2 * Math.PI,
+      );
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = verdict === 'good' ? '#80ed99' : '#ffb000';
+      if (verdict === 'fix') ctx.setLineDash([6, 4]);
+      ctx.stroke();
+      ctx.restore();
     }
     if (pulse?.has(`${item.string}-${item.fret}`)) {
       // The note is sounding (practice runs, tab play-along): a bright ring outside the dot.

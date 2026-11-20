@@ -110,3 +110,16 @@
   stroke: var(--text);
   stroke-width: 2.5;
 }
+
+/* Listening verdicts (phase 6): green = rang right, amber = needs a fix. */
+.fretboard__judged {
+  fill: none;
+  stroke-width: 3;
+}
+.fretboard__judged--good {
+  stroke: var(--success);
+}
+.fretboard__judged--fix {
+  stroke: var(--accent);
+  stroke-dasharray: 4 3;
+}

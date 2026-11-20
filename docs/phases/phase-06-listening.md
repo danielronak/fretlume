@@ -16,9 +16,9 @@ it does not do this.
 - [x] **6.3 Real-time plumbing:** worklet → analysis Worker; expectation API
       `listener.expect({ notes, muted, window })` → verdict events; self-masking of app-generated sound;
       level/noise/latency calibration flow.
-- [ ] **6.4 Judging in the session engine:** `judge: 'audio'`; `advance: on-correct` (wait-mode);
+- [x] **6.4 Judging in the session engine:** `judge: 'audio'`; `advance: on-correct` (wait-mode);
       leniency levels; "mark as played" escape; per-step attempt log → `AttemptEvent` store.
-- [ ] **6.5 Feedback UX:** dots pulse green/amber/red per string; one-line coach message from templates
+- [x] **6.5 Feedback UX:** dots pulse green/amber/red per string; one-line coach message from templates
       (spec 04 §8); string-by-string check flow; score summary at the end of a run (accuracy, timing,
       clean streak, tempo); gentle sounds; captions.
 - [ ] **6.6 Apply everywhere:** practice runs (optional judging toggle), tab play-along (note hits,

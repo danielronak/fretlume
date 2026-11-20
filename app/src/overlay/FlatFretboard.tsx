@@ -23,6 +23,8 @@ export interface FlatFretboardProps {
   activeGroups?: readonly string[];
   /** Dots sounding right now ("string-fret" keys): drawn with a bright pulse ring. */
   pulse?: ReadonlySet<string>;
+  /** Listening verdicts: "string-fret" → good (green ring) or fix (amber ring). */
+  judged?: ReadonlyMap<string, 'good' | 'fix'>;
   /** Tab play-along (neck layout): notes coming up, as rings sliding in from the bridge side. */
   approach?: readonly { string: number; fret: number; lead: number }[];
 }
@@ -36,10 +38,11 @@ interface DotProps {
   colorMode: ColorMode;
   dim: boolean;
   pulse?: boolean;
+  judged?: 'good' | 'fix' | undefined;
 }
 
 /** One note: a filled dot (split in two colours when it belongs to two groups), ring on roots, label. */
-function Dot({ x, y, r, mark, labelMode, colorMode, dim, pulse }: DotProps) {
+function Dot({ x, y, r, mark, labelMode, colorMode, dim, pulse, judged }: DotProps) {
   const colors = markColors(mark, colorMode);
   const label = markLabel(mark, labelMode);
   const classes = [
@@ -69,6 +72,15 @@ function Dot({ x, y, r, mark, labelMode, colorMode, dim, pulse }: DotProps) {
         </>
       ) : null}
       {pulse ? <circle className="fretboard__pulse" cx={x} cy={y} r={r + 4} /> : null}
+      {judged ? (
+        <circle
+          className={`fretboard__judged fretboard__judged--${judged}`}
+          data-testid={`judged-${judged}`}
+          cx={x}
+          cy={y}
+          r={r + 4.5}
+        />
+      ) : null}
       {label ? (
         <text className="fretboard__label" x={x} y={y} fontSize={fontSize}>
           {label}
@@ -117,6 +129,7 @@ function NeckDiagram({
   activeGroups,
   pulse,
   approach,
+  judged,
 }: FlatFretboardProps) {
   const fretW = 56;
   const stringH = 26;
@@ -218,6 +231,7 @@ function NeckDiagram({
             colorMode={colorMode}
             dim={!isActive(mark, activeGroups)}
             pulse={pulse?.has(`${mark.string}-${mark.fret}`) ?? false}
+            judged={judged?.get(`${mark.string}-${mark.fret}`)}
           />
         ))}
       {approach
@@ -245,6 +259,7 @@ function BoxDiagram({
   leftHanded = false,
   activeGroups,
   pulse,
+  judged,
 }: FlatFretboardProps) {
   const rows = 5;
   const stringW = 30;
@@ -369,6 +384,7 @@ function BoxDiagram({
               colorMode={colorMode}
               dim={!isActive(mark, activeGroups)}
               pulse={pulse?.has(`${mark.string}-${mark.fret}`) ?? false}
+              judged={judged?.get(`${mark.string}-${mark.fret}`)}
             />
           ) : null,
         )}

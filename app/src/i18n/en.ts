@@ -802,6 +802,39 @@ export const en = {
   stageDeckCollapse: 'Hide',
   stageDeckExpand: 'Show',
   stageExitFullscreen: 'Exit full screen',
+  // Listening feedback (phase 6 task 6.5; docs/specs/04-learning.md §8)
+  coachClean: 'Clean!',
+  coachSoundedClose: 'Sounded close: that counts.',
+  coachStreak: '{n} clean in a row.',
+  coachTryAgain: 'Not quite. Try once more.',
+  coachFretLow:
+    'String {string}: sounds like {heard}, a fret too low. Move that finger up one fret.',
+  coachFretHigh:
+    'String {string}: sounds like {heard}, a fret too high. Move that finger down one fret.',
+  coachWrongNote: 'String {string}: heard {heard}, expected {expected}.',
+  coachStringMuted: 'String {string} did not ring. Press with your fingertip, close to the fret.',
+  coachStringRings:
+    'String {string} should be silent. Rest a finger on it or start the strum lower down.',
+  coachStringQuiet: 'String {string} is quiet. Press a little harder.',
+  coachHeardInstead: 'Heard {heard} on string {string}.',
+  coachNoteQuiet: 'A bit quiet. Pick it a little harder.',
+  coachNoteMissing: 'Did not hear that one yet.',
+  coachEarly: '{ms} ms early.',
+  coachLate: '{ms} ms late.',
+  coachStringCheckOffer: 'Check string by string',
+  listenToggle: 'Listen',
+  listenWaitMode: 'Wait for me',
+  listenMarkPlayed: 'Mark as played',
+  listenReady: 'Listening. Play when you are ready.',
+  listenUnsupported: 'Listening checks chords and single notes; for this card, play along freely.',
+  listenCheckPlay: 'Pick string {string} on its own and let it ring.',
+  listenCheckDone: 'All strings checked.',
+  listenCheckRings: 'String {string} rings.',
+  listenCheckNot: 'String {string} does not ring clearly.',
+  listenCheckClose: 'Done',
+  listenSummary:
+    'Done: {correct} of {attempts} attempts clean, {firstTry} first time, best streak {streak}.',
+  listenOneString: 'That was a strum: pick just the one string.',
 } as const;
 
 export type MessageKey = keyof typeof en;

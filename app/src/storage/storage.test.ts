@@ -196,3 +196,25 @@ describe('tabs', () => {
     expect(await getTab('tab-bad')).toBeNull();
   });
 });
+
+describe('attempt log', () => {
+  it('stores attempts by session, oldest first', async () => {
+    const { logAttempt, attemptsOf, recentAttempts } = await import('./attempts');
+    const base = {
+      sessionId: 's1',
+      stepId: 'a',
+      skillIds: ['chord:G'],
+      target: { label: 'G', notes: [] },
+      perNote: [],
+      latencyMs: 0,
+      scaffold: 'full' as const,
+      usedHint: false,
+      source: 'audio' as const,
+    };
+    await logAttempt({ ...base, tMs: 2, verdict: 'correct' });
+    await logAttempt({ ...base, tMs: 1, verdict: 'wrong' });
+    await logAttempt({ ...base, sessionId: 's2', tMs: 3, verdict: 'escaped' });
+    expect((await attemptsOf('s1')).map((a) => a.verdict)).toEqual(['wrong', 'correct']);
+    expect((await recentAttempts(2)).map((a) => a.tMs)).toEqual([3, 2]);
+  });
+});

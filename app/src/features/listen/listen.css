@@ -1,0 +1,67 @@
+.listen {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--hairline);
+  padding-top: var(--space-2);
+}
+.listen__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.listen__level {
+  width: 80px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.listen__level span {
+  display: block;
+  height: 100%;
+  background: var(--success);
+}
+.listen__coach {
+  margin: 0;
+  font-weight: 600;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.listen__coach.is-good {
+  color: var(--success);
+}
+.listen__coach.is-fix {
+  color: var(--accent);
+}
+.listen__hint {
+  margin: 0;
+  color: var(--text-muted);
+}
+.listen__problem {
+  margin: 0;
+  color: var(--danger);
+}
+.listen__strings {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.listen__strings .is-good {
+  color: var(--success);
+}
+.listen__strings .is-fix {
+  color: var(--accent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .listen__coach {
+    animation: listen-in 160ms ease-out;
+  }
+  @keyframes listen-in {
+    from {
+      opacity: 0;
+      transform: translateY(2px);
+    }
+  }
+}

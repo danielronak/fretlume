@@ -42,6 +42,9 @@ import { readFrameStamp } from '@vision/stamp';
 import { diagnostics, FRAME_WIDTH } from '@/diagnostics/recorder';
 import { buildDeck, type DeckEntry } from './deck';
 import { DeckFrame } from './DeckFrame';
+import { useListening } from '@features/listen/useListening';
+import { ListenPanel } from '@features/listen/ListenPanel';
+import { expectationFromShape } from '@features/listen/expect';
 import { playAlongShape } from '@core/tab/playalong';
 import { TabDeck, useTabStage } from '@features/tabs/TabDeck';
 import { clearColorCache, drawGrid, drawOverlay, toCanvas, toVideo, type View } from './draw';
@@ -154,22 +157,31 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
   // A tab to play along with (/stage/tab/:tabId, task 5.7).
   const tabStage = useTabStage(params.tabId ?? null);
   const [showAll, setShowAll] = useState(true);
+  /** Wait-mode: with listening on, each card waits until it is played right (phase 6 task 6.4). */
+  const [waitMode, setWaitMode] = useState(false);
   // Deck transport: the session engine (learn/session.ts) steps through the deck's entries; a run
   // brings its own timing (seconds or bars per card, repeats, tempo).
   const deckSteps: Step<DeckEntry>[] = useMemo(() => {
+    const wait = { auto: 'on-correct' as const, holdMs: 400 };
     if (run && deck) {
       return runSteps(run)
         .slice(0, deck.entries.length)
-        .map((step, i) => ({ ...step, show: deck.entries[i]! }));
+        .map((step, i) => ({
+          ...step,
+          show: deck.entries[i]!,
+          ...(waitMode ? { advance: wait, judge: 'audio' as const } : {}),
+        }));
     }
     return (deck?.entries ?? []).map((e, i) => ({
       id: String(i),
       show: e,
-      advance: settings.stageAutoSeconds
-        ? { auto: 'timer' as const, seconds: settings.stageAutoSeconds }
-        : ('manual' as const),
+      advance: waitMode
+        ? wait
+        : settings.stageAutoSeconds
+          ? { auto: 'timer' as const, seconds: settings.stageAutoSeconds }
+          : ('manual' as const),
     }));
-  }, [run, deck, settings.stageAutoSeconds]);
+  }, [run, deck, settings.stageAutoSeconds, waitMode]);
   const [session, send] = useSession(deckSteps);
   useEffect(() => {
     if (!run) return;
@@ -182,6 +194,31 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
   const loop = session.loop;
   const entry: DeckEntry | null =
     deck?.entries[Math.min(entryIndex, deck.entries.length - 1)] ?? null;
+
+  // ---------- listening (phase 6) ----------
+  const expectation = useMemo(
+    () =>
+      entry
+        ? expectationFromShape(
+            entry.shape,
+            showAll ? [] : entry.activeGroups,
+            tuning.strings,
+            `${deck?.title ?? ''}:${entryIndex}:${session.repeat}`,
+            settings.a4Hz,
+          )
+        : null,
+    [entry, showAll, tuning.strings, deck?.title, entryIndex, session.repeat, settings.a4Hz],
+  );
+  const listening = useListening({
+    expectation,
+    sessionId: `stage:${runId ?? deck?.title ?? 'none'}`,
+    label: entry?.label ?? '',
+    a4Hz: settings.a4Hz,
+    onAttempt: (ok) => send({ type: 'attempt', ok }),
+  });
+  useEffect(() => {
+    if (!listening.on) setWaitMode(false);
+  }, [listening.on]);
 
   // ---------- camera and vision ----------
   const [withoutCamera, setWithoutCamera] = useState(false);
@@ -680,7 +717,7 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
             flipStrings: settings.flipStrings,
           });
           const fade = pose.state === 'locked' ? 1 : pose.state === 'recovering' ? 0.4 : 0.15;
-          drawOverlay(ctx, view, items, fade, settings.dotScale, pulse);
+          drawOverlay(ctx, view, items, fade, settings.dotScale, pulse, listening.dots);
         }
       }
       const now = performance.now();
@@ -1057,7 +1094,26 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
                 leftHanded={settings.handedness === 'left'}
                 activeGroups={entry.activeGroups}
                 pulse={pulse}
+                judged={listening.dots}
               />
+            ) : null}
+            <ListenPanel
+              listening={listening}
+              waitMode={waitMode}
+              onWaitMode={setWaitMode}
+              onMarkPlayed={() => send({ type: 'markPlayed' })}
+              canCheck={expectation?.kind === 'chord'}
+              unsupported={expectation ? null : 'listenUnsupported'}
+            />
+            {listening.on && session.finished && listening.stats.attempts > 0 ? (
+              <p className="stage__summary" role="status" data-testid="listen-summary">
+                {t('listenSummary', {
+                  correct: listening.stats.correct,
+                  attempts: listening.stats.attempts,
+                  firstTry: listening.stats.firstTry,
+                  streak: listening.stats.bestStreak,
+                })}
+              </p>
             ) : null}
             <div className="stage__actions">
               <Button onClick={() => step(-1)} aria-label={t('stageDeckBack')}>

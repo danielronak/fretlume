@@ -111,3 +111,56 @@ describe('session engine', () => {
     expect([s.index, s.repeat]).toEqual([1, 1]);
   });
 });
+
+describe('judging (wait-mode)', () => {
+  const wait: Step<string>[] = [
+    { id: 'a', show: 'G', advance: { auto: 'on-correct' }, judge: 'audio' },
+    {
+      id: 'b',
+      show: 'C',
+      advance: { auto: 'on-correct', holdMs: 500 },
+      judge: 'audio',
+      repeats: 2,
+    },
+    { id: 'c', show: 'D', advance: { auto: 'timer', seconds: 4 }, judge: 'audio' },
+  ];
+  const go = () => reduce(createSession(wait), { type: 'start', tMs: 0 });
+
+  it('stays on a wrong attempt, moves on a right one; the streak counts', () => {
+    let s = reduce(go(), { type: 'attempt', ok: false, tMs: 1000 });
+    expect([s.index, s.attempts, s.lastResult, s.streak]).toEqual([0, 1, 'wrong', 0]);
+    s = reduce(s, { type: 'tick', tMs: 60_000 });
+    expect(s.index).toBe(0); // no timer in wait-mode
+    s = reduce(s, { type: 'attempt', ok: true, tMs: 2000 });
+    expect([s.index, s.attempts, s.streak]).toEqual([1, 0, 1]);
+  });
+
+  it('holds a right attempt before moving on, then repeats', () => {
+    let s = reduce(go(), { type: 'attempt', ok: true, tMs: 100 });
+    s = reduce(s, { type: 'attempt', ok: true, tMs: 1000 });
+    expect([s.index, s.passedMs]).toEqual([1, 1000]);
+    s = reduce(s, { type: 'tick', tMs: 1400 });
+    expect([s.index, s.repeat]).toEqual([1, 0]);
+    s = reduce(s, { type: 'tick', tMs: 1500 });
+    expect([s.index, s.repeat, s.passedMs]).toEqual([1, 1, null]);
+    s = reduce(s, { type: 'attempt', ok: true, tMs: 2000 });
+    s = reduce(s, { type: 'tick', tMs: 2600 });
+    expect(s.index).toBe(2);
+  });
+
+  it('timer steps record attempts without waiting for them', () => {
+    let s = reduce(createSession(wait), { type: 'goto', index: 2, tMs: 0 });
+    s = reduce(s, { type: 'start', tMs: 0 });
+    s = reduce(s, { type: 'attempt', ok: false, tMs: 1000 });
+    expect([s.index, s.attempts]).toEqual([2, 1]);
+    s = reduce(s, { type: 'tick', tMs: 4000 });
+    expect(s.finished).toBe(true);
+  });
+
+  it('"mark as played" always gets the player past a wait-mode step', () => {
+    let s = reduce(go(), { type: 'attempt', ok: false, tMs: 100 });
+    s = reduce(s, { type: 'markPlayed', tMs: 200 });
+    expect([s.index, s.lastResult, s.streak]).toEqual([1, null, 0]);
+    expect(reduce(s, { type: 'markPlayed', tMs: 300 }).repeat).toBe(1);
+  });
+});

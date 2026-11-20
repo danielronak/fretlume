@@ -31,10 +31,12 @@ export function useSession<T>(
     }
     dispatch({ type: 'setSteps', steps });
   }, [steps, dispatch]);
+  // The clock runs while playing, and while a right attempt in wait-mode is being held.
+  const ticking = state.playing || state.passedMs !== null;
   useEffect(() => {
-    if (!state.playing) return;
+    if (!ticking) return;
     const id = window.setInterval(() => dispatch({ type: 'tick' }), 100);
     return () => clearInterval(id);
-  }, [state.playing, dispatch]);
+  }, [ticking, dispatch]);
   return [state, dispatch];
 }

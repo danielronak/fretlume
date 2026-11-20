@@ -40,6 +40,64 @@ fixtures.push({
   },
 });
 
+// Listening (phase 6 task 6.7): scripted players through the fake microphone. Open G (320003) strummed
+// every 2.5 s, 30 ms per string: perfect, with string 4 (D3) muted, with string 5 a fret low; and a
+// string-by-string pass with string 4 muted.
+const OPEN = [64, 59, 55, 50, 45, 40];
+const G_FRETS = [3, 0, 0, 0, 2, 3]; // string 1 … 6
+function player({ mute = 0, shift = null, mode = 'strum' } = {}) {
+  const sr = 48000;
+  const total = mode === 'strum+check' ? 13 : 10;
+  const out = new Float32Array(total * sr);
+  const add = (midi, t, seed) => {
+    // Ring until the end of the file (an abrupt stop would itself look like an onset).
+    const y = pluckTone(440 * 2 ** ((midi - 69) / 12), total - t, sr, { amplitude: 0.22, seed, decayScale: 0.25 });
+    const s0 = Math.round(t * sr);
+    for (let i = 0; i < y.length && s0 + i < out.length; i++) out[s0 + i] += y[i];
+  };
+  const strings = [6, 5, 4, 3, 2, 1];
+  const thud = (t) => {
+    // A muted string picked: a short dead click, no pitch.
+    const s0 = Math.round(t * sr);
+    let seed = 99;
+    for (let i = 0; i < sr * 0.03 && s0 + i < out.length; i++) {
+      seed = (seed * 16807) % 2147483647;
+      out[s0 + i] += 0.08 * ((seed / 2147483647) * 2 - 1) * Math.exp(-i / (sr * 0.004));
+    }
+  };
+  if (mode === 'strum+check') {
+    // Two strums, then each string on its own (the muted one gives a dead click).
+    for (let k = 0; k < 2; k++)
+      strings.forEach((s, j) => {
+        if (s !== mute) add(OPEN[s - 1] + G_FRETS[s - 1], 0.4 + k * 2.5 + j * 0.03, 10 * k + s);
+      });
+    strings.forEach((s, j) => {
+      const t = 5.5 + j * 1.2;
+      if (s === mute) thud(t);
+      else add(OPEN[s - 1] + G_FRETS[s - 1], t, 70 + s);
+    });
+  } else if (mode === 'strum') {
+    for (let k = 0; k < 4; k++)
+      strings.forEach((s, j) => {
+        if (s === mute) return;
+        const fret = G_FRETS[s - 1] + (shift && shift.string === s ? shift.by : 0);
+        add(OPEN[s - 1] + fret, 0.4 + k * 2.5 + j * 0.03, 10 * k + s);
+      });
+  } else {
+    strings.forEach((s, j) => {
+      if (s !== mute) add(OPEN[s - 1] + G_FRETS[s - 1], 0.6 + j * 1.4, 50 + s);
+    });
+  }
+  return out;
+}
+for (const [file, describe, opts] of [
+  ['player-g-perfect.wav', 'open G strummed cleanly every 2.5 s (scripted player)', {}],
+  ['player-g-muted4.wav', 'open G with string 4 muted: two strums, then string by string (scripted player)', { mute: 4, mode: 'strum+check' }],
+  ['player-g-wrong5.wav', 'open G with the string-5 finger a fret low (scripted player)', { shift: { string: 5, by: -1 } }],
+  ['player-g-sbs-muted4.wav', 'open G string by string, string 4 silent (scripted player)', { mute: 4, mode: 'sbs' }],
+])
+  fixtures.push({ file, describe, make: (out) => floatsToWav(player(opts), 48000, out) });
+
 // Tuner gate G6.1: each open string of standard tuning at -20, 0 and +20 cents, as a 2 s pluck
 // that the fake microphone loops (so it is re-plucked every 2 s).
 const OPEN_STRINGS = [

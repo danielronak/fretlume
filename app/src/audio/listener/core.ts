@@ -22,7 +22,8 @@ const RING_SECONDS = 6;
 /** A note is judged this long after its onset; a strum this long after its last pluck. */
 const NOTE_WAIT_S = 0.3;
 const CHORD_WAIT_S = 0.5;
-const STRUM_GAP_S = 0.08;
+/** Plucks closer than this are one strum (longer than the onset detector's 120 ms ripple guard). */
+const STRUM_GAP_S = 0.13;
 const APP_MASK_S = 0.06;
 
 export interface Expectation {
@@ -40,6 +41,8 @@ export type ListenerEvent =
   | { type: 'note'; id: string; t: number; check: NoteCheck }
   | { type: 'chord'; id: string; start: number; end: number; verdict: Verdict }
   | { type: 'suggest'; t: number; guesses: ChordGuess[] }
+  /** A strum while a single note was expected: not judged (the string check wants one string). */
+  | { type: 'strumIgnored'; id: string; t: number }
   | { type: 'level'; t: number; rms: number };
 
 export class ListenerCore {
@@ -49,7 +52,7 @@ export class ListenerCore {
   private expectation: Expectation | null = null;
   private appSounds: number[] = [];
   /** A note waiting to be judged, or a strum still collecting plucks. */
-  private pending: { start: number; end: number } | null = null;
+  private pending: { start: number; end: number; count: number } | null = null;
   private suggest = false;
   private lastSuggest = 0;
   private levelAcc = 0;
@@ -114,13 +117,11 @@ export class ListenerCore {
   private onOnset(t: number): void {
     const e = this.expectation;
     if (!e) return;
-    if (e.kind === 'note') {
-      this.pending ??= { start: t, end: t };
-      return;
-    }
-    // A chord: plucks within 80 ms of each other are one strum.
-    if (this.pending && t - this.pending.end <= STRUM_GAP_S) this.pending.end = t;
-    else if (!this.pending) this.pending = { start: t, end: t };
+    // Plucks within 80 ms of each other are one strum.
+    if (this.pending && t - this.pending.end <= STRUM_GAP_S) {
+      this.pending.end = t;
+      this.pending.count++;
+    } else if (!this.pending) this.pending = { start: t, end: t, count: 1 };
   }
 
   private judgeIfDue(): ListenerEvent | null {
@@ -128,6 +129,7 @@ export class ListenerCore {
     const p = this.pending;
     if (!e || !p) return null;
     const wait = e.kind === 'note' ? NOTE_WAIT_S : CHORD_WAIT_S;
+    // A note waits from its first pluck; a strum from its last.
     if (this.now < p.end + wait) return null;
     this.pending = null;
     const opts = {
@@ -135,6 +137,7 @@ export class ListenerCore {
       ...(e.a4Hz ? { a4Hz: e.a4Hz } : {}),
     };
     if (e.kind === 'note') {
+      if (p.count > 1) return { type: 'strumIgnored', id: e.id, t: p.start };
       const from = p.start - 0.3;
       const x = this.slice(from, p.start + NOTE_WAIT_S);
       const spec = newEnergySpectrum(
