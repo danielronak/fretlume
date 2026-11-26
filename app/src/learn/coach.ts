@@ -17,7 +17,21 @@ export interface Coach {
 const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const pc = (midi: number) => NAMES[((midi % 12) + 12) % 12]!;
 
+/**
+ * Nothing of the chord came through (every judged string at noise level): the microphone, the room or
+ * a very short strum, not the player's fingers (field test 2026-11-26). Not counted as an attempt.
+ */
+export function notHeard(v: Verdict): boolean {
+  const judged = v.perNote.filter((n) => n.state !== 'unsure');
+  return (
+    judged.length > 0 &&
+    judged.every((n) => n.state === 'missing' || n.state === 'weak') &&
+    v.extra.length === 0
+  );
+}
+
 export function coachChord(v: Verdict, context: { streak: number; failsInARow: number }): Coach {
+  if (notHeard(v)) return { key: 'coachNotHeard', tone: 'info' };
   const wrong = v.perNote.find((n) => n.state === 'wrong' && n.heard !== undefined);
   if (wrong) {
     const d = wrong.heard! - wrong.midi;

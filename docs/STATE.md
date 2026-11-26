@@ -5,7 +5,7 @@
 ## Now
 - **Current phase:** 6 — complete except gate G6.3 strum mode (fallback ladder applied, D-031); v0.5.0 released 2026-11-20. Optional 6.8 (GuitarSet) needs zenodo.org. Next: Phase 7 (hand vision).
 - **Next task:** Phase 7, first task (`docs/phases/phase-07-*.md`).
-- **Last release:** 0.5.1 (field-test fixes, D-033), 2026-11-26 — live at https://danielronak.github.io/fretlume/ (tagged by the Release workflow)
+- **Last release:** 0.5.2 (D-034), 2026-11-26 — live at https://danielronak.github.io/fretlume/ (tagged by the Release workflow)
 - **Repository:** `danielronak/fretlume`, default branch `main`, trunk-based (DECISIONS D-001)
 - **Cloud environment:** `fretlume` (personal; setup script runs `npm ci` + `uv sync`).
 - **Last updated:** 2026-11-26
@@ -14,7 +14,7 @@
 - **Golden set downloads (optional).** Wikimedia hosts are allowed on the environment, but this session's
   automatic permission check refused the download. To let a future session collect real guitar photos for
   gate G4.4, allow it when asked (or add a permission rule for fetching from upload.wikimedia.org).
-- **🎸 Field test of 0.5.1 (listening + tracking near the nut):** as below; any CAGED shape card works now. Switch on "Include camera video" and export straight after the grid slips while you hold an open chord (the export keeps only the last 10 s).
+- **🎸 Field test of 0.5.2 (listening):** Settings → Field test → switch on "Include microphone audio (last 10 s)", strum a few G chords with Listen on, export right after a strum it did not catch. Also say if Windows has "Voice clarity" / audio enhancements on for the microphone.
 - **🎸 Field test of 0.5.0 (listening):** Settings → Field test, new step “Listen”: on the Stage, G major,
   step to “Voicing 1 · 320003”, switch Listen on, strum G, then C and D slowly. Did it hear you? Any false
   “did not ring”? Try “Check string by string”, and Tabs → Play along with Listen + Wait for me. Then
@@ -175,6 +175,7 @@ The "Release" workflow deploys it and creates the tag. The session cannot push t
 | 2026-11-19 | same laptop, 0.3.6 | "Slightly better", "quite good"; covering the frets makes the overlay go away for a bit; some lag. Diagnostics: 4 losses, 3 automatic re-locks unsure of the index (hand over the inlays) → confirm step, overlay gone until confirmed. Video segment clean. Worker 66 ms, tracked every 96 ms. | 0.3.7 (D-027): after a short loss an uncertain index is aligned with the previous grid instead of asking. Lag next: processing speed. |
 | 2026-11-19 | same laptop, 0.3.7 → owner reply | "Work on the lag first." | 0.3.8 (D-028): 42 % less work per tracked frame (≈ 15 instead of 10 updates a second on the owner's laptop); on-screen error while moving 3.8 → 2.1 px at those rates. |
 | 2026-11-26 | same laptop, 0.5.0 | Scale tracked well; G major CAGED shapes lost the neck easily; listening said nothing. Diagnostics: no verdicts (CAGED cards with "All shapes" on were not judged), tracking ~4.5/s with ~0.48 s NeckNet freezes once a second, listener 20–25 % of a core. | 0.5.1 (D-033): NeckNet in its own worker (worst frame 355 → 60 ms on replay), highlighted CAGED shape judged, cheaper resampler and level meter. |
+| 2026-11-26 | same laptop, 0.5.1 | "Tracking is better and listening is decent." Tracking ~9/s, freezes 1.8 % of time, listener 4.9 % of a core. 9 of 105 chord verdicts passed; the fails were noise-level on every string (no sustained chord heard). | 0.5.2 (D-034): opt-in microphone audio in diagnostics + mic-track settings; "didn't catch that strum" instead of blaming a string. |
 
 ## Decisions log pointer
 See `docs/DECISIONS.md` (created in Phase 0). Architecture decisions A1–A10 are in `MASTER_PLAN.md` §2.

@@ -60,6 +60,7 @@ export function FieldTest() {
   const toast = useToast();
   const [done, setDone] = useState(loadDone);
   const [frames, setFrames] = useState(diagnostics.recordFrames);
+  const [audio, setAudio] = useState(diagnostics.recordAudio);
   const toggle = (id: string, on: boolean) => {
     const next = on ? [...new Set([...done, id])] : done.filter((d) => d !== id);
     setDone(next);
@@ -110,6 +111,15 @@ export function FieldTest() {
           }}
         />
         <p className="settings__body">{t('fieldFramesNote')}</p>
+        <Toggle
+          label={t('fieldAudio')}
+          checked={audio}
+          onChange={(on) => {
+            diagnostics.setRecordAudio(on);
+            setAudio(on);
+          }}
+        />
+        <p className="settings__body">{t('fieldAudioNote')}</p>
         <div className="settings__rows">
           <Button variant="primary" onClick={exportNow} data-testid="diagnostics-export">
             {t('fieldExportButton')}

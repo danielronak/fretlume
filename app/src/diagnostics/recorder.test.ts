@@ -92,3 +92,22 @@ describe('DiagnosticsRecorder', () => {
     );
   });
 });
+
+describe('microphone audio in diagnostics', () => {
+  it('kept only with consent, decimated, the last 10 s as a WAV', () => {
+    const d = new DiagnosticsRecorder();
+    const block = new Float32Array(48000).fill(0.5);
+    d.audio(block, 48000);
+    expect(d.bundle('x', {}, {}).audio).toBeNull();
+    d.setRecordAudio(true);
+    for (let i = 0; i < 12; i++) d.audio(block, 48000);
+    const a = d.bundle('x', {}, {}).audio!;
+    expect(a.sampleRate).toBe(24000);
+    const wav = Buffer.from(a.wavBase64, 'base64');
+    expect(wav.toString('ascii', 0, 4)).toBe('RIFF');
+    expect(wav.readUInt32LE(40)).toBe(24000 * 10 * 2);
+    expect(wav.readInt16LE(44)).toBe(Math.round(0.5 * 32767));
+    d.setRecordAudio(false);
+    expect(d.bundle('x', {}, {}).audio).toBeNull();
+  });
+});

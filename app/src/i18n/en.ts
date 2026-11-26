@@ -585,6 +585,9 @@ export const en = {
   fieldFrames: 'Include camera video (last 10 s, 10 frames per second)',
   fieldFramesNote:
     'Off by default. When on, the last 10 seconds of camera video (640 px wide) are kept in memory while the Stage runs and go into the next export (a few MB). Turning it off deletes them.',
+  fieldAudio: 'Include microphone audio (last 10 s)',
+  fieldAudioNote:
+    'Off by default. When on, the last 10 seconds the microphone heard are kept in memory and go into the next export (about 0.6 MB), so problems with listening can be heard and fixed. Turning it off deletes them.',
   fieldExportButton: 'Export diagnostics',
   fieldExported: 'Saved {file} ({poses} positions, {frames} frames).',
   fieldClear: 'Clear recorded data',
@@ -809,6 +812,8 @@ export const en = {
   coachSoundedClose: 'Sounded close: that counts.',
   coachStreak: '{n} clean in a row.',
   coachTryAgain: 'Not quite. Try once more.',
+  coachNotHeard:
+    'Did not catch that strum clearly. Let it ring for a moment; if this keeps happening, check the microphone (Settings → Field test).',
   coachFretLow:
     'String {string}: sounds like {heard}, a fret too low. Move that finger up one fret.',
   coachFretHigh:

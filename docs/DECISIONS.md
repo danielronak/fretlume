@@ -493,3 +493,18 @@ core here); the level meter re-renders only itself, 5 times a second, instead of
 **Open.** The nut-end instability with the hand near the nut was not in the 10 s of video the export
 holds; it is asked for in the next field test. `stage: track-motion` e2e fails 1 in 4 runs under load on
 unchanged code too (pre-existing).
+
+## D-034 · 2026-11-26 · Field test of 0.5.1: listening sees noise on most strums; opt-in audio in diagnostics
+**Context.** Owner: "tracking is better and listening is decent". Diagnostics: tracking 8.7–9.1 updates/s
+(was 4.5), NeckNet freezes 1.8 % of the time (was 51 %), listener 4.9 % of a core (was 20–25 %), two losses
+in ~160 s. Listening: 105 chord verdicts, 9 passed. The fails were not near misses: on most, every judged
+string scored 0.3–0.6 of the threshold (noise level), while the passes scored 3–30 — no sustained chord in
+the analysis window. Likely causes: the browser or Windows still processing the microphone (noise
+suppression or voice clarity removing a ringing chord after its attack), very short strums, or the
+window landing late. The export holds no audio, so they cannot be told apart.
+**Decision.** (1) Field test gains "Include microphone audio (last 10 s)", off by default, in memory only,
+deleted when switched off, exported as a 16-bit WAV at ≤ 24 kHz (same policy as camera video; CLAUDE.md
+rule 1 allows it on the player's export). The export also records what the browser reports about the mic
+track (echo cancellation, noise suppression, auto gain) and, per strum, the analysed RMS, plucks heard and
+strum length. (2) A strum where nothing of the chord came through is no longer blamed on a string or
+counted as a wrong attempt: the coach says it did not catch the strum and points at the microphone check.

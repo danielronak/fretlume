@@ -48,11 +48,27 @@ export type ListenerEvent =
   | { type: 'onset'; t: number }
   /** `deltaMs`: onset minus the expected time (timeline mode). */
   | { type: 'note'; id: string; t: number; check: NoteCheck; deltaMs?: number }
-  | { type: 'chord'; id: string; start: number; end: number; verdict: Verdict; deltaMs?: number }
+  | {
+      type: 'chord';
+      id: string;
+      start: number;
+      end: number;
+      verdict: Verdict;
+      deltaMs?: number;
+      /** Plucks heard in the strum, and the RMS of the analysed audio (diagnostics). */
+      plucks?: number;
+      rms?: number;
+    }
   | { type: 'suggest'; t: number; guesses: ChordGuess[] }
   /** A strum while a single note was expected: not judged (the string check wants one string). */
   | { type: 'strumIgnored'; id: string; t: number }
   | { type: 'level'; t: number; rms: number };
+
+const rmsOf = (x: Float32Array) => {
+  let acc = 0;
+  for (const v of x) acc += v * v;
+  return x.length ? Math.sqrt(acc / x.length) : 0;
+};
 
 export class ListenerCore {
   private readonly ring = new Float32Array(ANALYSIS_RATE * RING_SECONDS);
@@ -220,6 +236,8 @@ export class ListenerCore {
       end: p.end,
       verdict: decide(refined, v.extra, leniency),
       ...timed,
+      plucks: p.count,
+      rms: rmsOf(x.subarray(endAt)),
     };
   }
 

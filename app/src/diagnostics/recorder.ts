@@ -37,7 +37,23 @@ export interface ListenRecord {
   perNote: { string: number; state: string; score: number; heard?: number }[];
   extra?: { string: number; score: number }[];
   deltaMs?: number;
+  /** RMS of the analysed audio, plucks heard in the strum and its length (field test 2026-11-26). */
+  rms?: number;
+  plucks?: number;
+  strumMs?: number;
 }
+
+/** What the browser says about the microphone track (processing it could not switch off). */
+export interface MicInfo {
+  sampleRate: number;
+  echoCancellation?: boolean;
+  noiseSuppression?: boolean;
+  autoGainControl?: boolean;
+  channelCount?: number;
+}
+
+/** Seconds of microphone audio kept (only with consent), and the rate it is kept at. */
+export const AUDIO_SECONDS = 10;
 
 export interface FrameRecord {
   tMs: number;
@@ -58,6 +74,9 @@ export interface DiagnosticsBundle {
   listen: ListenRecord[];
   /** Share of one CPU core the listener worker used (sampled every 5 s). */
   listenCost: number[];
+  mic: MicInfo | null;
+  /** The last 10 s of microphone audio as a 16-bit WAV (base64), only with consent. */
+  audio: { sampleRate: number; wavBase64: string } | null;
   frames: FrameRecord[];
 }
 
@@ -75,6 +94,13 @@ export class DiagnosticsRecorder {
   frames: FrameRecord[] = [];
   listenRecords: ListenRecord[] = [];
   listenCost: number[] = [];
+  mic: MicInfo | null = null;
+  /** The player agreed to keep the last 10 s of microphone audio for the next export. */
+  recordAudio = false;
+  private audioRing: Float32Array | null = null;
+  private audioRate = 0;
+  private audioWritten = 0;
+  private decimate = 1;
   /** The player agreed to keep camera frames for the next export. */
   recordFrames = false;
   private lastFrameMs = -Infinity;
@@ -110,6 +136,49 @@ export class DiagnosticsRecorder {
   listen(record: ListenRecord): void {
     this.listenRecords.push(record);
     if (this.listenRecords.length > 300) this.listenRecords.shift();
+  }
+
+  setMic(info: MicInfo | null): void {
+    this.mic = info;
+  }
+
+  setRecordAudio(on: boolean): void {
+    this.recordAudio = on;
+    if (!on) {
+      this.audioRing = null;
+      this.audioWritten = 0;
+    }
+  }
+
+  /** A block of microphone samples (kept, decimated to ≤ 24 kHz, only while recordAudio is on). */
+  audio(samples: Float32Array, sampleRate: number): void {
+    if (!this.recordAudio) return;
+    const decimate = Math.max(1, Math.round(sampleRate / 24000));
+    const rate = sampleRate / decimate;
+    if (!this.audioRing || rate !== this.audioRate) {
+      this.audioRing = new Float32Array(Math.round(rate * AUDIO_SECONDS));
+      this.audioRate = rate;
+      this.audioWritten = 0;
+      this.decimate = decimate;
+    }
+    const ring = this.audioRing;
+    for (let i = 0; i + this.decimate <= samples.length; i += this.decimate) {
+      let v = 0;
+      for (let k = 0; k < this.decimate; k++) v += samples[i + k]!;
+      ring[this.audioWritten % ring.length] = v / this.decimate;
+      this.audioWritten++;
+    }
+  }
+
+  /** The kept audio, oldest first. */
+  private audioSnapshot(): Float32Array | null {
+    const ring = this.audioRing;
+    if (!ring || this.audioWritten === 0) return null;
+    const n = Math.min(this.audioWritten, ring.length);
+    const out = new Float32Array(n);
+    const start = this.audioWritten - n;
+    for (let i = 0; i < n; i++) out[i] = ring[(start + i) % ring.length]!;
+    return out;
   }
 
   cost(share: number): void {
@@ -152,6 +221,8 @@ export class DiagnosticsRecorder {
       events: [...this.events],
       listen: [...this.listenRecords],
       listenCost: [...this.listenCost],
+      mic: this.mic,
+      audio: this.recordAudio ? encodeAudio(this.audioSnapshot(), this.audioRate) : null,
       frames: this.recordFrames ? [...this.frames] : [],
     };
   }
@@ -163,7 +234,41 @@ export class DiagnosticsRecorder {
     this.frames = [];
     this.listenRecords = [];
     this.listenCost = [];
+    this.audioRing = null;
+    this.audioWritten = 0;
   }
+}
+
+/** 16-bit mono WAV, base64. */
+export function encodeAudio(
+  samples: Float32Array | null,
+  sampleRate: number,
+): { sampleRate: number; wavBase64: string } | null {
+  if (!samples || samples.length === 0) return null;
+  const bytes = new Uint8Array(44 + samples.length * 2);
+  const v = new DataView(bytes.buffer);
+  const text = (o: number, s: string) =>
+    [...s].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  text(0, 'RIFF');
+  v.setUint32(4, 36 + samples.length * 2, true);
+  text(8, 'WAVE');
+  text(12, 'fmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, Math.round(sampleRate), true);
+  v.setUint32(28, Math.round(sampleRate) * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  text(36, 'data');
+  v.setUint32(40, samples.length * 2, true);
+  samples.forEach((x, i) =>
+    v.setInt16(44 + i * 2, Math.round(Math.max(-1, Math.min(1, x)) * 32767), true),
+  );
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000)
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return { sampleRate: Math.round(sampleRate), wavBase64: btoa(binary) };
 }
 
 export const diagnostics = new DiagnosticsRecorder();

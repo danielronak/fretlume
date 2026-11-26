@@ -7,6 +7,7 @@ import captureWorkletUrl from './worklets/capture.worklet.ts?worker&url';
 import type { CaptureBlockMessage } from './worklets/capture.worklet';
 import { audioEngine } from './engine';
 import { RingBuffer } from './ringBuffer';
+import { diagnostics } from '@/diagnostics/recorder';
 
 export type MicStatus =
   | 'idle'
@@ -153,6 +154,19 @@ class Microphone {
     const track = stream.getAudioTracks()[0];
     const settings = track?.getSettings() ?? {};
     track?.addEventListener('ended', this.onTrackEnded);
+    diagnostics.setMic({
+      sampleRate: context.sampleRate,
+      ...(typeof settings.echoCancellation === 'boolean'
+        ? { echoCancellation: settings.echoCancellation }
+        : {}),
+      ...(typeof settings.noiseSuppression === 'boolean'
+        ? { noiseSuppression: settings.noiseSuppression }
+        : {}),
+      ...(typeof settings.autoGainControl === 'boolean'
+        ? { autoGainControl: settings.autoGainControl }
+        : {}),
+      ...(typeof settings.channelCount === 'number' ? { channelCount: settings.channelCount } : {}),
+    });
     this.set({
       status: 'running',
       deviceId: settings.deviceId && deviceId ? settings.deviceId : deviceId,
@@ -187,6 +201,7 @@ class Microphone {
     this.ring.write(message.samples);
     this.latest = { rms: message.rms, peak: message.peak };
     const block: Block = { ...message, endSample: this.ring.total };
+    if (diagnostics.recordAudio) diagnostics.audio(message.samples, this.snapshot.sampleRate);
     for (const listener of this.blockListeners) listener(block);
   }
 

@@ -11,7 +11,7 @@ import type { Expectation, TimedExpectation } from '@audio/listener/core';
 import { listener } from '@audio/listener/listener';
 import { playNotes } from '@audio/player';
 import { attemptFromChord, attemptFromNote } from '@learn/attempt';
-import { coachChord, coachNote, judgedDots, type Coach } from '@learn/coach';
+import { coachChord, coachNote, judgedDots, notHeard, type Coach } from '@learn/coach';
 import { logAttempt } from '@storage/attempts';
 import { diagnostics } from '@/diagnostics/recorder';
 
@@ -190,8 +190,16 @@ export function useListening(options: {
             ...(n.heard !== undefined ? { heard: n.heard } : {}),
           })),
           extra: v.extra.map((x) => ({ string: x.string, score: +x.score.toFixed(3) })),
+          ...(ev.rms !== undefined ? { rms: +ev.rms.toFixed(5) } : {}),
+          ...(ev.plucks !== undefined ? { plucks: ev.plucks } : {}),
+          strumMs: Math.round((ev.end - ev.start) * 1000),
           ...(info.deltaMs !== undefined ? { deltaMs: Math.round(info.deltaMs) } : {}),
         });
+        if (notHeard(v)) {
+          // Not the player's fault as far as we can tell: say so, count nothing.
+          setCoach(coachChord(v, { streak: streak.current, failsInARow: fails.current }));
+          return;
+        }
         streak.current = v.ok ? streak.current + 1 : 0;
         fails.current = v.ok ? 0 : fails.current + 1;
         setCoach(coachChord(v, { streak: streak.current, failsInARow: fails.current }));

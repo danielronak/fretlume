@@ -83,4 +83,18 @@ describe('coach', () => {
       ['2-3', 'fix'],
     ]);
   });
+
+  it('a strum with nothing clear is not blamed on a string', () => {
+    const v = verdict(
+      [note(5, 3, 48, 'missing'), note(4, 2, 52, 'weak'), note(1, 0, 64, 'unsure')],
+      false,
+    );
+    expect(coachChord(v, { streak: 0, failsInARow: 3 })).toEqual({
+      key: 'coachNotHeard',
+      tone: 'info',
+    });
+    // One string present: then the missing one is named.
+    const w = verdict([note(5, 3, 48, 'present'), note(4, 2, 52, 'missing')], false);
+    expect(coachChord(w, { streak: 0, failsInARow: 0 }).key).toBe('coachStringMuted');
+  });
 });
