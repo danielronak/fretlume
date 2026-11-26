@@ -474,3 +474,22 @@ green/amber rings on the judged dots, an end-of-run summary, a quiet chime on a 
 playing?" shows the smoothed top chroma guess and alternatives, with a library link.
 **Alternatives.** Spectral subtraction of the app's own playback (needs the room's transfer function);
 judging continuous tab play with a moving single expectation (verdicts were cancelled by the next beat).
+
+## D-033 · 2026-11-26 · Field test of 0.5.0: NeckNet in its own worker; listening on CAGED cards
+**Context.** Owner, 0.5.0: the overlay tracked well on the scale but lost the neck easily while playing
+G major in the CAGED shapes, and listening said nothing. Diagnostics: 0 listening verdicts; tracking at
+~4.5 updates/s (105 ms per frame; 0.3.8 managed ~15/s); half of all time in ~480 ms freezes, once a
+second; the listener worker at 20–25 % of a core; before each loss the grid's nut end jumped ~100 px
+between frames while the 12th-fret end held (the fretting hand at frets 1–3 covers the nut end).
+**Decision.** (1) The watchdog's NeckNet check (~200 ms here, ~350 ms on the owner's laptop) and the
+re-find while recovering ran inline in the tracking worker, so each one froze tracking. They now run in a
+second worker (`detect.worker.ts`); the core queues the request, keeps tracking, and applies the answer
+against the frame it was asked about (re-finds only if still recovering). Replay of the owner's frames:
+worst frame 355 → 60 ms, mean 57 → 33 ms, locked throughout. Without nested workers it runs inline as
+before. (2) Listening judged nothing on CAGED cards because "All shapes" (on by default) handed it every
+shape's 19 notes; it now always checks the highlighted shape. The message for cards that cannot be
+judged says to press Next for a single shape. (3) The resampler tabulates its kernel (3.7 → 0.8 % of a
+core here); the level meter re-renders only itself, 5 times a second, instead of the whole Stage.
+**Open.** The nut-end instability with the hand near the nut was not in the 10 s of video the export
+holds; it is asked for in the next field test. `stage: track-motion` e2e fails 1 in 4 runs under load on
+unchanged code too (pre-existing).

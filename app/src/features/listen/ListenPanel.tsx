@@ -1,7 +1,7 @@
 /** Listening controls and feedback for a deck (phase 6 task 6.5): toggle, level, coach line, checks. */
 import { t, type MessageKey } from '@i18n/index';
 import { Button, Toggle } from '@ui/index';
-import type { Listening } from './useListening';
+import { useListenLevel, type Listening } from './useListening';
 import './listen.css';
 
 const MIC_PROBLEM: Partial<Record<string, MessageKey>> = {
@@ -31,7 +31,8 @@ export function ListenPanel({
   unsupported?: MessageKey | null;
 }) {
   const problem = l.on ? MIC_PROBLEM[l.mic] : undefined;
-  const levelPct = Math.min(100, Math.round(Math.sqrt(l.level) * 400));
+  const level = useListenLevel();
+  const levelPct = Math.min(100, Math.round(Math.sqrt(level) * 400));
   return (
     <div className="listen" data-testid="listen-panel" data-on={l.on}>
       <div className="listen__row">

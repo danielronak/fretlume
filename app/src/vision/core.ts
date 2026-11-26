@@ -9,7 +9,7 @@ import { multiply, type Mat3, type Pt } from './geometry';
 import type { Image } from './image';
 import { AutoLocker, type AutoLockStatus } from './autoLock';
 import { alignToPrevious, snapLock, VERIFIED_CONFIDENCE } from './lock';
-import { detectNeck } from './neckNet';
+import { detectNeck, type NeckDetection } from './neckNet';
 import type { Network } from './nn';
 import { TrackingSession, type Pose } from './tracking';
 import { compare, TrackingWatchdog } from './watchdog';
@@ -25,6 +25,16 @@ export interface LockReply {
   found: boolean;
   /** Confident enough to call the lock verified (G3.2 calibration). */
   verified: boolean;
+}
+
+/**
+ * A NeckNet call for a second worker (field test 2026-11-26: inline, each call froze tracking for
+ * ~0.35 s once a second on the owner's laptop — half of all the time). The core keeps tracking and
+ * applies the answer, against the frame it was asked about, when it comes back.
+ */
+export interface DetectRequest {
+  id: number;
+  image: Image;
 }
 
 /** Scale matrix: video px → processing px. */
@@ -50,6 +60,19 @@ export class VisionCore {
   private reacquire = false;
   private lastReacquireMs = -Infinity;
   private finder: AutoLocker | null = null;
+  /** NeckNet runs in another worker: requests are queued, answers applied later. */
+  private asyncDetect = false;
+  private nextId = 1;
+  private pending: {
+    id: number;
+    purpose: 'watch' | 'reacquire';
+    image: Image;
+    tMs: number;
+    controlPoints: Pt[];
+    sent: boolean;
+  } | null = null;
+  /** The detection the finder should use (async mode hands it the worker's answer). */
+  private given: NeckDetection | null = null;
 
   get model(): InstrumentModel {
     return INSTRUMENTS[this.instrument];
@@ -124,6 +147,52 @@ export class VisionCore {
     this.finder = null;
   }
 
+  /** Run watchdog checks and re-finds through takeDetectRequest / detectResult (another worker). */
+  setAsyncDetect(on: boolean): void {
+    this.asyncDetect = on;
+    this.pending = null;
+  }
+
+  /** The NeckNet request waiting to be sent, if any (each is handed out once). */
+  takeDetectRequest(): DetectRequest | null {
+    const p = this.pending;
+    if (!p || p.sent) return null;
+    p.sent = true;
+    return { id: p.id, image: p.image };
+  }
+
+  /** The other worker's answer to request `id`. */
+  detectResult(id: number, det: NeckDetection): void {
+    const p = this.pending;
+    if (!p || p.id !== id) return;
+    this.pending = null;
+    if (!this.session) return;
+    if (p.purpose === 'reacquire') {
+      // Only while still recovering: tracking may have found its own way back meanwhile.
+      if (this.lastPose?.state === 'recovering') this.reacquireWith(p.image, p.tMs, det);
+      return;
+    }
+    const verdict = compare(det, p.controlPoints);
+    if (verdict === 'disagree' && this.reacquireWith(p.image, p.tMs, det)) return;
+    if (this.watchdog.record(verdict, p.tMs)) {
+      this.session = null;
+      this.watchLost = true;
+      this.auto?.reset();
+    }
+  }
+
+  private request(purpose: 'watch' | 'reacquire', image: Image, tMs: number): void {
+    if (this.pending) return;
+    this.pending = {
+      id: this.nextId++,
+      purpose,
+      image,
+      tMs,
+      controlPoints: this.lastPose?.controlPoints ?? [],
+      sent: false,
+    };
+  }
+
   /**
    * Automatic lock on one frame (scaled by `scale`); the result's H is in video px. Null without a
    * network.
@@ -163,6 +232,13 @@ export class VisionCore {
     const pose = this.lastPose;
     if (!this.net || !this.session || !pose || pose.state !== 'locked') return;
     if (!this.watchdog.due(tMs)) return;
+    if (this.asyncDetect) {
+      if (this.pending) return;
+      // Counts as the check's time now, so another is not queued every frame meanwhile.
+      this.watchdog.record('unsure', tMs);
+      this.request('watch', image, tMs);
+      return;
+    }
     const verdict = compare(detectNeck(this.net, image), pose.controlPoints);
     // NeckNet sees the neck elsewhere: try to put the grid there now rather than after three checks.
     if (verdict === 'disagree') {
@@ -185,8 +261,23 @@ export class VisionCore {
     const net = this.net;
     if (!net || !this.reacquire || !this.session || tMs - this.lastReacquireMs < 250) return null;
     this.lastReacquireMs = tMs;
-    this.finder ??= new AutoLocker(this.tracker(), (img) => detectNeck(net, img));
+    if (this.asyncDetect) {
+      this.request('reacquire', image, tMs);
+      return null;
+    }
+    return this.reacquireWith(image, tMs, detectNeck(net, image));
+  }
+
+  /** Lock where NeckNet sees the neck on `image` (when the fit and its index are sure). */
+  private reacquireWith(image: Image, tMs: number, det: NeckDetection): Pose | null {
+    if (!this.net || !this.reacquire || !this.session) return null;
+    this.given = det;
+    this.finder ??= new AutoLocker(
+      this.tracker(),
+      (img) => this.given ?? detectNeck(this.net!, img),
+    );
     const found = this.finder.find(image);
+    this.given = null;
     if (found.state !== 'verifying' || !found.H) return null;
     // With the fret index uncertain (a hand over the inlays), keep the index the grid had a moment
     // ago: the guitar has barely moved during a short loss.

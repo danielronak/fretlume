@@ -201,13 +201,14 @@ export function StageScreen({ source }: { source?: 'playground' } = {}) {
       entry
         ? expectationFromShape(
             entry.shape,
-            showAll ? [] : entry.activeGroups,
+            // The highlighted shape is what is practised, even when the others are shown dimmed.
+            entry.activeGroups,
             tuning.strings,
             `${deck?.title ?? ''}:${entryIndex}:${session.repeat}`,
             settings.a4Hz,
           )
         : null,
-    [entry, showAll, tuning.strings, deck?.title, entryIndex, session.repeat, settings.a4Hz],
+    [entry, tuning.strings, deck?.title, entryIndex, session.repeat, settings.a4Hz],
   );
   const listening = useListening({
     expectation,

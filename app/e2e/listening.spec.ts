@@ -35,6 +35,24 @@ test.describe('listening: perfect player', () => {
   });
 });
 
+test.describe('listening: CAGED shape card', () => {
+  test.use({ fakeMedia: { video: 'bars-720p.mjpeg', audio: 'player-g-perfect.wav' } });
+
+  test('the highlighted shape is judged while the others show dimmed (field test 2026-11-26)', async ({
+    mediaPage: page,
+  }) => {
+    await page.goto('/#/stage/chord/G/maj');
+    await page.getByRole('button', { name: 'Use without camera' }).click();
+    await page.getByTestId('deck-next').click();
+    await expect(page.getByTestId('stage-entry')).toHaveText('G shape');
+    await expect(page.getByRole('switch', { name: 'All shapes' })).toBeChecked();
+    await page.getByRole('switch', { name: 'Listen' }).click();
+    await expect(coach(page)).toContainText(/Clean|clean in a row|Sounded close/, {
+      timeout: 15_000,
+    });
+  });
+});
+
 test.describe('listening: muted string', () => {
   test.use({ fakeMedia: { video: 'bars-720p.mjpeg', audio: 'player-g-muted4.wav' } });
 

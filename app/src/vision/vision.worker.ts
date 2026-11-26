@@ -8,11 +8,42 @@ import { Network, type Manifest } from './nn';
 import type { Image } from './image';
 import type { VisionReply, VisionRequest } from './messages';
 import { readFrameStamp } from './stamp';
+import type { FromDetect, ToDetect } from './detect.worker';
 
 declare const self: DedicatedWorkerGlobalScope;
 
 const core = new VisionCore();
 let autoOn = false;
+
+/**
+ * NeckNet for the watchdog and re-finds runs in a second worker, so tracking never waits for it
+ * (field test 2026-11-26). Without nested workers, the core runs it inline as before.
+ */
+let detector: Worker | null = null;
+function startDetector(modelUrl: string): void {
+  if (detector || typeof Worker === 'undefined') return;
+  try {
+    detector = new Worker(new URL('./detect.worker.ts', import.meta.url), { type: 'module' });
+  } catch {
+    detector = null;
+    return;
+  }
+  detector.onmessage = (e: MessageEvent<FromDetect>) => {
+    if (e.data.type === 'ready') core.setAsyncDetect(e.data.ok);
+    else core.detectResult(e.data.id, e.data.det);
+  };
+  detector.postMessage({ type: 'load', modelUrl } satisfies ToDetect);
+}
+function sendDetectRequest(): void {
+  const req = detector ? core.takeDetectRequest() : null;
+  if (!req || !detector) return;
+  // A copy: the core keeps the frame to fit against when the answer comes.
+  const data = new Uint8ClampedArray(req.image.data);
+  detector.postMessage(
+    { type: 'detect', id: req.id, image: { ...req.image, data } } satisfies ToDetect,
+    [data.buffer],
+  );
+}
 
 async function loadNetwork(baseUrl: string): Promise<Network> {
   const [manifest, bin] = await Promise.all([
@@ -98,6 +129,7 @@ self.onmessage = (event: MessageEvent<VisionRequest>) => {
         });
         // After the reply, so the overlay never waits for it.
         core.watch(image, message.tMs);
+        sendDetectRequest();
         break;
       }
       case 'stop':
@@ -110,6 +142,7 @@ self.onmessage = (event: MessageEvent<VisionRequest>) => {
           loadNetwork(message.modelUrl)
             .then((net) => {
               core.setNetwork(net);
+              startDetector(message.modelUrl);
               reply({ type: 'auto-ready', ok: true });
             })
             .catch((error: unknown) => {

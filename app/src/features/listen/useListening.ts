@@ -3,7 +3,7 @@
  * sends what the current step expects, turns verdicts into coach messages and coloured dots, logs
  * every attempt, and runs the string-by-string check. The screen passes `onAttempt` to its session.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { NoteCheck, Verdict } from '@audio/analysis/verify';
 import { microphone, type MicStatus } from '@audio/microphone';
 import { useMicrophone } from '@audio/useMicrophone';
@@ -14,6 +14,30 @@ import { attemptFromChord, attemptFromNote } from '@learn/attempt';
 import { coachChord, coachNote, judgedDots, type Coach } from '@learn/coach';
 import { logAttempt } from '@storage/attempts';
 import { diagnostics } from '@/diagnostics/recorder';
+
+/**
+ * The input level lives outside React state: only the meter re-renders (5 times a second), not the
+ * whole screen around it (the Stage shares the main thread with the camera loop).
+ */
+let levelValue = 0;
+let levelAt = 0;
+const levelListeners = new Set<() => void>();
+function setLevelValue(rms: number) {
+  const now = performance.now();
+  if (now - levelAt < 200) return;
+  levelAt = now;
+  levelValue = rms;
+  for (const l of levelListeners) l();
+}
+export function useListenLevel(): number {
+  return useSyncExternalStore(
+    (l) => {
+      levelListeners.add(l);
+      return () => levelListeners.delete(l);
+    },
+    () => levelValue,
+  );
+}
 
 export interface StringCheck {
   /** Strings still to play, low to high; results so far. */
@@ -27,7 +51,6 @@ export interface Listening {
   coach: Coach | null;
   /** "string-fret" → good / fix, after the last verdict (for the neck). */
   dots: ReadonlyMap<string, 'good' | 'fix'>;
-  level: number;
   check: StringCheck | null;
   /** This screen's attempts so far (for the end-of-run summary). */
   stats: { attempts: number; correct: number; firstTry: number; bestStreak: number };
@@ -52,7 +75,6 @@ export function useListening(options: {
   const [on, setOn] = useState(false);
   const [coach, setCoach] = useState<Coach | null>(null);
   const [dots, setDots] = useState<ReadonlyMap<string, 'good' | 'fix'>>(new Map());
-  const [level, setLevel] = useState(0);
   const [check, setCheck] = useState<StringCheck | null>(null);
   const streak = useRef(0);
   const [stats, setStats] = useState({ attempts: 0, correct: 0, firstTry: 0, bestStreak: 0 });
@@ -107,9 +129,10 @@ export function useListening(options: {
     return listener.on((ev) => {
       const o = latest.current;
       if (ev.type === 'level') {
-        setLevel(ev.rms);
+        setLevelValue(ev.rms);
         return;
       }
+      if (ev.type === 'onset') return;
       const c = checkRef.current;
       if (ev.type === 'strumIgnored') {
         setCoach({ key: 'listenOneString', tone: 'info' });
@@ -226,7 +249,6 @@ export function useListening(options: {
     mic: mic.status,
     coach,
     dots,
-    level,
     check,
     stats,
     toggle,

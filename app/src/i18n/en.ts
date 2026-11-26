@@ -828,7 +828,8 @@ export const en = {
   listenWaitMode: 'Wait for me',
   listenMarkPlayed: 'Mark as played',
   listenReady: 'Listening. Play when you are ready.',
-  listenUnsupported: 'Listening checks chords and single notes; for this card, play along freely.',
+  listenUnsupported:
+    'Listening checks one chord shape at a time. Press Next to pick a single shape; “All shapes” and scales are for playing along freely.',
   listenCheckPlay: 'Pick string {string} on its own and let it ring.',
   listenCheckDone: 'All strings checked.',
   listenCheckRings: 'String {string} rings.',
